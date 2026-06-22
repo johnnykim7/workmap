@@ -1,0 +1,205 @@
+# WorkMap API 설계
+
+> 설계 버전: 2.0 | 최종 수정: 2026-06-23 | 관련 CR: CR-006
+
+> 단계: 3. Detail Design | 실행스펙 섹션 3에 포함
+> 경로 + 메서드 + 한줄 설명 수준. Request/Response 상세 스키마는 구현 시 T3-1 데이터 모델에서 도출.
+
+---
+
+## 공통 사항
+
+### 공통 라이브러리 참조
+- **공통 라이브러리**: `com.therecommerce:bp-common-lib:0.1.0`
+- **참조 문서**: `AI-SDLC_공통라이브러리_레퍼런스.md`
+
+| 영역 | 제공 | 적용 방식 |
+|------|------|----------|
+| 응답 포맷(래퍼) | 예 | `ResponseDto<T>` |
+| 에러 코드 체계 | 예 | `ErrorCode` 구현체(`WorkMapErrorCode`, 7700번대) |
+| 페이징 | 예 | `PageRequest`/`PageResponse`/`PagingRequestDto` |
+| 인증/인가 | 예 | `JwtTokenProvider`/`JwtFilter` 상속 + `SecurityWhitelist` 구현 |
+| 로깅 | 예 | 자동 등록(`RequestLoggingFilter`/`TraceIdFilter`) |
+| 검색/필터 | 예 | `SearchConditionRequest`/`SearchConditionUtil` |
+
+> "예" 항목은 **직접 구현 금지**. 라이브러리 규격 사용.
+
+### API 기본 규격
+- **Base URL**: `/api/v1`
+- **인증**: 🔒 표시 엔드포인트에 JWT 필요. 역할 제한은 🔒 Admin·🔒 Manager 표기(POL-004).
+- **응답 래퍼**: `ResponseDto<T>`
+- **페이징**: `PageResponse<T>` (page, size, totalElements, content)
+- **에러 코드**: `WorkMapErrorCode` (7700~)
+- **우선순위**: **P1** = Phase 1 MVP · **P2** = Phase 2
+- 경로: kebab-case, 복수 명사. 행위(RPC)형은 `POST/PATCH /{resource}/{id}/{action}`.
+
+---
+
+## A. 인증 (Auth)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| POST | /auth/login | 로그인 (JWT 발급) | | P1 | WMP-AUTH-001 |
+| POST | /auth/logout | 로그아웃 (토큰 무효화) | 🔒 | P1 | WMP-AUTH-002 |
+| GET | /auth/me | 내 정보(프로필·역할) 조회 | 🔒 | P1 | WMP-AUTH-003 |
+
+## B. 사용자 (Users)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /users | 사용자 목록(검색·페이징) | 🔒 | P1 | WMP-AUTH-005 |
+| POST | /users | 사용자 생성/초대(역할·부서 지정) | 🔒 Admin | P1 | WMP-AUTH-004 |
+| PATCH | /users/{id} | 사용자 수정(역할·부서) | 🔒 Admin | P1 | WMP-AUTH-005 |
+| PATCH | /users/{id}/deactivate | 비활성화(소프트 삭제) | 🔒 Admin | P1 | WMP-AUTH-005 |
+
+## C. 워크스페이스 (Workspaces)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /workspaces | 워크스페이스 목록 | 🔒 | P1 | WMP-WS-001 |
+| POST | /workspaces | 워크스페이스 생성 | 🔒 Admin | P1 | WMP-WS-001 |
+| GET | /workspaces/{id} | 워크스페이스 상세 | 🔒 | P1 | WMP-WS-001 |
+| PATCH | /workspaces/{id} | 워크스페이스 수정 | 🔒 Admin | P1 | WMP-WS-001 |
+
+## D. 프로젝트 (Projects)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects | 프로젝트 목록(워크스페이스·유형·상태 필터, 보관 제외) | 🔒 | P1 | WMP-WS-003 |
+| POST | /projects | 프로젝트 생성(유형 프리셋→활성 탭) | 🔒 Manager | P1 | WMP-WS-002 |
+| GET | /projects/{id} | 프로젝트 상세 | 🔒 | P1 | WMP-WS-003 |
+| PATCH | /projects/{id} | 프로젝트 수정(탭 조합 편집) | 🔒 Manager | P2 | WMP-WS-004 |
+| PATCH | /projects/{id}/archive | 보관(소프트) | 🔒 Manager | P2 | WMP-WS-004 |
+| PATCH | /projects/{id}/visibility | 가시성 변경(PUBLIC/PRIVATE) | 🔒 Manager | P1 | WMP-WS-006 |
+| GET | /projects/{id}/summary | 프로젝트 홈 요약(전체/완료/지연/막힘/진행률) | 🔒 | P1 | WMP-WS-003 |
+
+## E. 프로젝트 멤버 (Members)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects/{id}/members | 멤버 목록 | 🔒 | P1 | WMP-WS-005 |
+| POST | /projects/{id}/members | 멤버 초대·역할 부여 | 🔒 Manager | P1 | WMP-WS-005 |
+| DELETE | /projects/{id}/members/{userId} | 멤버 제거 | 🔒 Manager | P1 | WMP-WS-005 |
+
+## F. 업무 항목 (Work Items)
+
+> 핵심 단일 테이블. Epic/Story/Task/Bug/Sub-task는 `issue_type` + `parent_id`/`epic_id` 계층(BIZ-106). 백로그·보드·목록·타임라인·이슈는 모두 work_item의 파생 뷰.
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /work-items | 통합 목록(검색·필터·정렬·페이징·퀵필터) | 🔒 | P1 | WMP-VIEW-001·004 |
+| POST | /work-items | 업무 항목 생성(만들기 모달, key 자동 발급) | 🔒 | P1 | WMP-WI-001 |
+| GET | /work-items/{id} | 상세 조회(하위·연결·댓글·이력, 유형별 분기) | 🔒 | P1 | WMP-WI-004 |
+| PATCH | /work-items/{id} | 필드 수정(인라인 편집·우선순위/기한/라벨) | 🔒 | P1 | WMP-WI-002·008 |
+| DELETE | /work-items/{id} | 소프트 삭제(deleted_at) | 🔒 | P1 | WMP-WI-003 |
+| POST | /work-items/{id}/subtasks | 하위 작업(Sub-task) 생성 | 🔒 | P1 | WMP-WI-005 |
+| PATCH | /work-items/{id}/status | 상태 전이(FSM 화이트리스트 + 공통상태 환산) | 🔒 | P1 | WMP-WI-007 |
+| PATCH | /work-items/{id}/assignee | 담당자/보고자 지정·변경 | 🔒 | P1 | WMP-WI-006 |
+| PATCH | /work-items/{id}/convert | 유형 전환(Move/Convert, 계층 재검증) | 🔒 | P1 | WMP-WI-014 |
+| PATCH | /work-items/bulk | 벌크 편집(상태·담당자·스프린트·라벨 일괄) | 🔒 | P1 | WMP-WI-015 |
+| PATCH | /work-items/{id}/measure | 측정(단위·목표·현재값, progress 자동) | 🔒 | P1 | WMP-WI-016 |
+
+### F1. 연결된 업무 항목 (Links)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /work-items/{id}/links | 연결 목록 | 🔒 | P2 | WMP-WI-013 |
+| POST | /work-items/{id}/links | 링크 생성(양방향 자동) | 🔒 | P2 | WMP-WI-013 |
+| DELETE | /work-items/{id}/links/{linkId} | 링크 제거 | 🔒 | P2 | WMP-WI-013 |
+
+### F2. 댓글 / 첨부 / 활동이력
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /work-items/{id}/comments | 댓글 목록 | 🔒 | P1 | WMP-WI-009 |
+| POST | /work-items/{id}/comments | 댓글 작성(@멘션) | 🔒 | P1 | WMP-WI-009 |
+| GET | /work-items/{id}/attachments | 첨부 목록 | 🔒 | P1 | WMP-WI-012 |
+| POST | /work-items/{id}/attachments | 파일 첨부 | 🔒 | P1 | WMP-WI-012 |
+| GET | /work-items/{id}/activities | 활동/변경 이력 | 🔒 | P1 | WMP-WI-011 |
+
+## G. 애자일 실행 (Agile — Backlog/Sprint/Board)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그, Epic 그룹 트리) | 🔒 | P1 | WMP-AGL-001 |
+| GET | /projects/{id}/sprints | 스프린트 목록 | 🔒 | P1 | WMP-AGL-001 |
+| POST | /projects/{id}/sprints | 스프린트 생성 | 🔒 | P1 | WMP-AGL-001 |
+| POST | /sprints/{id}/start | 스프린트 시작(기간 고정, 동시 ACTIVE 1개) | 🔒 | P1 | WMP-AGL-003 |
+| POST | /sprints/{id}/complete | 스프린트 완료(미완료 이월) | 🔒 | P1 | WMP-AGL-004 |
+| PATCH | /work-items/{id}/sprint | 스프린트 담기/빼기(백로그↔스프린트 이동) | 🔒 | P1 | WMP-AGL-002 |
+| GET | /projects/{id}/board | 보드(스크럼/칸반 컬럼별 카드) | 🔒 | P1 | WMP-AGL-005·OPS-001 |
+
+## H. 운영 실행 (Operations)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects/{id}/throughput | 일일/주간 처리량(담당자별 계획 대비 완료) | 🔒 | P1 | WMP-OPS-002 |
+| POST | /work-items/{id}/promote-to-backlog | 현장 이슈→개발 백로그 전환(원본 링크 유지) | 🔒 | P1 | WMP-OPS-003 |
+
+> 운영형 보드는 G. 보드(`GET /projects/{id}/board`)를 워크플로(운영형) 기준으로 공유. 현장검증 기록(WMP-OPS-004)은 P2.
+
+### H1. 승인 (Approvals)
+
+> 승인 = work_item 워크플로 게이트. `workflow_status.is_approval=true` 상태 도달 시 지정 승인자 승인 필요. 승인 시 다음 상태 진행, 거부 시 반려. 게이트 진입 시 approvals 행(decision=PENDING) 자동 생성.
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects/{key}/approvals | 승인 목록(승인 대기중/내가 요청/모든 승인 필터) | 🔒 | P1 | WMP-OPS-006 |
+| GET | /work-items/{id}/approvals | 항목별 승인 이력 | 🔒 | P1 | WMP-OPS-006 |
+| POST | /approvals/{id}/decision | 승인/거부 처리(body: decision APPROVE/REJECT, comment) | 🔒 승인자 | P1 | WMP-OPS-006 |
+
+> 승인 게이트 설정(상태에 `is_approval`/`approver_role` 지정)은 워크플로 편집 API(`K. /admin/workflows/{id}/statuses`)에 포함 — 별도 엔드포인트 없음 | P1 | WMP-OPS-005.
+
+## I. 보기 (View — Timeline/Calendar)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /work-items | 목록 뷰(표/분할, 검색·필터·퀵필터) — F 모듈 공유 | 🔒 | P1 | WMP-VIEW-001·004 |
+| GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) | 🔒 | P2 | WMP-VIEW-002 |
+| GET | /projects/{id}/calendar | 캘린더(기한 기준 월별) | 🔒 | P2 | WMP-VIEW-003 |
+
+## J. 회사 홈 / 보고 (Dashboard / Report)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /dashboard/blocked | 막힌 업무 목록(BLOCKED) | 🔒 | P1 | WMP-HOME-001·002 |
+| GET | /dashboard/delayed | 지연 업무 목록(기한 초과 미완료, POL-002) | 🔒 | P1 | WMP-HOME-002 |
+| GET | /dashboard/unassigned | 미배정 업무 목록(담당자 없음) | 🔒 | P1 | WMP-HOME-002 |
+| GET | /dashboard/metrics | 지표 카드(진행/오늘마감/이번주/미배정/장기미변경) | 🔒 | P1 | WMP-HOME-001 |
+| GET | /projects/{id}/report | 프로젝트 보고서(진행률/지연/막힘/담당자 부하) | 🔒 | P1 | WMP-HOME-003 |
+
+> 회사홈 집계는 가시성(WMP-WS-006/BIZ-108) 반영 — 볼 수 있는 프로젝트만 집계.
+
+## K. 관리자 마스터 (Admin)
+
+> 마스터 데이터로 관리(하드코딩 금지). 시스템 시드 제공. `is_system=true`는 삭제 불가.
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET·POST·PUT·DELETE | /admin/measure-units | 측정 단위 마스터 CRUD | 🔒 Admin | P1 | WMP-ADM-001 |
+| GET·POST·PUT·DELETE | /admin/field-schemes | 필드 스킴(유형/프로젝트별 표시 on/off) CRUD | 🔒 Admin | P1 | WMP-ADM-002 |
+| GET·POST·PUT·DELETE | /admin/workflows | 워크플로 CRUD(상태/전이 화이트리스트 포함) | 🔒 Admin | P1 | WMP-ADM-003 |
+| GET·POST·PUT·DELETE | /admin/workflows/{id}/statuses | 워크플로 상태 편집 | 🔒 Admin | P1 | WMP-ADM-003 |
+| GET·POST·DELETE | /admin/workflows/{id}/transitions | 전이(화이트리스트) 편집 | 🔒 Admin | P1 | WMP-ADM-003 |
+| GET·POST·PUT·DELETE | /admin/issue-types | 업무 유형 마스터 CRUD(5종 기본 삭제 불가) | 🔒 Admin | P2 | WMP-ADM-004 |
+| GET·POST·PUT·DELETE | /admin/forms | 양식 빌더 CRUD | 🔒 Admin | P2 | WMP-ADM-005 |
+
+## L. 알림 (Notifications)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /notifications | 알림 목록(읽음/안읽음) | 🔒 | P1 | WMP-NOTI-001 |
+| PATCH | /notifications/{id}/read | 알림 읽음 처리 | 🔒 | P1 | WMP-NOTI-001 |
+| GET | /inbox | 받은함(내게 온 것 통합) | 🔒 | P1 | WMP-NOTI-001 |
+
+> 알림 트리거 발행(WMP-NOTI-002)은 도메인 이벤트(ApplicationEvent) 기반 내부 처리 — 외부 엔드포인트 아님(T1-6 이벤트 계약).
+
+---
+
+## 작성 원칙
+- 경로: kebab-case, 복수 명사. 행위는 `POST/PATCH /{resource}/{id}/{action}`.
+- 인증: 🔒 / 역할 제한은 🔒 Admin·🔒 Manager.
+- 상태 변경은 반드시 FSM 가드 경유(BIZ-010). 직접 status UPDATE 금지.
+- Request/Response Body는 작성하지 않음 — 구현 시 T3-1 데이터 모델에서 도출.
+- 목록 엔드포인트는 `PageResponse` + `SearchConditionRequest` 필터 규격 사용.
+- 측정·진행률 등 정량/정성 값은 측정 추상화(measure_unit + target/current)로 일원화(WMP-WI-016).
