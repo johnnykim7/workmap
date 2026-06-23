@@ -115,15 +115,24 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 - 커밋: `<type>: <설명>` (feat/fix/refactor/docs/chore/ui)
 
 ## 현재 진행 상태
-- 설계: T1~T3 + execution-spec 완료 (2026-06-19)
-- Sprint 1~5: 미착수 (구현 세션 대기)
+- **설계: v0.4(Jira 애자일) 전면 개정 완료 (2026-06-23, CR-006).** ClickUp(v0.3) → Jira 전환. T1~T3 + execution-spec 모두 v0.4 기준.
+- **다음 작업 = Sprint 1(세팅) 구현 착수.** 아직 backend/ 없음(미생성). frontend/는 목업(참고용, v0.4 실구현은 새로).
+- 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 feat/SPR-{N} 브랜치에서.
+- **착수 시 첫 읽기 순서**: 이 CLAUDE.md → docs/origins/2026-06-23_세션인계_v0.4설계완료_구현착수전.md(직전 세션 인계) → docs/execution-spec.md(§5 Sprint별 가이드) → 해당 Sprint의 T3-1/T3-2/T1-5/T3-5.
 
-## 참조 문서
-- 실행스펙: ./docs/execution-spec.md
-- 단위테스트 명세: ./docs/T3-5_단위테스트_명세.md
+## 참조 문서 (전부 v0.4/CR-006 기준)
+- 실행스펙(구현 진입점): ./docs/execution-spec.md
+- 기능 요구사항: ./docs/T1-1_기능요구사항_명세서.md
+- 비즈니스 규칙/정책: ./docs/T1-3_비즈니스_규칙.md · ./docs/T1-4_정책_정의.md
+- FSM 상태/전이: ./docs/T1-5_FSM_상태_정의.md
+- 이벤트 계약: ./docs/T1-6_이벤트_계약.md
 - 데이터 모델: ./docs/T3-1_데이터_모델.md
 - API 설계: ./docs/T3-2_API_설계.md
-- 화면 구조: ./docs/T3-3_화면_구조.md
+- 화면 구조(IA)+UI 규칙: ./docs/T3-3_화면_구조.md
+- 단위테스트 명세: ./docs/T3-5_단위테스트_명세.md
+- 변경 이력: ./docs/CR_변경_이력.md (CR-006 = v0.4 전환 본체)
+- 정본 기획: ./docs/origins/WorkMap_제품기획서_v0.4_Jira기반.md
+- Jira 화면 인벤토리(캡처 누적용): ./docs/origins/WorkMap_Jira화면_인벤토리_v1.md
 
 ## 변경 규모 판단 및 설계 우선 원칙
 
