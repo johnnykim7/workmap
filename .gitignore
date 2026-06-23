@@ -16,3 +16,11 @@ build/
 .env.*
 *.key
 id_rsa*
+
+# 백엔드 (Gradle)
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/out/
+.idea/
+*.iml

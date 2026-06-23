@@ -1,0 +1,34 @@
+# WorkMap 운영 Docker Compose (deploy.sh로 배포)
+# 배포 구조: /home/therecommerce/workmap/
+#   ├── backend/build/libs/workmap.jar  (BE 빌드 산출물)
+#   ├── backend/Dockerfile
+#   ├── docker-compose.yml              (이 파일)
+#   ├── .env                            (서버에서 관리, deploy.sh는 건드리지 않음)
+#   └── frontend/                       (FE 정적 파일, 외부 nginx가 서빙)
+#
+# DB는 호스트 PG(host.docker.internal:5432/workmap). 외부 포트 8186.
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "8186:8186"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: "8186"
+      DB_URL: ${DB_URL:-jdbc:postgresql://host.docker.internal:5432/workmap}
+      DB_USERNAME: ${DB_USERNAME:-platform}
+      DB_PASSWORD: ${DB_PASSWORD:-platform}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8186/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
