@@ -1,0 +1,220 @@
+// WorkMap 도메인 타입 — v0.4 (Jira 애자일 기반, CR-006)
+// 핵심 컨셉: 하나의 work_item 데이터, 여러 관점 (이슈·리스크·WBS·칸반·타임라인은 파생 뷰).
+// 계층: 워크스페이스 > 프로젝트 > work_item(Epic > Story/Task/Bug > Sub-task)
+
+// ───────────────────────── 상태 (Workflow / FSM) ─────────────────────────
+// 상태 전이는 BE FSM 화이트리스트만(BIZ-010). 유형별 워크플로는 BE workflow 시드 참조.
+export type WorkStatus =
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'DONE'
+  | 'RECEIVED'
+  | 'CHECKING'
+  | 'PROCESSING'
+  | 'FIELD_CHECK'
+  | 'HOLD'
+  | 'DEV_DONE'
+  | 'FIELD_VERIFY'
+  | 'OPS_APPLIED'
+  | 'BLOCKED';
+
+export const WORK_STATUS_LABEL: Record<WorkStatus, string> = {
+  TODO: '할 일',
+  IN_PROGRESS: '진행 중',
+  IN_REVIEW: '검토 중',
+  DONE: '완료',
+  RECEIVED: '접수',
+  CHECKING: '확인 중',
+  PROCESSING: '처리 중',
+  FIELD_CHECK: '현장확인',
+  HOLD: '보류',
+  DEV_DONE: '개발완료',
+  FIELD_VERIFY: '현장검증중',
+  OPS_APPLIED: '운영반영완료',
+  BLOCKED: '막힘',
+};
+
+// 상태 카테고리 (Jira: To Do / In Progress / Done) — 색/집계용
+export type StatusCategory = 'TODO' | 'INPROGRESS' | 'DONE';
+export const STATUS_CATEGORY: Record<WorkStatus, StatusCategory> = {
+  TODO: 'TODO',
+  RECEIVED: 'TODO',
+  IN_PROGRESS: 'INPROGRESS',
+  IN_REVIEW: 'INPROGRESS',
+  CHECKING: 'INPROGRESS',
+  PROCESSING: 'INPROGRESS',
+  FIELD_CHECK: 'INPROGRESS',
+  DEV_DONE: 'INPROGRESS',
+  FIELD_VERIFY: 'INPROGRESS',
+  HOLD: 'INPROGRESS',
+  BLOCKED: 'INPROGRESS',
+  DONE: 'DONE',
+  OPS_APPLIED: 'DONE',
+};
+
+// ───────────────────────── 업무 유형 (IssueType / 계층) ─────────────────────────
+export type IssueType = 'EPIC' | 'STORY' | 'TASK' | 'BUG' | 'SUBTASK';
+
+export const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
+  EPIC: 'Epic',
+  STORY: 'Story',
+  TASK: 'Task',
+  BUG: 'Bug',
+  SUBTASK: 'Sub-task',
+};
+
+export const ISSUE_TYPE_COLOR: Record<IssueType, 'violet' | 'green' | 'blue' | 'red' | 'slate'> = {
+  EPIC: 'violet',
+  STORY: 'green',
+  TASK: 'blue',
+  BUG: 'red',
+  SUBTASK: 'slate',
+};
+
+// ───────────────────────── 우선순위 ─────────────────────────
+export type Priority = 'HIGHEST' | 'HIGH' | 'MEDIUM' | 'LOW' | 'LOWEST';
+export const PRIORITY_LABEL: Record<Priority, string> = {
+  HIGHEST: '최우선',
+  HIGH: '높음',
+  MEDIUM: '보통',
+  LOW: '낮음',
+  LOWEST: '최하',
+};
+
+// ───────────────────────── 프로젝트 유형 (T3-3 §7 — 유형 프리셋) ─────────────────────────
+// 개발형 / 운영형 / 계획형. 유형이 기본 탭 조합과 워크플로를 정한다.
+export type ProjectType = 'DEV' | 'OPS' | 'PLAN';
+export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
+  DEV: '개발형',
+  OPS: '운영형',
+  PLAN: '계획형',
+};
+
+// 유형별 본문 가로 탭 프리셋 (T3-3 §9.1, Phase1 고정 노출).
+// 값은 route-paths.ts ProjectTab 키와 일치.
+export const PROJECT_TAB_PRESET: Record<ProjectType, string[]> = {
+  DEV: ['summary', 'backlog', 'board', 'timeline', 'reports'],
+  OPS: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'],
+  PLAN: ['summary', 'timeline', 'reports'],
+};
+
+export const PROJECT_TAB_LABEL: Record<string, string> = {
+  summary: '요약',
+  list: '목록',
+  board: '보드',
+  backlog: '백로그',
+  timeline: '타임라인',
+  calendar: '캘린더',
+  approvals: '승인',
+  reports: '보고서',
+};
+
+// ───────────────────────── 핵심 엔티티 ─────────────────────────
+export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'MEMBER' | 'VIEWER';
+
+// BE UserResponse: { id, email, name, role:String, departmentId, active, createdAt }
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  departmentId?: number;
+  active: boolean;
+}
+
+export interface Workspace {
+  id: number;
+  name: string;
+}
+
+export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'DONE' | 'ARCHIVED';
+export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
+  PLANNING: '준비',
+  ACTIVE: '진행',
+  DONE: '완료',
+  ARCHIVED: '보관',
+};
+
+export type Visibility = 'PUBLIC' | 'PRIVATE';
+
+// BE ProjectDtos.Response 그대로 (T3-2 §D). 유형은 templateId로 표현(BIZ-107, enum 아님).
+// progress/itemCount/지연·막힘 등 표시용 집계는 BE 미제공 → /summary 또는 work_item(Sprint3)에서.
+export interface Project {
+  id: number;
+  workspaceId: number;
+  key: string; // Jira식 프로젝트 키 (URL /projects/:key)
+  name: string;
+  templateId: number;
+  status: ProjectStatus;
+  visibility: Visibility;
+  workflowId?: number;
+  activeTabs?: string[];
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+  createdBy?: number;
+  archivedAt?: string;
+  createdAt?: string;
+}
+
+// 프로젝트 멤버 (BE MemberDtos.Response: userId, name, email, role:String, createdAt)
+export interface ProjectMember {
+  userId: number;
+  name: string;
+  email: string;
+  role: UserRole; // 프로젝트 내 역할(POL-004)
+  createdAt?: string;
+}
+
+// 프로젝트 템플릿 (유형 마스터, BIZ-107). BE에 조회 엔드포인트가 없어 FE 상수로 보유.
+// id는 V2 시드 INSERT 순서(GENERATED ALWAYS): DEV=1, OPS=2, PLAN=3.
+export interface ProjectTemplate {
+  id: number;
+  code: ProjectType;
+  name: string;
+  description: string;
+  defaultTabs: string[];
+  issueTypeCodes: string[];
+}
+
+export const PROJECT_TEMPLATES: ProjectTemplate[] = [
+  { id: 1, code: 'DEV', name: '개발형', description: '개발 프로젝트(백로그·스프린트·보드 중심)', defaultTabs: ['summary', 'backlog', 'board', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] },
+  { id: 2, code: 'OPS', name: '운영형', description: '운영·고객대응(접수·처리·보류 워크플로)', defaultTabs: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['TASK', 'BUG'] },
+  { id: 3, code: 'PLAN', name: '계획형', description: '계획·경영공통(타임라인·목록 중심)', defaultTabs: ['summary', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK'] },
+];
+
+/** templateId → 프로젝트 유형(탭 프리셋·배지용). 미지정/미상은 DEV로 폴백. */
+export function templateType(templateId?: number): ProjectType {
+  return PROJECT_TEMPLATES.find((t) => t.id === templateId)?.code ?? 'DEV';
+}
+
+// 프로젝트 요약 카드 (GET /projects/:id/summary)
+export interface ProjectSummary {
+  total: number;
+  done: number;
+  delayed: number;
+  blocked: number;
+  progress: number;
+}
+
+// work_item — Epic/Story/Task/Bug/Sub-task 통합 단일 엔티티 (BIZ-014/015)
+export interface WorkItem {
+  id: number;
+  key: string; // 예: WMP-101
+  title: string;
+  issueType: IssueType;
+  status: WorkStatus;
+  priority: Priority;
+  projectKey: string;
+  assigneeName?: string;
+  assigneeId?: number;
+  epicKey?: string;
+  parentKey?: string;
+  startDate?: string;
+  dueDate?: string;
+  progress: number;
+  isDelayed?: boolean;
+  blockReason?: string;
+  description?: string;
+}

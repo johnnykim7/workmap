@@ -1,0 +1,8 @@
+# pnpm 11 빌드 스크립트 허용 정책 (TTY 없는 환경 대비 명시).
+# esbuild=Vite 빌드에 필요. ds-ui는 prebuilt dist를 제공하므로 빌드 불필요.
+allowBuilds:
+  '@therecommerce/ds-ui@file:../../../bp-platform/design-system/packages/ui': false
+  esbuild: true
+  msw: true
+onlyBuiltDependencies:
+  - esbuild

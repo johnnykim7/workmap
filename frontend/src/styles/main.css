@@ -1,0 +1,23 @@
+/* ds-ui 컴포넌트 스타일 (필수, 가장 먼저) */
+@import '@therecommerce/ds-ui/dist/style.css';
+
+/* 사내툴 테마가 확정되면 아래 한 줄 추가:
+   @import '@therecommerce/ds-ui/dist/themes/internal.css'; */
+
+/* WorkMap 로컬 Tailwind (자체 composite용 유틸) */
+@import 'tailwindcss';
+
+/* 공통상태 7색 토큰 (StatusBadge에서 사용) — ds-ui 기본값 위에 정의 */
+:root {
+  --wm-status-not-started: #94a3b8; /* slate-400 */
+  --wm-status-in-progress: #3b82f6; /* blue-500 */
+  --wm-status-in-review: #a855f7;   /* purple-500 */
+  --wm-status-done: #22c55e;        /* green-500 */
+  --wm-status-hold: #f59e0b;        /* amber-500 */
+  --wm-status-blocked: #ef4444;     /* red-500 */
+  --wm-status-cancelled: #6b7280;   /* gray-500 */
+}
+
+html, body, #root {
+  height: 100%;
+}
