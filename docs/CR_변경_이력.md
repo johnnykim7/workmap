@@ -349,8 +349,9 @@
   - `pages/SearchPage.tsx`(StubPage→실구현): 검색 바 + 유형/상태/우선순위 Select + 퀵필터(내 항목/최근 업데이트/막힌 것/미배정) + 결과 표(WorkItemTable 읽기전용 재사용, 전사 담당자 이름은 `GET /users` 전체 맵으로 해소) + 페이징. 회사 홈 카드 도착지(`?quick=blocked|unassigned` 진입 시 퀵필터 선점).
   - 회사 홈 `DashboardListPanel`에 `quickHref` 추가 → 막힘/미배정 패널 "모두 보기"가 `/search?quick=`로 이동(§9.2 카드→검색 연결, 이전 미연결분 마감).
   - MSW: `GET /work-items`(검색) 핸들러 추가(dashItems 기반 keyword·필터·페이징).
-- **단위테스트 한계**: keyword mapper SQL은 Testcontainers/실DB 테스트 인프라 부재로 단위검증 불가(기존 전략 — Mapper 테스트는 복잡쿼리만·실DB 없음). FE 계약은 MSW로 5건 PASS. **mapper의 description·댓글 검색은 운영 E2E로 검증 필요**(미수행 — `./deploy.sh be` 후 확인).
-- **검증**: FE `tsc --noEmit` PASS, `pnpm build` PASS, vitest 50/50 PASS(신규 search 계약 5). BE: 컴파일·운영배포는 별도 승인 후. 라우트(`/search`)·헤더 검색버튼·회사홈 연결 확인.
+- **단위테스트 한계**: keyword mapper SQL은 Testcontainers/실DB 테스트 인프라 부재로 단위검증 불가(기존 전략 — Mapper 테스트는 복잡쿼리만·실DB 없음). FE 계약은 MSW로 5건 PASS.
+- **검증**: FE `tsc --noEmit` PASS, `pnpm build` PASS, vitest 50/50 PASS(신규 search 계약 5). BE `./gradlew test` 148 PASS·`bootJar` PASS. 라우트(`/search`)·헤더 검색버튼·회사홈 연결 확인.
+- **운영 배포·E2E 완료(2026-06-27, `./deploy.sh all`)**: BE jar 재빌드+docker 재기동, FE 정적 배포. health UP. **mapper keyword SQL을 운영 DB(workmap@59.8.160.12)에 직접 검증**(트랜잭션 INSERT→검색→ROLLBACK, 운영 데이터 무변경): 설명에만 있는 키워드→해당 work_item 매칭 ✅, 댓글(comments.content)에만 있는 키워드→EXISTS로 매칭 ✅, 무관 키워드→0건(거짓매칭 없음) ✅. 검색 API 라우팅·시큐리티 가드 응답 확인(미인증 403). (운영 work_items 0건 상태라 API E2E 대신 SQL 직접검증으로 수행 — 쿼리 정합성 확인이 목적.)
 - **영향 설계서**: 없음(T3-3 §13.9 그대로 충족 — 설계는 원래 제목·설명·댓글을 명시했고 BE가 따라온 것).
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 설명·댓글 풀 구현·소규모) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
