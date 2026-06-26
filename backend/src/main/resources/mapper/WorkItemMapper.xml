@@ -197,4 +197,84 @@
         SELECT EXISTS(SELECT 1 FROM ancestors WHERE id = #{nodeId})
     </select>
 
+    <!-- ===== Sprint 4: 애자일/운영/목록 조회 ===== -->
+
+    <select id="findByProjectAndSprint" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        <choose>
+            <when test="sprintId != null">AND sprint_id = #{sprintId}</when>
+            <when test="includeBacklog">AND sprint_id IS NULL</when>
+        </choose>
+        ORDER BY id
+    </select>
+
+    <select id="findBySprint" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE sprint_id = #{sprintId} AND deleted_at IS NULL
+        ORDER BY id
+    </select>
+
+    <select id="findUnfinishedBySprint" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE sprint_id = #{sprintId} AND deleted_at IS NULL
+          AND common_status &lt;&gt; 'DONE'
+        ORDER BY id
+    </select>
+
+    <select id="findDoneBySprint" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE sprint_id = #{sprintId} AND deleted_at IS NULL
+          AND common_status = 'DONE'
+        ORDER BY id
+    </select>
+
+    <!-- 통합 목록 동적 WHERE(가시성·필터 공유) -->
+    <sql id="searchWhere">
+        deleted_at IS NULL
+        <choose>
+            <when test="c.projectId != null">AND project_id = #{c.projectId}</when>
+            <otherwise>
+                <if test="c.visibleProjectIds != null and c.visibleProjectIds.size() > 0">
+                    AND project_id IN
+                    <foreach collection="c.visibleProjectIds" item="pid" open="(" separator="," close=")">
+                        #{pid}
+                    </foreach>
+                </if>
+                <if test="c.visibleProjectIds == null or c.visibleProjectIds.size() == 0">
+                    AND 1 = 0
+                </if>
+            </otherwise>
+        </choose>
+        <if test="c.issueType != null">AND issue_type = #{c.issueType}</if>
+        <if test="c.commonStatus != null">AND common_status = #{c.commonStatus}</if>
+        <if test="c.priority != null">AND priority = #{c.priority}</if>
+        <if test="c.assigneeId != null">AND assignee_id = #{c.assigneeId}</if>
+        <if test="c.sprintId != null">AND sprint_id = #{c.sprintId}</if>
+        <if test="c.epicId != null">AND epic_id = #{c.epicId}</if>
+        <if test="c.keyword != null and c.keyword != ''">
+            AND (title ILIKE '%' || #{c.keyword} || '%' OR key ILIKE '%' || #{c.keyword} || '%')
+        </if>
+    </sql>
+
+    <select id="search" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE <include refid="searchWhere"/>
+        ORDER BY ${c.sortColumn} ${c.sortDirection}, id DESC
+        LIMIT #{c.limit} OFFSET #{c.offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM work_items
+        WHERE <include refid="searchWhere"/>
+    </select>
+
+    <select id="findCompletedBetween" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+          AND completed_at IS NOT NULL
+          AND completed_at &gt;= #{from} AND completed_at &lt; #{to}
+        ORDER BY assignee_id, completed_at
+    </select>
+
 </mapper>

@@ -1,6 +1,7 @@
 package com.therecommerce.workmap.workitem.service;
 
 import com.therecommerce.common.exception.BusinessException;
+import com.therecommerce.workmap.approval.service.ApprovalGate;
 import com.therecommerce.workmap.common.event.WorkItemEvents;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.measure.domain.MeasureUnit;
@@ -47,6 +48,7 @@ public class WorkItemService {
     private final ProjectMemberMapper memberMapper;
     private final MeasureUnitMapper measureUnitMapper;
     private final ActivityLogMapper activityLogMapper;
+    private final ApprovalGate approvalGate;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
@@ -119,8 +121,8 @@ public class WorkItemService {
                 .environment(req.environment())
                 .severity(req.severity())
                 .checklist(req.checklist())
-                .labels(req.labels())
-                .relatedSolutions(req.relatedSolutions())
+                .labels(req.labels() == null ? List.of() : req.labels())
+                .relatedSolutions(req.relatedSolutions() == null ? List.of() : req.relatedSolutions())
                 .createdBy(actorId)
                 .build();
 
@@ -210,12 +212,25 @@ public class WorkItemService {
 
     @Transactional
     public WorkItemDtos.Response changeStatus(Long id, WorkItemDtos.ChangeStatusRequest req, Long actorId) {
+        return changeStatus(id, req, actorId, false);
+    }
+
+    /**
+     * 상태 전이 핵심(FSM 가드 + 승인 게이트). {@code bypassApproval}=true는 승인 결과로 진행하는 경우
+     * (ApprovalService가 APPROVE 후 호출) — 현재 게이트의 PENDING 차단을 우회한다(APR-4).
+     */
+    @Transactional
+    public WorkItemDtos.Response changeStatus(Long id, WorkItemDtos.ChangeStatusRequest req,
+                                              Long actorId, boolean bypassApproval) {
         WorkItem w = getEntity(id);
         WorkflowStatus from = workflowMapper.findStatusById(w.getStatusId());
         WorkflowStatus to = workflowMapper.findStatusById(req.toStatusId());
         if (to == null || !to.getWorkflowId().equals(w.getWorkflowId())) {
             throw new BusinessException(WmpErrorCode.TRANSITION_NOT_ALLOWED, "대상 상태가 이 워크플로에 없습니다.");
         }
+
+        // 승인 게이트(BIZ-110): 현재 상태가 승인 게이트이고 PENDING 승인이 남아있으면 다음 상태 전이 차단(APR-2)
+        approvalGate.assertCanLeave(from, w.getId(), bypassApproval);
 
         boolean toBlocked = CommonStatus.BLOCKED.name().equals(to.getCommonStatus());
         boolean fromBlocked = from != null && CommonStatus.BLOCKED.name().equals(from.getCommonStatus());
@@ -274,6 +289,9 @@ public class WorkItemService {
                     w.getId(), w.getIssueType(), req.blockReason(), actorId, now,
                     w.getAssigneeId(), List.of()));
         }
+
+        // 승인 게이트 진입(APR-1/7): is_approval 상태에 도달하면 PENDING 승인 행 생성 + ApprovalRequested 발행
+        approvalGate.onEnterGate(to, w.getId(), actorId, now);
 
         // 상위 Epic 진행률 재집계(AGG-1) — 동일 트랜잭션(파생값 정합)
         recomputeEpicProgress(w.getEpicId());

@@ -44,6 +44,7 @@ class WorkItemServiceTest {
     @Mock ProjectMemberMapper memberMapper;
     @Mock MeasureUnitMapper measureUnitMapper;
     @Mock ActivityLogMapper activityLogMapper;
+    @Mock com.therecommerce.workmap.approval.service.ApprovalGate approvalGate;
     @Mock org.springframework.context.ApplicationEventPublisher events;
 
     WorkItemService service;
@@ -54,7 +55,7 @@ class WorkItemServiceTest {
     @BeforeEach
     void setUp() {
         service = new WorkItemService(workItemMapper, workflowMapper, projectMapper, memberMapper,
-                measureUnitMapper, activityLogMapper, events, fixedClock);
+                measureUnitMapper, activityLogMapper, approvalGate, events, fixedClock);
     }
 
     // ── 픽스처 ──

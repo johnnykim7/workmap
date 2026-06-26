@@ -25,4 +25,7 @@ public interface ProjectMemberMapper {
 
     /** BIZ-108 가시성 필터: 사용자가 멤버로 속한 프로젝트 id 목록. */
     List<Long> findProjectIdsByUserId(@Param("userId") Long userId);
+
+    /** 프로젝트 내 사용자 역할(승인 권한 검증, BIZ-111). 멤버 아니면 null. */
+    String findRole(@Param("projectId") Long projectId, @Param("userId") Long userId);
 }

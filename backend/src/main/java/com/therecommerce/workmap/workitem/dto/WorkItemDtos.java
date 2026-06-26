@@ -110,6 +110,50 @@ public final class WorkItemDtos {
             Long sprintId
     ) {}
 
+    /**
+     * 벌크 편집(WMP-WI-015). 다건 일괄 변경. 전달된(non-null) 필드만 적용.
+     * toStatusId는 항목별 FSM 검증(BLK-1) — 실패 항목은 분리 보고(BLK-2, 전체 롤백 아님).
+     */
+    public record BulkRequest(
+            @NotNull List<Long> ids,
+            Long toStatusId,         // 상태 일괄 변경(FSM 검증)
+            String blockReason,      // toStatus가 BLOCKED일 때 필수
+            Boolean changeAssignee,  // true면 assigneeId 적용(null=미배정)
+            Long assigneeId,
+            Long sprintId,           // 스프린트 일괄 변경
+            Boolean changeSprint,    // true면 sprintId 적용(null=백로그)
+            String priority,         // 우선순위 일괄 변경
+            List<String> labels      // 라벨 일괄 변경
+    ) {}
+
+    /** 벌크 편집 결과(성공/실패 분리 보고, BLK-2). */
+    public record BulkResult(
+            List<Long> succeeded,
+            List<BulkFailure> failed
+    ) {}
+
+    public record BulkFailure(
+            Long id,
+            String reason
+    ) {}
+
+    /**
+     * 통합 목록(GET /work-items, WMP-VIEW-001) 쿼리 파라미터. 모두 선택.
+     * sort 키: createdAt/dueDate/priority/statusChangedAt/updatedAt(화이트리스트). direction: ASC/DESC.
+     */
+    public record SearchParams(
+            Long projectId,
+            String issueType,
+            String commonStatus,
+            String priority,
+            Long assigneeId,
+            Long sprintId,
+            Long epicId,
+            String keyword,
+            String sort,
+            String direction
+    ) {}
+
     public record Response(
             Long id,
             String key,

@@ -63,4 +63,33 @@ public interface WorkItemMapper {
     /** 순환 참조 검사(HRC-4): candidateAncestorId가 nodeId의 자손인지. */
     boolean isDescendant(@Param("nodeId") Long nodeId,
                          @Param("candidateAncestorId") Long candidateAncestorId);
+
+    // ===================================================================
+    // Sprint 4 — 애자일/운영/목록 조회
+    // ===================================================================
+
+    /** 백로그/보드용: 프로젝트의 특정 스프린트 항목(sprintId=null이면 백로그). */
+    List<WorkItem> findByProjectAndSprint(@Param("projectId") Long projectId,
+                                          @Param("sprintId") Long sprintId,
+                                          @Param("includeBacklog") boolean includeBacklog);
+
+    /** 보드용: 특정 스프린트의 모든 항목(서브태스크 포함). */
+    List<WorkItem> findBySprint(@Param("sprintId") Long sprintId);
+
+    /** 스프린트 완료 이월용: 해당 스프린트의 미완료(common_status ∉ {DONE}) 항목. */
+    List<WorkItem> findUnfinishedBySprint(@Param("sprintId") Long sprintId);
+
+    /** 스프린트 완료 집계용: 해당 스프린트의 완료(DONE) 항목. */
+    List<WorkItem> findDoneBySprint(@Param("sprintId") Long sprintId);
+
+    /** 통합 목록(WMP-VIEW-001) — 필터+정렬+페이징. 가시성은 visibleProjectIds로 제한. */
+    List<WorkItem> search(@Param("c") WorkItemSearchCriteria c);
+
+    /** 통합 목록 총건수(페이징 totalElements). */
+    long countSearch(@Param("c") WorkItemSearchCriteria c);
+
+    /** 처리량(OPS-002): 기간 내 완료(completed_at) 항목 — 담당자별 집계 소스. */
+    List<WorkItem> findCompletedBetween(@Param("projectId") Long projectId,
+                                        @Param("from") OffsetDateTime from,
+                                        @Param("to") OffsetDateTime to);
 }

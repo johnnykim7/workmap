@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.approval.mapper.ApprovalMapper">
+
+    <resultMap id="approvalMap" type="com.therecommerce.workmap.approval.domain.Approval">
+        <id     property="id"           column="id"/>
+        <result property="workItemId"   column="work_item_id"/>
+        <result property="statusId"     column="status_id"/>
+        <result property="requestedBy"  column="requested_by"/>
+        <result property="approverId"   column="approver_id"/>
+        <result property="approverRole" column="approver_role"/>
+        <result property="decision"     column="decision"/>
+        <result property="comment"      column="comment"/>
+        <result property="decidedBy"    column="decided_by"/>
+        <result property="decidedAt"    column="decided_at"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.approval.domain.Approval"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO approvals (work_item_id, status_id, requested_by, approver_id, approver_role, decision)
+        VALUES (#{workItemId}, #{statusId}, #{requestedBy}, #{approverId}, #{approverRole},
+                COALESCE(#{decision}, 'PENDING'))
+    </insert>
+
+    <select id="findById" resultMap="approvalMap">
+        SELECT * FROM approvals WHERE id = #{id}
+    </select>
+
+    <select id="findByWorkItem" resultMap="approvalMap">
+        SELECT * FROM approvals WHERE work_item_id = #{workItemId} ORDER BY id DESC
+    </select>
+
+    <select id="findByWorkItemAndStatus" resultMap="approvalMap">
+        SELECT * FROM approvals
+        WHERE work_item_id = #{workItemId} AND status_id = #{statusId}
+        ORDER BY id
+    </select>
+
+    <select id="countPendingByWorkItemAndStatus" resultType="int">
+        SELECT COUNT(*) FROM approvals
+        WHERE work_item_id = #{workItemId} AND status_id = #{statusId}
+          AND decision = 'PENDING'
+    </select>
+
+    <select id="findByProject" resultMap="approvalMap">
+        SELECT a.* FROM approvals a
+        JOIN work_items w ON w.id = a.work_item_id
+        WHERE w.project_id = #{projectId} AND w.deleted_at IS NULL
+        <if test="decision != null and decision != ''">
+            AND a.decision = #{decision}
+        </if>
+        ORDER BY a.id DESC
+    </select>
+
+    <update id="updateDecision">
+        UPDATE approvals
+        SET decision   = #{decision},
+            comment    = #{comment},
+            decided_by = #{decidedBy},
+            decided_at = #{decidedAt}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -33,6 +33,8 @@ public enum WmpErrorCode implements ErrorCode {
     // 스프린트 (7730번대)
     SPRINT_NOT_FOUND("WMP-7730", "스프린트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     ACTIVE_SPRINT_EXISTS("WMP-7731", "이미 진행 중인 스프린트가 있습니다.", HttpStatus.CONFLICT),
+    SPRINT_NOT_FUTURE("WMP-7732", "예정(FUTURE) 상태의 스프린트만 시작할 수 있습니다.", HttpStatus.CONFLICT),
+    SPRINT_NOT_ACTIVE("WMP-7733", "진행 중(ACTIVE) 상태의 스프린트만 완료할 수 있습니다.", HttpStatus.CONFLICT),
 
     // 인증 / 사용자 (7740번대)
     USER_NOT_FOUND("WMP-7740", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
@@ -41,7 +43,9 @@ public enum WmpErrorCode implements ErrorCode {
 
     // 승인 (7750번대)
     APPROVAL_NOT_FOUND("WMP-7750", "승인 요청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    NOT_AUTHORIZED_APPROVER("WMP-7751", "지정된 승인자만 처리할 수 있습니다.", HttpStatus.FORBIDDEN);
+    NOT_AUTHORIZED_APPROVER("WMP-7751", "지정된 승인자만 처리할 수 있습니다.", HttpStatus.FORBIDDEN),
+    APPROVAL_PENDING("WMP-7752", "승인 대기 중입니다. 승인 완료 후 다음 상태로 전이할 수 있습니다.", HttpStatus.CONFLICT),
+    APPROVAL_ALREADY_DECIDED("WMP-7753", "이미 처리된 승인 요청입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;

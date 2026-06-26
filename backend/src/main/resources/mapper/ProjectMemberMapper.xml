@@ -36,4 +36,8 @@
         SELECT project_id FROM project_members WHERE user_id = #{userId}
     </select>
 
+    <select id="findRole" resultType="java.lang.String">
+        SELECT role FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}
+    </select>
+
 </mapper>

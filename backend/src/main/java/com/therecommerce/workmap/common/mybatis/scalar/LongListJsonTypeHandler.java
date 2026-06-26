@@ -1,4 +1,4 @@
-package com.therecommerce.workmap.common.mybatis;
+package com.therecommerce.workmap.common.mybatis.scalar;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,8 +13,13 @@ import java.util.List;
 
 /**
  * JSONB(숫자 배열) ↔ {@code List<Long>} TypeHandler. comments.mentioned_user_ids 에 사용.
- * String 리스트용 {@link StringListJsonTypeHandler}와 동일 전략(JDBC URL stringtype=unspecified).
- * @MappedTypes는 List가 String 핸들러와 겹치므로 붙이지 않고, 매퍼 XML에서 명시 지정한다.
+ * String 리스트용 {@link com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler}와 동일 전략
+ * (JDBC URL stringtype=unspecified).
+ *
+ * <p><b>패키지 분리 이유(CR-008)</b>: 본 핸들러는 {@code common.mybatis.scalar}에 두어
+ * {@code type-handlers-package: common.mybatis} 자동 스캔에서 제외한다. 자동 스캔되면 raw {@code List}
+ * 키로 {@code StringListJsonTypeHandler}(@MappedTypes(List))와 충돌해 active_tabs 등 String 리스트 컬럼을
+ * 가로채기 때문이다. 본 핸들러는 매퍼 XML에서 명시 지정으로만 사용한다(CommentMapper.xml).
  */
 public class LongListJsonTypeHandler extends BaseTypeHandler<List<Long>> {
 

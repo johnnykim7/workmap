@@ -44,6 +44,8 @@ class WorkItemControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean WorkItemService workItemService;
+    @MockBean com.therecommerce.workmap.workitem.service.WorkItemQueryService workItemQueryService;
+    @MockBean com.therecommerce.workmap.workitem.service.WorkItemBulkService workItemBulkService;
     @MockBean CommentService commentService;
     @MockBean AttachmentService attachmentService;
     @MockBean ActivityLogService activityLogService;
@@ -60,6 +62,9 @@ class WorkItemControllerTest {
     @MockBean com.therecommerce.workmap.workflow.mapper.WorkflowMapper workflowMapper;
     @MockBean com.therecommerce.workmap.measure.mapper.MeasureUnitMapper measureUnitMapper;
     @MockBean com.therecommerce.workmap.notification.mapper.NotificationMapper notificationMapper;
+    @MockBean com.therecommerce.workmap.agile.mapper.SprintMapper sprintMapper;
+    @MockBean com.therecommerce.workmap.approval.mapper.ApprovalMapper approvalMapper;
+    @MockBean com.therecommerce.workmap.workitem.mapper.WorkItemLinkMapper workItemLinkMapper;
 
     private WorkItemDtos.Response sample() {
         return new WorkItemDtos.Response(

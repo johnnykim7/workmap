@@ -116,7 +116,10 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 
 ## 현재 진행 상태
 - **설계: v0.4(Jira 애자일) 전면 개정 완료 (2026-06-23, CR-006).** ClickUp(v0.3) → Jira 전환. T1~T3 + execution-spec 모두 v0.4 기준.
-- **다음 작업 = Sprint 1(세팅) 구현 착수.** 아직 backend/ 없음(미생성). frontend/는 목업(참고용, v0.4 실구현은 새로).
+- **구현 진척**: Sprint 1(세팅)·2(인증·WS·프로젝트·멤버, CR-007)·3(work_item 코어)·**4(애자일·운영 실행 BE, CR-008) 완료.**
+  - Sprint 4 BE 신규 모듈: `agile`(스프린트 FSM·백로그), `board`(보드), `ops`(처리량·백로그전환), `approval`(승인 게이트) + work_item 통합목록·벌크편집. 승인 게이트는 사용자 결정(2026-06-26)으로 Sprint 4 포함.
+  - 단위테스트 전체 `./gradlew test` PASS(Sprint 4 신규 25개 포함). **런타임 E2E(서버 기동·curl)는 미수행** — 사용자 승인 후 진행.
+- **다음 작업 = Sprint 4 FE(백로그/보드/벌크편집 화면) 또는 Sprint 5 BE(보기·검색·회사홈·관리자·알림).**
 - 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 feat/SPR-{N} 브랜치에서.
 - **착수 시 첫 읽기 순서**: 이 CLAUDE.md → docs/origins/2026-06-23_세션인계_v0.4설계완료_구현착수전.md(직전 세션 인계) → docs/execution-spec.md(§5 Sprint별 가이드) → 해당 Sprint의 T3-1/T3-2/T1-5/T3-5.
 
@@ -168,6 +171,9 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 - **(CR-007) JSONB List 컬럼**(active_tabs/issue_type_codes 등): `StringListJsonTypeHandler` 사용 + JDBC URL에 `stringtype=unspecified` 필수(String→jsonb 캐스팅). application.yml에 `mybatis.mapper-locations`/`type-handlers-package` 설정 필요.
 - **(CR-007) @PreAuthorize 거부는 500이 됨.** bp-common-lib GlobalExceptionHandler가 AccessDeniedException을 일반 Exception(500)으로 처리 → WorkMap `WmpSecurityExceptionHandler`(HIGHEST_PRECEDENCE)로 403 매핑. 새 보안 예외 추가 시 여기 보강.
 - **(CR-007) bp-common-lib `@AuthUserInfo("userId")`** 로 컨트롤러에서 인증 사용자 ID 주입(`@AuthUserId` 같은 커스텀 어노테이션 없음). `postgresql`은 build.gradle에서 `runtimeOnly`라 `PGobject` 등 컴파일 의존 불가.
+- **(CR-008) JSONB List TypeHandler는 자동 스캔 금지.** `mybatis.type-handlers-package` 자동 스캔은 하위 패키지까지 재귀 등록하며, `BaseTypeHandler<List<X>>` 핸들러를 raw `List` 키로 등록한다. String/Long 두 리스트 핸들러가 공존하면 나중 등록이 다른 것을 가로채 역직렬화 500(예: active_tabs를 Long 핸들러가 파싱). → 자동 스캔 제거하고 `AppConfig.ConfigurationCustomizer`에서 `StringListJsonTypeHandler`만 `List`에 명시 등록, 그 외 리스트 핸들러는 스캔 밖(`common.mybatis.scalar`)에 두고 매퍼 XML에서 명시 지정. **새 JSONB List 컬럼/핸들러 추가 시 이 규칙 준수.**
+- **(CR-008) NOT NULL JSONB 배열 컬럼은 서비스에서 빈 리스트 기본값.** `work_items.labels/related_solutions`는 `NOT NULL DEFAULT '[]'`이지만 INSERT가 `#{...}`로 컬럼을 항상 포함하므로 null이면 DB default가 무시돼 위반. create 시 `null → List.of()` 보정 필요.
+- **(CR-008) MyBatis 도메인 매핑은 setter 기반 — `@NoArgsConstructor` 권장.** 기존 도메인 다수가 `@Builder`만 보유. 자동 스캔 시절엔 우연히 동작했으나, 핸들러 명시 등록으로 바꾸면 no-arg 생성자 + setter 매핑이 안전(신규 도메인 Sprint/Approval은 `@NoArgsConstructor @AllArgsConstructor @Builder` 모두 부여).
 
 ## bp-common-lib 기여 후보
 > 구현 중 2개 이상 프로젝트 공통 필요 코드 발견 시 기록. 스프린트 종료 시 전달.

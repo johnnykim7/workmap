@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.agile.mapper.SprintMapper">
+
+    <resultMap id="sprintMap" type="com.therecommerce.workmap.agile.domain.Sprint">
+        <id     property="id"          column="id"/>
+        <result property="projectId"   column="project_id"/>
+        <result property="name"        column="name"/>
+        <result property="goal"        column="goal"/>
+        <result property="status"      column="status"/>
+        <result property="startDate"   column="start_date"/>
+        <result property="endDate"     column="end_date"/>
+        <result property="sortOrder"   column="sort_order"/>
+        <result property="startedAt"   column="started_at"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="createdAt"   column="created_at"/>
+        <result property="updatedAt"   column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.agile.domain.Sprint"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sprints (project_id, name, goal, status, start_date, end_date, sort_order)
+        VALUES (#{projectId}, #{name}, #{goal},
+                COALESCE(#{status}, 'FUTURE'), #{startDate}, #{endDate},
+                COALESCE(#{sortOrder}, 0))
+    </insert>
+
+    <select id="findById" resultMap="sprintMap">
+        SELECT * FROM sprints WHERE id = #{id}
+    </select>
+
+    <select id="findByProject" resultMap="sprintMap">
+        SELECT * FROM sprints
+        WHERE project_id = #{projectId}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="findActiveByProject" resultMap="sprintMap">
+        SELECT * FROM sprints
+        WHERE project_id = #{projectId} AND status = 'ACTIVE'
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+
+    <update id="updateStart" parameterType="com.therecommerce.workmap.agile.domain.Sprint">
+        UPDATE sprints
+        SET status     = 'ACTIVE',
+            start_date = #{startDate},
+            end_date   = #{endDate},
+            started_at = #{startedAt},
+            updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateComplete">
+        UPDATE sprints
+        SET status       = 'COMPLETED',
+            completed_at = #{completedAt},
+            updated_at   = now()
+        WHERE id = #{id}
+    </update>
+
+    <select id="maxSortOrder" resultType="java.lang.Integer">
+        SELECT MAX(sort_order) FROM sprints WHERE project_id = #{projectId}
+    </select>
+
+</mapper>

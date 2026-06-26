@@ -9,7 +9,7 @@
         <result property="authorId"         column="author_id"/>
         <result property="content"          column="content"/>
         <result property="mentionedUserIds" column="mentioned_user_ids"
-                typeHandler="com.therecommerce.workmap.common.mybatis.LongListJsonTypeHandler"/>
+                typeHandler="com.therecommerce.workmap.common.mybatis.scalar.LongListJsonTypeHandler"/>
         <result property="createdAt"        column="created_at"/>
         <result property="updatedAt"        column="updated_at"/>
     </resultMap>
@@ -18,7 +18,7 @@
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO comments (work_item_id, author_id, content, mentioned_user_ids)
         VALUES (#{workItemId}, #{authorId}, #{content},
-                #{mentionedUserIds, typeHandler=com.therecommerce.workmap.common.mybatis.LongListJsonTypeHandler})
+                #{mentionedUserIds, typeHandler=com.therecommerce.workmap.common.mybatis.scalar.LongListJsonTypeHandler})
     </insert>
 
     <select id="findByWorkItem" resultMap="commentMap">
