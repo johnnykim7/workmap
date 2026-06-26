@@ -22,3 +22,12 @@ export function useDashboardList(kind: DashboardListKind, size = 5, projectId?: 
     queryFn: () => dashboardApi.list(kind, projectId, 0, size),
   });
 }
+
+// 프로젝트 보고서(WMP-HOME-003) — 보고서 탭.
+export function useProjectReport(projectId?: number) {
+  return useQuery({
+    queryKey: ['dashboard', 'report', projectId] as const,
+    queryFn: () => dashboardApi.report(projectId!),
+    enabled: !!projectId,
+  });
+}

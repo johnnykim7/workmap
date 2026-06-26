@@ -12,6 +12,31 @@ export interface DashboardMetrics {
   stale: number;
 }
 
+// BE DashboardDtos.Distribution — 분포 위젯 한 칸(상태별/유형별/담당자별 공통).
+export interface Distribution {
+  key: string;
+  count: number;
+}
+
+// BE ProjectSummary — 진행률/지연/막힘 요약.
+export interface ReportSummary {
+  total: number;
+  done: number;
+  delayed: number;
+  blocked: number;
+  progress: number;
+}
+
+// BE DashboardDtos.Report — 프로젝트 보고서(WMP-HOME-003).
+export interface ProjectReport {
+  projectId: number;
+  projectName: string;
+  summary: ReportSummary;
+  byStatus: Distribution[];
+  byType: Distribution[];
+  byAssignee: Distribution[];
+}
+
 // 막힘/지연/미배정 목록 종류.
 export type DashboardListKind = 'blocked' | 'delayed' | 'unassigned';
 
@@ -28,4 +53,7 @@ export const dashboardApi = {
   // 막힘/지연/미배정 목록(PageResponse<WorkItemResponse>).
   list: (kind: DashboardListKind, projectId?: number, page = 0, size = 20) =>
     api.get<PageResponse<WorkItemResponse>>(`/dashboard/${kind}?${qs(projectId, page, size)}`),
+  // 프로젝트 보고서(WMP-HOME-003) — 진행률/지연/막힘 + 상태·유형·담당자 분포.
+  report: (projectId: number) =>
+    api.get<ProjectReport>(`/projects/${projectId}/report`),
 };
