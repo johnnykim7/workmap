@@ -5,6 +5,7 @@ import { toast } from '@therecommerce/ds-ui';
 import {
   workItemApi, type UpdateWorkItemRequest, type CreateSubtaskRequest,
   type CreateCommentRequest, type CreateLinkRequest, type DecisionRequest,
+  type CreateAttachmentRequest, type ConvertRequest,
 } from './api';
 import { ApiError } from '@/lib/api-client';
 import type { WorkItemResponse } from '@/types/domain';
@@ -147,6 +148,38 @@ export function useCreateComment(id: number) {
       qc.invalidateQueries({ queryKey: wiActivitiesKey(id) });
     },
     onError: (e) => toast.error(errMsg(e, '댓글 등록에 실패했습니다.')),
+  });
+}
+
+// ── 첨부 (WMP-WI-012) ──
+export const wiAttachmentsKey = (id?: number) => ['work-item', id, 'attachments'] as const;
+export function useAttachments(id?: number) {
+  return useQuery({
+    queryKey: wiAttachmentsKey(id),
+    queryFn: () => workItemApi.listAttachments(id!),
+    enabled: !!id,
+  });
+}
+export function useCreateAttachment(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateAttachmentRequest) => workItemApi.createAttachment(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: wiAttachmentsKey(id) });
+      qc.invalidateQueries({ queryKey: wiActivitiesKey(id) });
+      toast.success('첨부를 추가했습니다.');
+    },
+    onError: (e) => toast.error(errMsg(e, '첨부 추가에 실패했습니다.')),
+  });
+}
+
+// ── 유형 전환 (WMP-WI-014) ──
+export function useConvert(id: number, key?: string) {
+  const invalidate = useInvalidateDetail(id, key);
+  return useMutation({
+    mutationFn: (body: ConvertRequest) => workItemApi.convert(id, body),
+    onSuccess: () => { invalidate(); toast.success('업무 유형을 전환했습니다.'); },
+    onError: (e) => toast.error(errMsg(e, '유형 전환에 실패했습니다.')),
   });
 }
 

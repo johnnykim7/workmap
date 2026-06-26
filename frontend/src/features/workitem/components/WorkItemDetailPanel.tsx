@@ -7,6 +7,7 @@ import { DetailBody } from './DetailBody';
 import { DetailSidePanel } from './DetailSidePanel';
 import { SubtaskList } from './SubtaskList';
 import { LinkedItems } from './LinkedItems';
+import { Attachments } from './Attachments';
 import { CommentThread } from './CommentThread';
 import { ActivityFeed } from './ActivityFeed';
 import { ApprovalBanner } from './ApprovalBanner';
@@ -28,6 +29,7 @@ interface Props {
 export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
   const addSubtaskRef = useRef<() => void>(() => {});
   const addLinkRef = useRef<() => void>(() => {});
+  const addAttachmentRef = useRef<() => void>(() => {});
 
   const body = (
     <div className="min-w-0 flex-1 space-y-6">
@@ -35,6 +37,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       <DetailBody item={item} />
       {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
       <LinkedItems item={item} addRef={addLinkRef} />
+      <Attachments item={item} addRef={addAttachmentRef} />
       {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
       {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
       <CommentThread item={item} />
@@ -48,6 +51,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
         item={item}
         onAddSubtask={() => addSubtaskRef.current()}
         onAddLink={() => addLinkRef.current()}
+        onAddAttachment={() => addAttachmentRef.current()}
       />
       {stacked ? (
         <div className="space-y-6">

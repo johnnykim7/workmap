@@ -43,6 +43,31 @@ export interface CreateLinkRequest {
   targetId: number;
 }
 
+// 첨부(WMP-WI-012, T3-2 F2) — BE는 파일 메타데이터(경로/URL) 등록 방식(바이너리 업로드 아님).
+export interface CreateAttachmentRequest {
+  fileName: string;
+  filePath: string;            // URL 또는 경로
+  fileSize?: number | null;
+  contentType?: string | null;
+}
+export interface Attachment {
+  id: number;
+  workItemId: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number | null;
+  contentType: string | null;
+  uploadedBy: number;
+  createdAt: string;
+}
+
+// 유형 전환(WMP-WI-014) — issueType 변경 + 부모/Epic 재지정. PATCH /work-items/{id}/convert.
+export interface ConvertRequest {
+  issueType: string;
+  parentId?: number | null;
+  epicId?: number | null;
+}
+
 // POST /approvals/{id}/decision (APR-4/5). nextStatusId/rejectStatusId 미지정 시 결정만 기록.
 export interface DecisionRequest {
   decision: ApprovalDecision;
@@ -87,6 +112,13 @@ export const workItemApi = {
     api.post<LinkView[]>(`/work-items/${id}/links`, body),
   deleteLink: (id: number, linkId: number) =>
     api.delete<void>(`/work-items/${id}/links/${linkId}`),
+
+  listAttachments: (id: number) => api.get<Attachment[]>(`/work-items/${id}/attachments`),
+  createAttachment: (id: number, body: CreateAttachmentRequest) =>
+    api.post<Attachment>(`/work-items/${id}/attachments`, body),
+
+  convert: (id: number, body: ConvertRequest) =>
+    api.patch<WorkItemResponse>(`/work-items/${id}/convert`, body),
 
   listActivities: (id: number) => api.get<Activity[]>(`/work-items/${id}/activities`),
 

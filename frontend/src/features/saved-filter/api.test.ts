@@ -5,6 +5,7 @@ import { burndownApi } from '@/features/burndown/api';
 import { opsApi } from '@/features/ops/api';
 import { savedFilterApi } from './api';
 import { adminApi } from '@/features/admin/api';
+import { workItemApi } from '@/features/workitem/api';
 import { useAuthStore } from '@/store/auth-store';
 
 interface Captured { url: string; method: string; body: unknown }
@@ -121,5 +122,25 @@ describe('P2 API 계약', () => {
     expect(last().method).toBe('POST');
     expect(last().url).toMatch(/\/work-items\/50\/promote-to-backlog$/);
     expect(last().body).toMatchObject({ targetProjectId: 9, issueType: 'STORY' });
+  });
+
+  it('첨부_목록_GET_work-items중첩경로', async () => {
+    await workItemApi.listAttachments(12);
+    expect(last().method).toBe('GET');
+    expect(last().url).toMatch(/\/work-items\/12\/attachments$/);
+  });
+
+  it('첨부_생성_POST_fileName·filePath바디', async () => {
+    await workItemApi.createAttachment(12, { fileName: '설계도.pdf', filePath: 'https://x/a.pdf' });
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/work-items\/12\/attachments$/);
+    expect(last().body).toMatchObject({ fileName: '설계도.pdf', filePath: 'https://x/a.pdf' });
+  });
+
+  it('유형전환_PATCH_issueType바디', async () => {
+    await workItemApi.convert(33, { issueType: 'STORY', epicId: 5 });
+    expect(last().method).toBe('PATCH');
+    expect(last().url).toMatch(/\/work-items\/33\/convert$/);
+    expect(last().body).toMatchObject({ issueType: 'STORY', epicId: 5 });
   });
 });

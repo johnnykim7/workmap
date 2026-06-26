@@ -8,7 +8,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, toast,
 } from '@therecommerce/ds-ui';
 import {
-  ChevronUp, ChevronDown, Eye, Share2, Plus, Settings, GitBranch, Link2, Paperclip,
+  ChevronUp, ChevronDown, Eye, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace,
 } from 'lucide-react';
 import { TypeBadge } from '@/components/badges';
 import { ROUTES } from '@/lib/route-paths';
@@ -16,14 +16,16 @@ import { useBoard } from '@/features/board/hooks';
 import { type WorkItemResponse } from '@/types/domain';
 import { useUpdateWorkItem, useChangeStatus } from '../hooks';
 import { BlockReasonDialog } from '@/features/board/components/BlockReasonDialog';
+import { ConvertDialog } from './ConvertDialog';
 
 interface Props {
   item: WorkItemResponse;
   onAddSubtask: () => void;
   onAddLink: () => void;
+  onAddAttachment: () => void;
 }
 
-export function DetailHeader({ item, onAddSubtask, onAddLink }: Props) {
+export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }: Props) {
   const navigate = useNavigate();
   const update = useUpdateWorkItem(item.id, item.key);
   const changeStatus = useChangeStatus(item.id, item.key);
@@ -34,6 +36,7 @@ export function DetailHeader({ item, onAddSubtask, onAddLink }: Props) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [pendingBlockStatusId, setPendingBlockStatusId] = useState<number | null>(null);
+  const [convertOpen, setConvertOpen] = useState(false);
   useEffect(() => { setTitle(item.title); }, [item.title]);
 
   // 목록 내 이전/다음 = 같은 프로젝트 카드 순서(보드 평탄화 기준). 보드 미로딩 시 비활성.
@@ -109,8 +112,11 @@ export function DetailHeader({ item, onAddSubtask, onAddLink }: Props) {
                 <DropdownMenuItem onClick={onAddLink}>
                   <Link2 className="size-4" /> 업무 연결
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.info('첨부는 준비 중입니다.')}>
+                <DropdownMenuItem onClick={onAddAttachment}>
                   <Paperclip className="size-4" /> 첨부
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setConvertOpen(true)}>
+                  <Replace className="size-4" /> 유형 전환
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -159,6 +165,8 @@ export function DetailHeader({ item, onAddSubtask, onAddLink }: Props) {
           </div>
         </div>
       </div>
+
+      <ConvertDialog item={item} open={convertOpen} onOpenChange={setConvertOpen} />
 
       <BlockReasonDialog
         open={pendingBlockStatusId != null}
