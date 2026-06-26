@@ -2,7 +2,7 @@ spring:
   application:
     name: workmap
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:15432/workmap}
+    url: ${DB_URL:jdbc:postgresql://localhost:15432/workmap?stringtype=unspecified}
     username: ${DB_USERNAME:platform}
     password: ${DB_PASSWORD:platform}
     driver-class-name: org.postgresql.Driver
@@ -23,6 +23,8 @@ server:
 # MyBatis (JPA 미사용 — 조직 표준)
 mybatis:
   type-aliases-package: com.therecommerce.workmap
+  type-handlers-package: com.therecommerce.workmap.common.mybatis
+  mapper-locations: classpath*:mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
     default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler

@@ -163,8 +163,11 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 - 대화로 입력된 기획 변경/추가는 즉시 새 파일로 기록.
 
 ## 주의사항 (구현 중 발견 누적)
-- (구현 중 추가)
 - 예시: MyBatis Enum은 `EnumTypeHandler` 또는 String 매핑 명시 필요.
+- **(CR-007) API prefix는 `/api/v1`.** SecurityWhitelist 패턴도 `/api/v1/auth/login` 처럼 v1 포함해야 함(불일치 시 로그인 403).
+- **(CR-007) JSONB List 컬럼**(active_tabs/issue_type_codes 등): `StringListJsonTypeHandler` 사용 + JDBC URL에 `stringtype=unspecified` 필수(String→jsonb 캐스팅). application.yml에 `mybatis.mapper-locations`/`type-handlers-package` 설정 필요.
+- **(CR-007) @PreAuthorize 거부는 500이 됨.** bp-common-lib GlobalExceptionHandler가 AccessDeniedException을 일반 Exception(500)으로 처리 → WorkMap `WmpSecurityExceptionHandler`(HIGHEST_PRECEDENCE)로 403 매핑. 새 보안 예외 추가 시 여기 보강.
+- **(CR-007) bp-common-lib `@AuthUserInfo("userId")`** 로 컨트롤러에서 인증 사용자 ID 주입(`@AuthUserId` 같은 커스텀 어노테이션 없음). `postgresql`은 build.gradle에서 `runtimeOnly`라 `PGobject` 등 컴파일 의존 불가.
 
 ## bp-common-lib 기여 후보
 > 구현 중 2개 이상 프로젝트 공통 필요 코드 발견 시 기록. 스프린트 종료 시 전달.

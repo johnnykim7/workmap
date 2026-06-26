@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.member.mapper.ProjectMemberMapper">
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.member.domain.ProjectMember">
+        INSERT INTO project_members (project_id, user_id, role)
+        VALUES (#{projectId}, #{userId}, #{role})
+        ON CONFLICT (project_id, user_id) DO UPDATE SET role = EXCLUDED.role
+    </insert>
+
+    <select id="findByProjectId" resultType="com.therecommerce.workmap.member.dto.MemberDtos$Response">
+        SELECT u.id          AS userId,
+               u.name        AS name,
+               u.email       AS email,
+               pm.role       AS role,
+               pm.created_at AS createdAt
+        FROM project_members pm
+        JOIN users u ON u.id = pm.user_id
+        WHERE pm.project_id = #{projectId}
+        ORDER BY pm.created_at
+    </select>
+
+    <select id="exists" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM project_members
+            WHERE project_id = #{projectId} AND user_id = #{userId}
+        )
+    </select>
+
+    <delete id="delete">
+        DELETE FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}
+    </delete>
+
+    <select id="findProjectIdsByUserId" resultType="long">
+        SELECT project_id FROM project_members WHERE user_id = #{userId}
+    </select>
+
+</mapper>

@@ -12,8 +12,8 @@ public class WmpSecurityWhitelist implements SecurityWhitelist {
     @Override
     public String[] getWhitelistPatterns() {
         return new String[]{
-                "/api/auth/login",
-                "/api/auth/refresh",
+                "/api/v1/auth/login",
+                "/api/v1/auth/refresh",
                 "/actuator/health",
                 "/actuator/health/**"
         };
