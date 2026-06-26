@@ -23,7 +23,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: "8186"
-      DB_URL: ${DB_URL:-jdbc:postgresql://host.docker.internal:5432/workmap}
+      DB_URL: ${DB_URL:-jdbc:postgresql://host.docker.internal:5432/workmap?stringtype=unspecified}
       DB_USERNAME: ${DB_USERNAME:-platform}
       DB_PASSWORD: ${DB_PASSWORD:-platform}
     healthcheck:
