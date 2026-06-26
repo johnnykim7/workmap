@@ -12,7 +12,7 @@ import { useApprovals, useDecideApproval } from '../hooks';
 
 export function ApprovalBanner({ item }: { item: WorkItemResponse }) {
   const { data: approvals = [] } = useApprovals(item.id);
-  const pending = approvals.filter((a) => !a.decision); // decision null = PENDING
+  const pending = approvals.filter((a) => a.decision === 'PENDING'); // BE: decision NOT NULL, 미결정='PENDING'
   if (pending.length === 0) return null;
 
   return (

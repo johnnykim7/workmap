@@ -283,7 +283,9 @@ export interface Activity {
 }
 
 // BE ApprovalDtos.Response — 승인 게이트 1건.
+// 요청 시 decision='APPROVE'|'REJECT'. 저장 상태는 decision 컬럼(NOT NULL DEFAULT 'PENDING').
 export type ApprovalDecision = 'APPROVE' | 'REJECT';
+export type ApprovalState = 'PENDING' | 'APPROVED' | 'REJECTED';
 export interface Approval {
   id: number;
   workItemId: number;
@@ -291,7 +293,7 @@ export interface Approval {
   requestedBy?: number | null;
   approverId?: number | null;
   approverRole?: string | null;
-  decision?: string | null; // null=PENDING
+  decision: ApprovalState; // BE: NOT NULL, 미결정은 'PENDING'(null 아님)
   comment?: string | null;
   decidedBy?: number | null;
   decidedAt?: string | null;

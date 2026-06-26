@@ -319,6 +319,21 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·BE 무변경) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
 
+### CR-016 — FE 승인 탭(§9.5) + ApprovalBanner decision 판정 버그 수정
+
+- **변경 타입**: 신규 + 설계보정 | **영향도**: Medium
+- **배경**: Sprint4 마지막 잔여 화면. `/projects/:key/approvals`가 StubPage였음. T3-3 §9.5(승인) 이미 v0.4 확정 → 캐스케이드 불필요. BE `ApprovalController` 계약 운영 배포됨. **구현 중 BE 실측으로 CR-014 버그 발견**: `approvals.decision`은 `NOT NULL DEFAULT 'PENDING'`(V1 스키마 L302)인데 ApprovalBanner가 `!a.decision`(null=PENDING)으로 판정 → 운영에서 PENDING 승인이 배너에 안 잡힘. 같은 세션 동일 주제 실측 원칙에 따라 함께 수정.
+- **변경 내용(FE)**:
+  - **버그 수정**: `types/domain.ts` `Approval.decision`을 `ApprovalState('PENDING'|'APPROVED'|'REJECTED')` 非옵셔널로 정정(주석 'null=PENDING' 오류 제거) + `ApprovalBanner` 필터를 `a.decision === 'PENDING'`로 수정.
+  - **신규 feature `approval`**: `api.ts`(GET `/projects/{id}/approvals?decision=`, POST `/approvals/{id}/decision`) + `hooks.ts`(`useProjectApprovals` 토글별 필터, `useDecideProjectApproval` 성공 시 목록·보드·상세 invalidate).
+  - **화면 구현**: `pages/project/ApprovalsView.tsx`(StubPage→실구현). 토글(승인 대기/내가 요청/모든 승인 — 내가 요청은 클라 requestedBy 필터), 표(유형·업무항목·상태·담당자·승인자·결정·작업), 지정 승인자만 승인/거부(거부는 사유 Dialog), 행 클릭→상세, 빈 상태에서 워크플로 편집기(승인 설정) 링크. 업무 메타(제목/상태/담당자)는 Approval 응답에 없어 `useProjectItems`로 workItemId 해소.
+  - **UI 규칙 준수(CLAUDE.md)**: ds-ui Table/Dialog/Button/Textarea만(네이티브 0), 색 절제(결정 배지=신호색만), 버튼 variant 고정(승인=primary·거부=destructive·취소/설정=ghost), 로딩=스켈레톤(WorkListTableSkeleton 재사용).
+- **스키마/BE**: 무변경(기존 승인 계약 소비).
+- **검증**: `tsc -b` PASS, `pnpm build` PASS, vitest 35/35 PASS. 운영 적용=`./deploy.sh fe`.
+- **영향 설계서**: 없음(T3-3 §9.5 그대로 구현). decision 판정은 설계가 아니라 구현 버그 정정.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 순서대로 진행) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---
