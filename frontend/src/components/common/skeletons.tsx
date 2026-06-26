@@ -90,3 +90,29 @@ export function MemberRowsSkeleton({ count = 4 }: { count?: number }) {
     </div>
   );
 }
+
+/** 업무 상세 스켈레톤 — 좌 본문(제목/블록) + 우 패널 필드 행(§9.3) */
+export function WorkItemDetailSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="flex-1 space-y-4">
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <Skeleton className="h-5 w-12 rounded" />
+          <Skeleton className="h-5 w-20" />
+        </div>
+        <Skeleton className="h-7 w-2/3" />
+        <Skeleton className="h-24 w-full rounded" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-20 w-full rounded" />
+      </div>
+      <div className="w-full shrink-0 space-y-3 rounded-lg border border-border p-3 lg:w-80">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-8 w-full rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

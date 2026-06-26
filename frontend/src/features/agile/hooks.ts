@@ -5,11 +5,21 @@ import { agileApi, type BacklogResponse, type CreateSprintRequest } from './api'
 import { ApiError } from '@/lib/api-client';
 
 export const backlogKey = (projectId?: number) => ['backlog', projectId] as const;
+export const sprintsKey = (projectId?: number) => ['sprints', projectId] as const;
 
 export function useBacklog(projectId?: number) {
   return useQuery({
     queryKey: backlogKey(projectId),
     queryFn: () => agileApi.backlog(projectId!),
+    enabled: !!projectId,
+  });
+}
+
+/** 프로젝트 스프린트 목록(상세 패널 Sprint Select 등). */
+export function useSprints(projectId?: number) {
+  return useQuery({
+    queryKey: sprintsKey(projectId),
+    queryFn: () => agileApi.listSprints(projectId!),
     enabled: !!projectId,
   });
 }

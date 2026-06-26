@@ -226,10 +226,76 @@ export interface WorkItemResponse {
   measureUnitId?: number | null;
   targetValue?: number | null;
   currentValue?: number | null;
+  // 유형별 본문 필드(§9.3 — BE Response 전체 계약). 보드/백로그 카드 목록엔 비어 올 수 있음.
+  acceptanceCriteria?: string[] | null; // Story 인수조건
+  stepsToReproduce?: string[] | null; // Bug 재현절차
+  expectedResult?: string | null; // Bug 기대 결과
+  actualResult?: string | null; // Bug 실제 결과
+  environment?: string | null; // Bug 환경
+  severity?: string | null; // Bug 심각도
+  checklist?: string | null; // Task 작업 체크리스트(개행 구분 텍스트)
+  relatedSolutions?: string[] | null;
   labels?: string[] | null;
   completedAt?: string | null;
   createdBy?: number | null;
   createdAt?: string | null;
+}
+
+// ───────────────────────── 업무 상세 하위 리소스 (§9.3) ─────────────────────────
+// BE SubResourceDtos / LinkDtos / ApprovalDtos 그대로.
+export interface Comment {
+  id: number;
+  workItemId: number;
+  authorId: number;
+  content: string;
+  mentionedUserIds?: number[] | null;
+  createdAt: string;
+}
+
+export type LinkType = 'BLOCKS' | 'BLOCKED_BY' | 'RELATES_TO' | 'DUPLICATES';
+export const LINK_TYPE_LABEL: Record<LinkType, string> = {
+  BLOCKS: '막는 항목',
+  BLOCKED_BY: '막힌 원인',
+  RELATES_TO: '관련 항목',
+  DUPLICATES: '중복',
+};
+
+// BE LinkDtos.LinkView — 링크 메타 + 연결 항목(target) 요약.
+export interface LinkView {
+  linkId: number;
+  linkType: LinkType;
+  targetId: number;
+  targetKey: string;
+  targetTitle: string;
+  targetIssueType: IssueType;
+  targetCommonStatus: WorkStatus;
+}
+
+// BE SubResourceDtos.ActivityResponse — 활동 이력 한 행.
+export interface Activity {
+  id: number;
+  workItemId: number;
+  actorId: number;
+  action: string;
+  fromValue?: string | null;
+  toValue?: string | null;
+  createdAt: string;
+}
+
+// BE ApprovalDtos.Response — 승인 게이트 1건.
+export type ApprovalDecision = 'APPROVE' | 'REJECT';
+export interface Approval {
+  id: number;
+  workItemId: number;
+  statusId?: number | null;
+  requestedBy?: number | null;
+  approverId?: number | null;
+  approverRole?: string | null;
+  decision?: string | null; // null=PENDING
+  comment?: string | null;
+  decidedBy?: number | null;
+  decidedAt?: string | null;
+  createdAt: string;
 }
 
 // 기한 경과(미완료) 판정 — BE는 isDelayed를 안 주므로 클라에서 계산.

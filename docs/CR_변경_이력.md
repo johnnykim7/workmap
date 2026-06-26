@@ -287,6 +287,22 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·풀 DnD·실 BE 결정) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
 
+### CR-014 — FE 업무 상세(§9.3) 1차: 보드/백로그 카드 클릭 도착지
+
+- **변경 타입**: 신규 | **영향도**: Medium
+- **배경**: 보드(CR-013)·백로그 카드 클릭 시 `ROUTES.workItem(key)`로 이동하나 도착지 `WorkItemDetail`이 StubPage였음. T3-3 §9.3(업무 상세 — 핵심)이 이미 v0.4로 확정돼 있어 **설계 캐스케이드 불필요(구현만)**. BE는 Phase1+P2 100% 완료라 신규 BE 없음. 사용자 결정(2026-06-27): 중규모·핵심 섹션 전부(P2 'Git 연동'·'자동화' 패널 제외).
+- **변경 내용(FE)**:
+  - **신규 feature `workitem`**: `api.ts`(GET `/work-items/{id}`·`?keyword=`(key→id 해소)·`/comments`·`/links`·`/activities`·`/approvals`, POST `/comments`·`/subtasks`·`/links`, DELETE `/links/{linkId}`, PATCH `/work-items/{id}`·`/status`·`/assignee`·`/measure`·`/sprint`, POST `/approvals/{id}/decision`) + `hooks.ts`(`useWorkItemByKey`(keyword 해소→상세), `useUpdateWorkItem`·`useChangeStatus`·`useChangeAssignee`·`useUpdateMeasure`·`useComments`·`useCreateComment`·`useLinks`·`useCreateLink`·`useDeleteLink`·`useActivities`·`useApprovals`·`useDecideApproval`·`useCreateSubtask`).
+  - **신규 composite(features/workitem/components)**: `DetailHeader`(key·이전/다음 화살표·워치·공유·+액션 메뉴·구성·제목 인라인 편집), `DetailBody`(유형별 분기 — Epic 집계·Story 인수조건·Task 체크리스트·공수·Bug 재현절차/기대vs실제/환경/심각도·Sub-task 부모링크), `SubtaskList`, `LinkedItems`(blocks/blocked by/relates to/duplicates), `CommentThread`(@멘션), `ActivityFeed`, `ApprovalBanner`(승인/거부+코멘트, POST decision), `DetailSidePanel`(▾세부 사항 접이식 — 담당자·레이블·상위·기한·시작일·Sprint·SP·보고자·측정).
+  - **화면 구현**: `pages/WorkItemDetail.tsx`(StubPage→실구현). 분할뷰/모달/딥링크 무관 동일 구조(§9.3).
+  - **공통 보강**: `types/domain.ts` `WorkItemResponse`에 유형별 필드(acceptanceCriteria/stepsToReproduce/expectedResult/actualResult/environment/severity/checklist/relatedSolutions) + Comment/Link/Activity/Approval 타입 추가, `skeletons.tsx`에 `WorkItemDetailSkeleton`.
+  - **UI 규칙 준수(CLAUDE.md)**: ds-ui만(네이티브 위젯 0 — 접이식=Accordion, 선택=Select, 날짜=DatePicker, 확인=ConfirmDialog), 색 절제(상태/유형/우선순위/막힘 신호만), 버튼 variant 고정(저장=primary·취소=ghost·삭제 링크=destructive·승인=primary/거부=destructive), 로딩=스켈레톤, 공통 컴포넌트 재사용.
+- **스키마/BE**: 무변경(기존 BE 계약 그대로 소비). key→id는 `?keyword=` 검색으로 정확 매칭 해소(BE 별도 by-key 엔드포인트 없음).
+- **검증**: `tsc -b` PASS, `pnpm build` PASS, vitest PASS(신규 hook/해소 단위테스트 포함).
+- **영향 설계서**: 없음(T3-3 기존 §9.3 그대로 구현, 캐스케이드 불필요).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·핵심 섹션 전부) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---
