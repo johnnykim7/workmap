@@ -9,6 +9,8 @@ import {
   type WorkflowRequest,
   type WorkflowStatusRequest,
   type WorkflowTransitionRequest,
+  type FormRequest,
+  type FormSubmitRequest,
 } from './api';
 
 const msg = (err: unknown, fallback: string) =>
@@ -155,4 +157,41 @@ export function useWorkflowDetailMutations(workflowId?: number) {
     onError: (e) => toast.error(msg(e, '전이 삭제에 실패했습니다.')),
   });
   return { addStatus, removeStatus, addTransition, removeTransition };
+}
+
+// ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
+export function useForms(projectId?: number, page = 0, size = 20) {
+  return useQuery({
+    queryKey: ['admin', 'forms', projectId ?? 'all', page],
+    queryFn: () => adminApi.forms.list(projectId, page, size),
+  });
+}
+
+export function useFormMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'forms'] });
+
+  const create = useMutation({
+    mutationFn: (body: FormRequest) => adminApi.forms.create(body),
+    onSuccess: () => { invalidate(); toast.success('양식을 추가했습니다.'); },
+    onError: (e) => toast.error(msg(e, '추가에 실패했습니다.')),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: FormRequest }) =>
+      adminApi.forms.update(id, body),
+    onSuccess: () => { invalidate(); toast.success('양식을 수정했습니다.'); },
+    onError: (e) => toast.error(msg(e, '수정에 실패했습니다.')),
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => adminApi.forms.remove(id),
+    onSuccess: () => { invalidate(); toast.success('양식을 삭제했습니다.'); },
+    onError: (e) => toast.error(msg(e, '삭제에 실패했습니다.')),
+  });
+  const submit = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: FormSubmitRequest }) =>
+      adminApi.forms.submit(id, body),
+    onSuccess: (res) => toast.success(`업무를 생성했습니다${res?.key ? ` (${res.key})` : ''}.`),
+    onError: (e) => toast.error(msg(e, '제출에 실패했습니다.')),
+  });
+  return { create, update, remove, submit };
 }

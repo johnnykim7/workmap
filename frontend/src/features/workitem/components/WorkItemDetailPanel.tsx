@@ -1,7 +1,7 @@
 // 업무 상세 패널(§9.3 구조 그대로) — 풀페이지(WorkItemDetail)와 분할뷰(SplitView)가 공유.
 // item을 직접 받는다(key 해소는 호출측 책임). compact=분할뷰용(헤더 화살표 등 축약 여지).
 import { useRef } from 'react';
-import { type WorkItemResponse, type Sprint } from '@/types/domain';
+import { type WorkItemResponse, type Sprint, type WorkStatus } from '@/types/domain';
 import { DetailHeader } from './DetailHeader';
 import { DetailBody } from './DetailBody';
 import { DetailSidePanel } from './DetailSidePanel';
@@ -10,6 +10,12 @@ import { LinkedItems } from './LinkedItems';
 import { CommentThread } from './CommentThread';
 import { ActivityFeed } from './ActivityFeed';
 import { ApprovalBanner } from './ApprovalBanner';
+import { FieldVerifications } from '@/features/ops/components/FieldVerifications';
+
+// 운영형(접수·처리·현장) 워크플로 상태 — 현장검증 섹션 노출 신호(WMP-OPS-004).
+const OPS_STATUSES = new Set<WorkStatus>([
+  'RECEIVED', 'CHECKING', 'PROCESSING', 'FIELD_CHECK', 'HOLD', 'DEV_DONE', 'FIELD_VERIFY', 'OPS_APPLIED',
+]);
 
 interface Props {
   item: WorkItemResponse;
@@ -28,6 +34,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       <DetailBody item={item} />
       {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
       <LinkedItems item={item} addRef={addLinkRef} />
+      {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
       <CommentThread item={item} />
       <ActivityFeed item={item} />
     </div>

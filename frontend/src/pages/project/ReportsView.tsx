@@ -1,15 +1,23 @@
 // 보고서 탭 (/projects/:key/reports, WMP-HOME-003) — 진행률·지연·막힘 + 상태/유형/담당자 분포.
 // 라우트는 :key → useProjectByKey로 numeric id 해소 후 GET /projects/{id}/report 호출.
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AlertTriangle, BarChart3 } from 'lucide-react';
+import {
+  Skeleton,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@therecommerce/ds-ui';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useProjectReport } from '@/features/dashboard/hooks';
+import { useSprints } from '@/features/agile/hooks';
+import { useBurndown, useVelocity } from '@/features/burndown/hooks';
+import { BurndownChart } from '@/features/burndown/components/BurndownChart';
+import { VelocityChart } from '@/features/burndown/components/VelocityChart';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { MetricCard } from '@/features/dashboard/components/MetricCard';
 import { DistributionBars } from '@/features/dashboard/components/DistributionBars';
 import { EmptyState } from '@/components/common/empty-state';
 import { PageHead } from '@/components/badges';
-import { Skeleton } from '@therecommerce/ds-ui';
 import { WORK_STATUS_LABEL, ISSUE_TYPE_LABEL, type WorkStatus, type IssueType } from '@/types/domain';
 
 export function ReportsView() {
@@ -19,6 +27,19 @@ export function ReportsView() {
 
   const { data: report, isPending, isError } = useProjectReport(projectId);
   const assigneeName = useAssigneeName(projectId);
+
+  // P2 번다운/벨로시티(WMP-AGL-006) — 번다운은 스프린트 선택, 벨로시티는 프로젝트 단위.
+  const { data: sprints = [] } = useSprints(projectId);
+  const [selectedSprintId, setSelectedSprintId] = useState<string>('');
+  const effectiveSprintId = useMemo(() => {
+    if (selectedSprintId) return Number(selectedSprintId);
+    // 기본: 진행중(ACTIVE) 우선, 없으면 첫 스프린트.
+    const active = sprints.find((s) => s.status === 'ACTIVE');
+    return active?.id ?? sprints[0]?.id;
+  }, [selectedSprintId, sprints]);
+  const { data: burndown } = useBurndown(effectiveSprintId);
+  const { data: velocity } = useVelocity(projectId);
+  const sprintName = (id: number) => sprints.find((s) => s.id === id)?.name;
 
   if (projectPending || (projectId && isPending && !report)) {
     return (
@@ -93,6 +114,44 @@ export function ReportsView() {
           items={report.byAssignee}
           labelOf={assigneeLabel}
         />
+      </div>
+
+      {/* P2: 번다운 / 벨로시티 (WMP-AGL-006) */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-border p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground">번다운</h3>
+            {sprints.length > 0 && (
+              <Select
+                value={effectiveSprintId != null ? String(effectiveSprintId) : ''}
+                onValueChange={setSelectedSprintId}
+              >
+                <SelectTrigger className="h-8 w-44"><SelectValue placeholder="스프린트 선택" /></SelectTrigger>
+                <SelectContent>
+                  {sprints.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {sprints.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">스프린트가 없습니다.</p>
+          ) : burndown ? (
+            <BurndownChart data={burndown} />
+          ) : (
+            <Skeleton className="h-48 w-full rounded" />
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border p-4">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">벨로시티</h3>
+          {velocity ? (
+            <VelocityChart data={velocity} sprintName={sprintName} />
+          ) : (
+            <Skeleton className="h-40 w-full rounded" />
+          )}
+        </div>
       </div>
     </div>
   );

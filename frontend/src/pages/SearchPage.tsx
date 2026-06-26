@@ -13,6 +13,8 @@ import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { WorkItemTable } from '@/features/workitem/components/WorkItemTable';
 import { useSearch } from '@/features/search/hooks';
 import type { SearchParams } from '@/features/search/api';
+import { SavedFilterBar } from '@/features/saved-filter/SavedFilterBar';
+import type { SearchFilterState, QuickKey } from '@/features/saved-filter/filter-codec';
 import { useUserSearch } from '@/features/members/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { ROUTES } from '@/lib/route-paths';
@@ -100,6 +102,22 @@ export function SearchPage() {
     setPage(0);
   }
 
+  // 저장 필터(WMP-VIEW-004): 현재 조건 직렬화 + 저장 필터 적용.
+  const currentFilterState: SearchFilterState = useMemo(() => ({
+    keyword: keyword.trim() || undefined,
+    issueType: filter.issueType,
+    commonStatus: filter.commonStatus,
+    priority: filter.priority,
+    quick: [...quick],
+  }), [keyword, filter, quick]);
+
+  function applySavedFilter(s: SearchFilterState) {
+    setKeyword(s.keyword ?? '');
+    setFilter({ issueType: s.issueType, commonStatus: s.commonStatus, priority: s.priority });
+    setQuick(new Set<QuickKey>(s.quick ?? []));
+    setPage(0);
+  }
+
   const noop = () => {};
   const emptySet = useMemo(() => new Set<number>(), []);
 
@@ -146,6 +164,9 @@ export function SearchPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* 저장 필터 (WMP-VIEW-004) */}
+      <SavedFilterBar current={currentFilterState} onApply={applySavedFilter} />
 
       {/* 퀵필터 */}
       <div className="mb-4 flex flex-wrap items-center gap-1.5">

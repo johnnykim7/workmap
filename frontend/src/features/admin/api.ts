@@ -83,6 +83,28 @@ export interface WorkflowTransitionRequest {
   toStatusId: number;
 }
 
+// ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
+export interface FormResponse {
+  id: number;
+  projectId: number;
+  issueTypeCode: string;
+  name: string;
+  fields: string;        // JSONB 원본 문자열(필드 배치/도움말/필수)
+  isPublic: boolean;
+}
+export interface FormRequest {
+  projectId: number;
+  issueTypeCode: string;
+  name: string;
+  fields: string;        // JSONB 문자열
+  isPublic?: boolean | null;
+}
+// 양식 제출(WMP-ADM-005) — 양식 정의로 work_item 생성. 인증 사용자 누구나.
+export interface FormSubmitRequest {
+  title: string;
+  description?: string | null;
+}
+
 function pageQs(page = 0, size = 20, extra?: Record<string, string | number | undefined>) {
   const p = new URLSearchParams({ page: String(page), size: String(size) });
   if (extra) for (const [k, v] of Object.entries(extra)) if (v != null && v !== '') p.set(k, String(v));
@@ -139,5 +161,20 @@ export const adminApi = {
       api.post<WorkflowTransitionResponse>(`/admin/workflows/${id}/transitions`, body),
     removeTransition: (id: number, transitionId: number) =>
       api.delete<void>(`/admin/workflows/${id}/transitions/${transitionId}`),
+  },
+  // 양식 빌더 (WMP-ADM-005)
+  forms: {
+    list: (projectId?: number, page = 0, size = 20) =>
+      api.get<PageResponse<FormResponse>>(
+        `/admin/forms?${pageQs(page, size, { projectId })}`,
+      ),
+    get: (id: number) => api.get<FormResponse>(`/admin/forms/${id}`),
+    create: (body: FormRequest) => api.post<FormResponse>('/admin/forms', body),
+    update: (id: number, body: FormRequest) =>
+      api.put<FormResponse>(`/admin/forms/${id}`, body),
+    remove: (id: number) => api.delete<void>(`/admin/forms/${id}`),
+    // 제출은 WorkItemDtos.Response 반환(여기선 unknown으로 받음 — 빌더 화면은 제출 후 토스트만).
+    submit: (id: number, body: FormSubmitRequest) =>
+      api.post<{ key: string; id: number }>(`/admin/forms/${id}/submit`, body),
   },
 };
