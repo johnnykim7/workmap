@@ -53,9 +53,9 @@ export function LoginPage() {
           </Button>
         </form>
 
-        {/* dev 목 계정 안내 (MSW). BE 실연동 시 제거. */}
+        {/* 안내 계정. 운영 계정 정책 확정 시 제거. */}
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          dev: admin@therecommerce.com / admin1234
+          admin@workmap.com / admin1234
         </p>
       </div>
     </div>

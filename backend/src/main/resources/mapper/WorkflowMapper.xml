@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.workflow.mapper.WorkflowMapper">
+
+    <resultMap id="statusMap" type="com.therecommerce.workmap.workflow.domain.WorkflowStatus">
+        <id     property="id"           column="id"/>
+        <result property="workflowId"   column="workflow_id"/>
+        <result property="code"         column="code"/>
+        <result property="label"        column="label"/>
+        <result property="commonStatus" column="common_status"/>
+        <result property="isStart"      column="is_start"/>
+        <result property="isDone"       column="is_done"/>
+        <result property="isApproval"   column="is_approval"/>
+        <result property="approverRole" column="approver_role"/>
+        <result property="sortOrder"    column="sort_order"/>
+    </resultMap>
+
+    <select id="findStatuses" resultMap="statusMap">
+        SELECT * FROM workflow_status
+        WHERE workflow_id = #{workflowId}
+        ORDER BY sort_order, id
+    </select>
+
+    <select id="findStatusById" resultMap="statusMap">
+        SELECT * FROM workflow_status WHERE id = #{statusId}
+    </select>
+
+    <select id="findStartStatus" resultMap="statusMap">
+        SELECT * FROM workflow_status
+        WHERE workflow_id = #{workflowId} AND is_start = true
+        ORDER BY sort_order, id
+        LIMIT 1
+    </select>
+
+    <select id="findStatusByCode" resultMap="statusMap">
+        SELECT * FROM workflow_status
+        WHERE workflow_id = #{workflowId} AND code = #{code}
+    </select>
+
+    <!-- 전이 화이트리스트 검증(BIZ-010): 정의되지 않은 (from→to)는 false -->
+    <select id="transitionExists" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM workflow_transition
+            WHERE workflow_id = #{workflowId}
+              AND from_status_id = #{fromStatusId}
+              AND to_status_id = #{toStatusId}
+        )
+    </select>
+
+</mapper>

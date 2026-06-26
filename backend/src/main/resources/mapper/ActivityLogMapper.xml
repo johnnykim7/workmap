@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.workitem.mapper.ActivityLogMapper">
+
+    <resultMap id="logMap" type="com.therecommerce.workmap.workitem.domain.ActivityLog">
+        <id     property="id"         column="id"/>
+        <result property="workItemId" column="work_item_id"/>
+        <result property="actorId"    column="actor_id"/>
+        <result property="action"     column="action"/>
+        <result property="fromValue"  column="from_value"/>
+        <result property="toValue"    column="to_value"/>
+        <result property="createdAt"  column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.workitem.domain.ActivityLog"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO activity_logs (work_item_id, actor_id, action, from_value, to_value)
+        VALUES (#{workItemId}, #{actorId}, #{action}, #{fromValue}, #{toValue})
+    </insert>
+
+    <select id="findByWorkItem" resultMap="logMap">
+        SELECT * FROM activity_logs WHERE work_item_id = #{workItemId} ORDER BY created_at DESC, id DESC
+    </select>
+
+</mapper>

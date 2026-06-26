@@ -1,0 +1,164 @@
+package com.therecommerce.workmap.workitem.dto;
+
+import com.therecommerce.workmap.workitem.domain.WorkItem;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
+
+/**
+ * 업무 항목 요청/응답 DTO (T3-2 F). 단일 테이블이라 유형 고유 필드도 같은 DTO에 두고
+ * 서비스/화면에서 표시 차등(BIZ-102). 상태/측정/담당자/유형전환은 전용 PATCH로 분리.
+ */
+public final class WorkItemDtos {
+
+    private WorkItemDtos() {}
+
+    /** 만들기 모달/인라인 생성(WMP-WI-001). status_id 입력은 무시 — 시작 상태 고정(WI-3). */
+    public record CreateRequest(
+            @NotNull Long projectId,
+            @NotBlank String issueType,
+            Long parentId,
+            Long epicId,
+            @NotBlank @Size(max = 300) String title,
+            String description,
+            String priority,
+            Long assigneeId,
+            Long reporterId,
+            Long sprintId,
+            Integer storyPoints,
+            BigDecimal estimateHours,
+            LocalDate startDate,
+            LocalDate dueDate,
+            Long measureUnitId,
+            BigDecimal targetValue,
+            BigDecimal currentValue,
+            List<String> acceptanceCriteria,
+            List<String> stepsToReproduce,
+            String expectedResult,
+            String actualResult,
+            String environment,
+            String severity,
+            String checklist,
+            List<String> labels,
+            List<String> relatedSolutions
+    ) {}
+
+    /** 하위 작업 생성(WMP-WI-005) — 부모 id는 경로에서 주입. */
+    public record CreateSubtaskRequest(
+            @NotBlank @Size(max = 300) String title,
+            String description,
+            String priority,
+            Long assigneeId,
+            LocalDate startDate,
+            LocalDate dueDate
+    ) {}
+
+    /** 인라인 필드 수정(WMP-WI-002/008). 전달된 값으로 덮어쓴다(부분 갱신은 서비스에서 머지). */
+    public record UpdateRequest(
+            String title,
+            String description,
+            String priority,
+            Long epicId,
+            Integer storyPoints,
+            BigDecimal estimateHours,
+            LocalDate startDate,
+            LocalDate dueDate,
+            List<String> acceptanceCriteria,
+            List<String> stepsToReproduce,
+            String expectedResult,
+            String actualResult,
+            String environment,
+            String severity,
+            String checklist,
+            List<String> labels,
+            List<String> relatedSolutions
+    ) {}
+
+    /** 상태 전이(WMP-WI-007). toStatusId 필수, BLOCKED 전이 시 blockReason 필수(BIZ-005). */
+    public record ChangeStatusRequest(
+            @NotNull Long toStatusId,
+            String blockReason
+    ) {}
+
+    /** 담당자/보고자 지정·변경(WMP-WI-006). null=미배정(BIZ-002). */
+    public record ChangeAssigneeRequest(
+            Long assigneeId,
+            Long reporterId
+    ) {}
+
+    /** 유형 전환(WMP-WI-014). 전환 후 계층 정합성 재검증(BIZ-103). */
+    public record ConvertRequest(
+            @NotBlank String issueType,
+            Long parentId,
+            Long epicId
+    ) {}
+
+    /** 측정(WMP-WI-016). progress는 서버에서 자동 계산(BIZ-105). */
+    public record MeasureRequest(
+            Long measureUnitId,
+            BigDecimal targetValue,
+            BigDecimal currentValue
+    ) {}
+
+    /** 스프린트 담기/빼기(WMP-AGL-002, SPR-5). null=백로그. */
+    public record ChangeSprintRequest(
+            Long sprintId
+    ) {}
+
+    public record Response(
+            Long id,
+            String key,
+            Long projectId,
+            String issueType,
+            Long parentId,
+            Long epicId,
+            String title,
+            String description,
+            Long workflowId,
+            Long statusId,
+            String commonStatus,
+            String priority,
+            Long assigneeId,
+            Long reporterId,
+            Long sprintId,
+            Integer storyPoints,
+            BigDecimal estimateHours,
+            LocalDate startDate,
+            LocalDate dueDate,
+            int progress,
+            String blockReason,
+            Long measureUnitId,
+            BigDecimal targetValue,
+            BigDecimal currentValue,
+            List<String> acceptanceCriteria,
+            List<String> stepsToReproduce,
+            String expectedResult,
+            String actualResult,
+            String environment,
+            String severity,
+            String checklist,
+            List<String> labels,
+            List<String> relatedSolutions,
+            OffsetDateTime completedAt,
+            Long createdBy,
+            OffsetDateTime createdAt
+    ) {
+        public static Response from(WorkItem w) {
+            return new Response(
+                    w.getId(), w.getKey(), w.getProjectId(), w.getIssueType(), w.getParentId(),
+                    w.getEpicId(), w.getTitle(), w.getDescription(), w.getWorkflowId(), w.getStatusId(),
+                    w.getCommonStatus(), w.getPriority(), w.getAssigneeId(), w.getReporterId(),
+                    w.getSprintId(), w.getStoryPoints(), w.getEstimateHours(), w.getStartDate(),
+                    w.getDueDate(), w.getProgress(), w.getBlockReason(), w.getMeasureUnitId(),
+                    w.getTargetValue(), w.getCurrentValue(), w.getAcceptanceCriteria(),
+                    w.getStepsToReproduce(), w.getExpectedResult(), w.getActualResult(),
+                    w.getEnvironment(), w.getSeverity(), w.getChecklist(), w.getLabels(),
+                    w.getRelatedSolutions(), w.getCompletedAt(), w.getCreatedBy(), w.getCreatedAt());
+        }
+    }
+}

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.workitem.mapper.WorkItemMapper">
+
+    <resultMap id="workItemMap" type="com.therecommerce.workmap.workitem.domain.WorkItem">
+        <id     property="id"                column="id"/>
+        <result property="key"               column="key"/>
+        <result property="projectId"         column="project_id"/>
+        <result property="issueType"         column="issue_type"/>
+        <result property="parentId"          column="parent_id"/>
+        <result property="epicId"            column="epic_id"/>
+        <result property="title"             column="title"/>
+        <result property="description"       column="description"/>
+        <result property="workflowId"        column="workflow_id"/>
+        <result property="statusId"          column="status_id"/>
+        <result property="commonStatus"      column="common_status"/>
+        <result property="priority"          column="priority"/>
+        <result property="assigneeId"        column="assignee_id"/>
+        <result property="reporterId"        column="reporter_id"/>
+        <result property="sprintId"          column="sprint_id"/>
+        <result property="storyPoints"       column="story_points"/>
+        <result property="estimateHours"     column="estimate_hours"/>
+        <result property="spentHours"        column="spent_hours"/>
+        <result property="startDate"         column="start_date"/>
+        <result property="dueDate"           column="due_date"/>
+        <result property="progress"          column="progress"/>
+        <result property="blockReason"       column="block_reason"/>
+        <result property="prevStatusId"      column="prev_status_id"/>
+        <result property="measureUnitId"     column="measure_unit_id"/>
+        <result property="targetValue"       column="target_value"/>
+        <result property="currentValue"      column="current_value"/>
+        <result property="acceptanceCriteria" column="acceptance_criteria"
+                typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
+        <result property="stepsToReproduce"  column="steps_to_reproduce"
+                typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
+        <result property="expectedResult"    column="expected_result"/>
+        <result property="actualResult"      column="actual_result"/>
+        <result property="environment"       column="environment"/>
+        <result property="severity"          column="severity"/>
+        <result property="checklist"         column="checklist"/>
+        <result property="labels"            column="labels"
+                typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
+        <result property="relatedSolutions"  column="related_solutions"
+                typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
+        <result property="opsApplyStatus"    column="ops_apply_status"/>
+        <result property="statusChangedAt"   column="status_changed_at"/>
+        <result property="completedAt"       column="completed_at"/>
+        <result property="deletedAt"         column="deleted_at"/>
+        <result property="createdBy"         column="created_by"/>
+        <result property="createdAt"         column="created_at"/>
+        <result property="updatedAt"         column="updated_at"/>
+    </resultMap>
+
+    <sql id="strList">com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler</sql>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO work_items
+            (key, project_id, issue_type, parent_id, epic_id, title, description,
+             workflow_id, status_id, common_status, priority, assignee_id, reporter_id,
+             sprint_id, story_points, estimate_hours, start_date, due_date, progress,
+             measure_unit_id, target_value, current_value,
+             acceptance_criteria, steps_to_reproduce, expected_result, actual_result,
+             environment, severity, checklist, labels, related_solutions, created_by)
+        VALUES
+            (#{key}, #{projectId}, #{issueType}, #{parentId}, #{epicId}, #{title}, #{description},
+             #{workflowId}, #{statusId}, #{commonStatus}, #{priority}, #{assigneeId}, #{reporterId},
+             #{sprintId}, #{storyPoints}, #{estimateHours}, #{startDate}, #{dueDate}, #{progress},
+             #{measureUnitId}, #{targetValue}, #{currentValue},
+             #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+             #{stepsToReproduce, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+             #{expectedResult}, #{actualResult}, #{environment}, #{severity}, #{checklist},
+             #{labels, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+             #{relatedSolutions, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+             #{createdBy})
+    </insert>
+
+    <select id="findById" resultMap="workItemMap">
+        SELECT * FROM work_items WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByIdIncludingDeleted" resultMap="workItemMap">
+        SELECT * FROM work_items WHERE id = #{id}
+    </select>
+
+    <!-- key 채번(WI-4): seq_counter 증가 후 새 값 반환. 동시성은 행 잠금(UPDATE … RETURNING). -->
+    <select id="nextSeq" resultType="int">
+        UPDATE projects SET seq_counter = seq_counter + 1, updated_at = now()
+        WHERE id = #{projectId}
+        RETURNING seq_counter
+    </select>
+
+    <update id="updateFields" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            title = #{title},
+            description = #{description},
+            priority = #{priority},
+            assignee_id = #{assigneeId},
+            reporter_id = #{reporterId},
+            story_points = #{storyPoints},
+            estimate_hours = #{estimateHours},
+            start_date = #{startDate},
+            due_date = #{dueDate},
+            epic_id = #{epicId},
+            acceptance_criteria = #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            steps_to_reproduce = #{stepsToReproduce, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            expected_result = #{expectedResult},
+            actual_result = #{actualResult},
+            environment = #{environment},
+            severity = #{severity},
+            checklist = #{checklist},
+            labels = #{labels, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            related_solutions = #{relatedSolutions, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- 상태 전이 반영(FSM 가드 경유만). common_status 동기화 + prev_status/block_reason/completed_at. -->
+    <update id="updateStatus" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            status_id = #{statusId},
+            common_status = #{commonStatus},
+            prev_status_id = #{prevStatusId},
+            block_reason = #{blockReason},
+            completed_at = #{completedAt},
+            status_changed_at = #{statusChangedAt},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateAssignee">
+        UPDATE work_items SET
+            assignee_id = #{assigneeId},
+            reporter_id = #{reporterId},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateMeasure" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            measure_unit_id = #{measureUnitId},
+            target_value = #{targetValue},
+            current_value = #{currentValue},
+            progress = #{progress},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateType" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            issue_type = #{issueType},
+            parent_id = #{parentId},
+            epic_id = #{epicId},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateProgress">
+        UPDATE work_items SET progress = #{progress}, updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateSprint">
+        UPDATE work_items SET sprint_id = #{sprintId}, updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="softDelete">
+        UPDATE work_items SET deleted_at = #{deletedAt}, updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="softDeleteChildren">
+        UPDATE work_items SET deleted_at = #{deletedAt}, updated_at = now()
+        WHERE parent_id = #{parentId} AND deleted_at IS NULL
+    </update>
+
+    <select id="findChildren" resultMap="workItemMap">
+        SELECT * FROM work_items WHERE parent_id = #{parentId} AND deleted_at IS NULL ORDER BY id
+    </select>
+
+    <select id="findByEpic" resultMap="workItemMap">
+        SELECT * FROM work_items WHERE epic_id = #{epicId} AND deleted_at IS NULL ORDER BY id
+    </select>
+
+    <!-- 순환참조 검사(HRC-4): candidateAncestorId 가 nodeId 의 (부모 체인을 타고 올라가) 자손인지.
+         즉 candidate 를 node 의 parent 로 두면 순환이 되는지. parent_id 체인을 재귀로 추적. -->
+    <select id="isDescendant" resultType="boolean">
+        WITH RECURSIVE ancestors AS (
+            SELECT id, parent_id FROM work_items WHERE id = #{candidateAncestorId}
+            UNION ALL
+            SELECT w.id, w.parent_id
+            FROM work_items w
+            JOIN ancestors a ON w.id = a.parent_id
+        )
+        SELECT EXISTS(SELECT 1 FROM ancestors WHERE id = #{nodeId})
+    </select>
+
+</mapper>

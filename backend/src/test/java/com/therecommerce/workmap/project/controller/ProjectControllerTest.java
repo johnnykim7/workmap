@@ -46,6 +46,13 @@ class ProjectControllerTest {
     @MockBean com.therecommerce.workmap.project.mapper.ProjectMapper projectMapper;
     @MockBean com.therecommerce.workmap.project.mapper.ProjectTemplateMapper projectTemplateMapper;
     @MockBean com.therecommerce.workmap.member.mapper.ProjectMemberMapper projectMemberMapper;
+    @MockBean com.therecommerce.workmap.workitem.mapper.WorkItemMapper workItemMapper;
+    @MockBean com.therecommerce.workmap.workitem.mapper.CommentMapper commentMapper;
+    @MockBean com.therecommerce.workmap.workitem.mapper.AttachmentMapper attachmentMapper;
+    @MockBean com.therecommerce.workmap.workitem.mapper.ActivityLogMapper activityLogMapper;
+    @MockBean com.therecommerce.workmap.workflow.mapper.WorkflowMapper workflowMapper;
+    @MockBean com.therecommerce.workmap.measure.mapper.MeasureUnitMapper measureUnitMapper;
+    @MockBean com.therecommerce.workmap.notification.mapper.NotificationMapper notificationMapper;
 
     @Test
     @DisplayName("C-PRJ: POST /projects 201 + id + active_tabs 템플릿 복사")
