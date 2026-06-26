@@ -31,6 +31,9 @@ public interface ProjectMapper {
             @Param("templateId") Long templateId,
             @Param("includeArchived") boolean includeArchived);
 
+    /** 부분수정(WMP-WS-004): null 아닌 필드만 갱신. active_tabs는 JSONB List 핸들러. */
+    void updateProject(@Param("id") Long id, @Param("p") Project p);
+
     void updateVisibility(@Param("id") Long id, @Param("visibility") String visibility);
 
     void updateStatus(@Param("id") Long id, @Param("status") String status);

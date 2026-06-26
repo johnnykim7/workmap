@@ -50,6 +50,19 @@ public class ProjectController {
         return ResponseDto.success(projectService.get(id, userId));
     }
 
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")
+    public ResponseDto<ProjectDtos.Response> update(
+            @PathVariable Long id, @Valid @RequestBody ProjectDtos.UpdateRequest req) {
+        return ResponseDto.success(projectService.update(id, req));
+    }
+
+    @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")
+    public ResponseDto<ProjectDtos.Response> archive(@PathVariable Long id) {
+        return ResponseDto.success(projectService.archive(id));
+    }
+
     @PatchMapping("/{id}/visibility")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")
     public ResponseDto<ProjectDtos.Response> changeVisibility(

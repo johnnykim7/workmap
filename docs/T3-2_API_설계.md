@@ -190,9 +190,10 @@
 |--------|------|------|------|----------|-------------|
 | GET | /notifications | 알림 목록(읽음/안읽음) | 🔒 | P1 | WMP-NOTI-001 |
 | PATCH | /notifications/{id}/read | 알림 읽음 처리 | 🔒 | P1 | WMP-NOTI-001 |
-| GET | /inbox | 받은함(내게 온 것 통합) | 🔒 | P1 | WMP-NOTI-001 |
+| GET | /inbox | 받은함(내게 온 것 통합 — 목록 + 안읽음 배지) | 🔒 | P1 | WMP-NOTI-001 |
 
 > 알림 트리거 발행(WMP-NOTI-002)은 도메인 이벤트(ApplicationEvent) 기반 내부 처리 — 외부 엔드포인트 아님(T1-6 이벤트 계약).
+> **받은함(/inbox) 구현 메모(CR-011)**: 배정·멘션·마감·막힘은 이미 `notifications.type`(ASSIGNED/MENTIONED/OVERDUE/BLOCKED/DUE_APPROACHING)으로 **통합 수신**된다(T1-1 WMP-NOTI-001 "내게 온 것 통합"). 별도 소스(멘션/승인대기/배정)를 런타임 합산하는 별도 테이블이 아니라, `/notifications` 목록을 **받은함 응답(items + unreadCount 배지)**으로 한 번에 제공하는 별칭이다. 데이터 소스는 `NotificationService.list()`/`unreadCount()` 재사용(신규 매퍼 없음).
 
 ---
 

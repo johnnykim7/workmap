@@ -71,6 +71,22 @@
         ORDER BY p.id DESC
     </select>
 
+    <!-- 부분수정(WMP-WS-004): null 아닌 필드만. active_tabs는 JSONB List 핸들러(CR-008) -->
+    <update id="updateProject">
+        UPDATE projects
+        <set>
+            <if test="p.name != null">name = #{p.name},</if>
+            <if test="p.activeTabs != null">
+                active_tabs = #{p.activeTabs, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            </if>
+            <if test="p.startDate != null">start_date = #{p.startDate},</if>
+            <if test="p.endDate != null">end_date = #{p.endDate},</if>
+            <if test="p.description != null">description = #{p.description},</if>
+            updated_at = now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
     <update id="updateVisibility">
         UPDATE projects SET visibility = #{visibility}, updated_at = now() WHERE id = #{id}
     </update>

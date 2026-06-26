@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -83,5 +84,36 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.id").value(100))
                 .andExpect(jsonPath("$.data.status").value("PLANNING"))
                 .andExpect(jsonPath("$.data.activeTabs[0]").value("backlog"));
+    }
+
+    @Test
+    @DisplayName("C-PRJ: PATCH /projects/{id} 200 + 수정된 이름·탭 반영")
+    void PATCH_projects_200() throws Exception {
+        ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
+                "새이름", List.of("board", "list"), null, null, null);
+        ProjectDtos.Response updated = new ProjectDtos.Response(
+                100L, 5L, "ZGOH", "새이름", 1L, "ACTIVE", "PUBLIC", 10L,
+                List.of("board", "list"), null, null, null, 99L, null, OffsetDateTime.now());
+        when(projectService.update(eq(100L), any())).thenReturn(updated);
+
+        mockMvc.perform(patch("/api/v1/projects/100").with(csrf()).with(WmpAuth.user(99L, "MANAGER"))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("새이름"))
+                .andExpect(jsonPath("$.data.activeTabs[0]").value("board"));
+    }
+
+    @Test
+    @DisplayName("C-PRJ: PATCH /projects/{id}/archive 200 + ARCHIVED")
+    void PATCH_archive_200() throws Exception {
+        ProjectDtos.Response archived = new ProjectDtos.Response(
+                100L, 5L, "ZGOH", "재고관리", 1L, "ARCHIVED", "PUBLIC", 10L,
+                List.of("board"), null, null, null, 99L, OffsetDateTime.now(), OffsetDateTime.now());
+        when(projectService.archive(100L)).thenReturn(archived);
+
+        mockMvc.perform(patch("/api/v1/projects/100/archive").with(csrf()).with(WmpAuth.user(99L, "MANAGER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
     }
 }

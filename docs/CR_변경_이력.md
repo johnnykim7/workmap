@@ -229,6 +229,27 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-26, 중규모 결정 + 가시성·제출 2개 결정) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-26
 
+### CR-011 — 설계(T3-2) 대비 미구현 BE 3종 마감 (프로젝트 수정·보관 + 받은함)
+
+- **변경 타입**: 신규 | **영향도**: Medium
+- **배경**: Phase 1 + P2 BE 완료 후, 설계(T3-2)에 정의돼 있으나 컨트롤러가 비어 있던 마지막 3개 엔드포인트를 마감해 **Phase 1 + P2 BE 100% 완료**. 설계(T1~T3 v0.4)에 이미 정의돼 있어 설계 변경 없이 구현만 진행(T3-2 inbox 행에 받은함 의미 1줄 명확화만 추가).
+- **변경 내용**:
+  - **PATCH /api/v1/projects/{id} 프로젝트 수정(WMP-WS-004, P2)** — name/description/active_tabs(탭 조합)/start_date/end_date 부분수정(PATCH 의미: null 필드는 미변경). visibility/status는 기존 전용 엔드포인트(`/visibility`·`/status`) 유지 — 섞지 않음. `ProjectMapper.updateProject`(신규 메서드 1개, 신규 매퍼 클래스 아님) + XML `<set>` 동적 부분 UPDATE, active_tabs는 `StringListJsonTypeHandler`(CR-008 규칙). 가드: `@PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")`(visibility/status와 동일 컨벤션 — 사용자 결정 2026-06-26 방식 A). DTO `ProjectDtos.UpdateRequest` 신규.
+  - **PATCH /api/v1/projects/{id}/archive 보관(WMP-WS-004, P2)** — 기존 `ProjectMapper.archive()`(status='ARCHIVED'+archived_at=now, 소프트 보관) 컨트롤러/서비스 연결. **FSM 가드 경유**(BIZ-010): 현재 상태→ARCHIVED가 화이트리스트 허용일 때만(ACTIVE/DONE→ARCHIVED 허용, PLANNING→ARCHIVED 거부 PRJ-4). `ProjectService.archive()` 신규(changeStatus의 ARCHIVED 분기와 동일 가드 재사용). 가드: Manager 역할.
+  - **GET /api/v1/inbox 받은함(WMP-NOTI-001, P1)** — **실측 판단**: T1-1 정의상 "내게 온 것 통합"은 이미 `notifications.type`(ASSIGNED/MENTIONED/OVERDUE/BLOCKED/DUE_APPROACHING)으로 통합 수신됨 → 별도 소스 런타임 합산 테이블이 **아님**. 단순 `/notifications` 목록 별칭이되, 받은함 본질(목록+안읽음 배지)을 살려 **items + unreadCount를 한 번에** 반환. 신규 `InboxController` + `InboxService`(기존 `NotificationService.list()`/`unreadCount()` 재사용 — 신규 매퍼 없음) + `InboxDtos.Response{items, unreadCount}`. 인증 사용자 본인 것만.
+  - **공통**: 에러코드 신규 없음(기존 7711 TRANSITION_NOT_ALLOWED·7720 PROJECT_NOT_FOUND 재사용). `Project` 도메인에 `@NoArgsConstructor @AllArgsConstructor` 부여(CR-008 규칙 — MyBatis setter 매핑 안전; 기존 `@Builder`만 보유했던 것 보정).
+- **스키마**: projects 테이블(active_tabs/archived_at/status)·notifications 모두 기존 → **신규 마이그레이션 불요**.
+- **영향 모듈**: BE (project.{dto,service,controller,mapper}+XML, notification 신규 inbox.{dto,service,controller}, project.domain). FE·DB 마이그레이션 무변경.
+- **영향 설계서**: T3-2(inbox 행 의미 1줄 명확화). T1~T3 그 외 무변경.
+- **구현 중 보정**:
+  - 신규 매퍼 클래스 없음(ProjectMapper에 메서드 1개 추가, Inbox는 NotificationMapper 재사용) → CR-009 @WebMvcTest mock 규칙 불해당, 슬라이스 mock 추가 불필요(실측 확인).
+  - PATCH 부분수정은 `<set>` 동적 XML + null-skip — null 필드 미변경 확인(E2E: visibility/status 보존).
+- **검증**:
+  - 단위테스트 신규 8개 PASS — ProjectServiceTest +4(부분수정 갱신·없는프로젝트 NOT_FOUND·ACTIVE 보관 성공·PLANNING 보관 거부), ProjectControllerTest +2(PATCH /{id} 200·PATCH /archive 200), InboxServiceTest 2(목록+배지 통합·빈상태). 전체 `./gradlew test` BUILD SUCCESSFUL(130 PASS, 0 fail).
+  - **런타임 E2E(curl, 서버 8186 기동) 완료**: ① GET /inbox → `{notifications:{items,totalCount,...}, unreadCount}` 통합 응답 정상. ② PATCH /projects/1 → name·activeTabs(JSONB)·description 반영, 미전달 visibility/status 보존. ③ PATCH /projects/3/archive(PLANNING) → WMP-7711 거부, PATCH /projects/1/archive(ACTIVE) → ARCHIVED+archived_at, DB 확인. 테스트 후 데이터 원복.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-26, 중규모 결정 + 권한 방식 A 결정) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-26
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

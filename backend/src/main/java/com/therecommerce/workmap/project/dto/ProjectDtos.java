@@ -29,6 +29,18 @@ public final class ProjectDtos {
             String description
     ) {}
 
+    /**
+     * 프로젝트 부분수정(WMP-WS-004, PATCH). null 필드는 미변경.
+     * 탭 조합(activeTabs)·이름·설명·기간만 — 가시성/상태는 전용 엔드포인트로 분리.
+     */
+    public record UpdateRequest(
+            @Size(max = 200) String name,
+            List<String> activeTabs,
+            LocalDate startDate,
+            LocalDate endDate,
+            String description
+    ) {}
+
     public record UpdateVisibilityRequest(
             @NotBlank String visibility
     ) {}

@@ -96,6 +96,34 @@ public class ProjectService {
         return ProjectDtos.Response.from(p);
     }
 
+    /** 부분수정(WMP-WS-004): 이름/탭조합/기간/설명만. 가시성·상태는 전용 엔드포인트. */
+    @Transactional
+    public ProjectDtos.Response update(Long id, ProjectDtos.UpdateRequest req) {
+        getEntity(id);   // 존재 확인(PROJECT_NOT_FOUND)
+        Project patch = Project.builder()
+                .name(req.name())
+                .activeTabs(req.activeTabs())
+                .startDate(req.startDate())
+                .endDate(req.endDate())
+                .description(req.description())
+                .build();
+        projectMapper.updateProject(id, patch);
+        return ProjectDtos.Response.from(getEntity(id));
+    }
+
+    /** 보관(WMP-WS-004, 소프트). FSM 가드 경유 — ARCHIVED 전이 화이트리스트 허용 시에만. */
+    @Transactional
+    public ProjectDtos.Response archive(Long id) {
+        Project p = getEntity(id);
+        ProjectStatus from = ProjectStatus.valueOf(p.getStatus());
+        if (!from.canTransitionTo(ProjectStatus.ARCHIVED)) {
+            throw new BusinessException(WmpErrorCode.TRANSITION_NOT_ALLOWED,
+                    "프로젝트 보관 불허: " + from + " → ARCHIVED");
+        }
+        projectMapper.archive(id);
+        return ProjectDtos.Response.from(getEntity(id));
+    }
+
     @Transactional
     public ProjectDtos.Response changeVisibility(Long id, String visibility) {
         getEntity(id);

@@ -115,4 +115,63 @@ class ProjectServiceTest {
 
         verify(projectMapper).updateStatus(4L, "ACTIVE");
     }
+
+    @Test
+    @DisplayName("WMP-WS-004: 프로젝트_부분수정_탭조합·이름 갱신")
+    void 프로젝트_부분수정_갱신() {
+        Project existing = Project.builder().id(7L).status("ACTIVE").name("기존").build();
+        Project updated = Project.builder().id(7L).status("ACTIVE").name("새이름")
+                .activeTabs(List.of("board", "list")).build();
+        when(projectMapper.findById(7L)).thenReturn(existing, updated);
+
+        ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
+                "새이름", List.of("board", "list"), null, null, null);
+
+        ProjectDtos.Response res = projectService.update(7L, req);
+
+        ArgumentCaptor<Project> pc = ArgumentCaptor.forClass(Project.class);
+        verify(projectMapper).updateProject(eq(7L), pc.capture());
+        assertThat(pc.getValue().getName()).isEqualTo("새이름");
+        assertThat(pc.getValue().getActiveTabs()).containsExactly("board", "list");
+        assertThat(res.name()).isEqualTo("새이름");
+    }
+
+    @Test
+    @DisplayName("WMP-WS-004: 없는_프로젝트_수정_NOT_FOUND")
+    void 프로젝트_수정_없음_거부() {
+        when(projectMapper.findById(404L)).thenReturn(null);
+
+        ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
+                "x", null, null, null, null);
+
+        assertThatThrownBy(() -> projectService.update(404L, req))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.PROJECT_NOT_FOUND);
+        verify(projectMapper, never()).updateProject(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("WMP-WS-004: ACTIVE_프로젝트_보관_성공(FSM 허용)")
+    void 프로젝트_보관_성공() {
+        Project active = Project.builder().id(8L).status("ACTIVE").build();
+        Project archived = Project.builder().id(8L).status("ARCHIVED").build();
+        when(projectMapper.findById(8L)).thenReturn(active, archived);
+
+        ProjectDtos.Response res = projectService.archive(8L);
+
+        verify(projectMapper).archive(8L);
+        assertThat(res.status()).isEqualTo("ARCHIVED");
+    }
+
+    @Test
+    @DisplayName("PRJ-4: PLANNING_프로젝트_보관_거부(FSM 위반)")
+    void 프로젝트_보관_PLANNING_거부() {
+        Project planning = Project.builder().id(9L).status("PLANNING").build();
+        when(projectMapper.findById(9L)).thenReturn(planning);
+
+        assertThatThrownBy(() -> projectService.archive(9L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.TRANSITION_NOT_ALLOWED);
+        verify(projectMapper, never()).archive(anyLong());
+    }
 }

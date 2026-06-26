@@ -1,7 +1,9 @@
 package com.therecommerce.workmap.project.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
@@ -13,9 +15,12 @@ import java.util.List;
  * 유형은 template_id(project_template) 참조(enum 아님, BIZ-107). 생성 시 템플릿에서
  * active_tabs/workflow_id 를 복사한다. key는 work_item key 접두이며 UNIQUE.
  * visibility=PRIVATE 는 멤버만 조회 가능(BIZ-108).
+ * MyBatis setter 매핑 안전을 위해 no-arg/all-arg 생성자 부여(CR-008 규칙).
  */
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Project {
 
