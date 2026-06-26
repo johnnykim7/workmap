@@ -270,6 +270,23 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-26, 중규모 결정 + 스냅샷 적재=이벤트+일별 스케줄러 결정) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-26
 
+### CR-013 — FE Sprint 4 화면 1차: 보드(칸반/스크럼) + 백로그
+
+- **변경 타입**: 신규 | **영향도**: Medium
+- **배경**: BE는 Phase1+P2(CR-012 포함)까지 100% 완료·운영 E2E 끝. 남은 작업은 FE 전부. FE를 BE Sprint 분할과 동일하게 Sprint 단위로 진행(StubPage `sprint=` 태그 내장)하기로 한 결정(2026-06-27)에 따라, Sprint 4 화면 중 **보드·백로그** 2종을 먼저 구현. T3-3 §보드(L148)·§백로그(L137)가 이미 v0.4로 확정돼 있어 **설계 캐스케이드 불필요(구현만)**. 사용자 결정(2026-06-27): 중규모·풀 DnD(@dnd-kit)·실 BE 직접 연동.
+- **변경 내용(FE)**:
+  - **신규 의존성**: `@dnd-kit/core·sortable·utilities`(보드/백로그 드래그앤드롭).
+  - **신규 feature `board`**: `api.ts`(GET `/projects/{id}/board`, PATCH `/work-items/{id}/status`) + `hooks.ts`(`useBoard`, `useChangeStatus` — **낙관적 업데이트 + 서버 권위 롤백** T1-5 UI FSM, 순수 reducer `moveCard` 분리) + composite `WorkItemCard`·`DraggableCard`·`KanbanColumn`·`KanbanBoard`·`BlockReasonDialog`.
+  - **신규 feature `agile`**: `api.ts`(GET `/projects/{id}/backlog`·`/sprints`, POST `/sprints`·`/sprints/{id}/start`·`/complete`, PATCH `/work-items/{id}/sprint`) + `hooks.ts`(`useBacklog`·`useCreateSprint`·`useStartSprint`·`useCompleteSprint`·`useChangeItemSprint` — 낙관적+롤백, 순수 reducer `moveItem` + 카운트 재계산) + composite `BacklogRow`·`SprintHeader`·`SprintSection`·`CreateSprintDialog`.
+  - **화면 구현**: `pages/project/BoardView.tsx`(StubPage→실구현, 드래그로 상태 전이, **BLOCKED 드롭 시 차단 사유 모달 먼저** BIZ-005, 스켈레톤·EmptyState·에러 처리), `pages/project/BacklogView.tsx`(다중 스프린트 + 백로그 공존, 드래그로 스프린트↔백로그 이동, 스프린트 만들기/시작/완료, 앞 스프린트 ACTIVE면 시작 비활성).
+  - **공통 보강**: `types/domain.ts`에 `WorkItemResponse`(BE 실 계약)·`Sprint`·`isWorkItemDelayed` 추가, `components/common/skeletons.tsx`에 `BoardSkeleton`·`BacklogSkeleton`, `features/members/use-assignee-name.ts`(assigneeId→이름 해소).
+  - **UI 규칙 준수(CLAUDE.md)**: ds-ui만 사용(네이티브 위젯 0 — 날짜는 `DatePicker`+RHF Controller, 확인은 `ConfirmDialog`/`Dialog`, 사유 입력은 `Textarea`), 색 절제(상태/우선순위/막힘 신호에만), 버튼 variant 고정(생성=primary·완료=secondary·취소=ghost), 로딩=스켈레톤, 공통 컴포넌트 재사용.
+- **스키마/BE**: 무변경(기존 BE 계약 그대로 소비).
+- **검증**: `tsc -b` PASS, `pnpm build`(tsc+vite) PASS, vitest 26/26 PASS(신규 reducer 단위테스트 11개 — `moveCard` 6·`moveItem` 5 포함). **실 BE E2E(8186 bootRun, 로컬 PG 5432) 완료**: 보드/백로그 응답 형태 일치, 작업항목 생성→상태 PATCH(TODO→IN_PROGRESS) 반영, 스프린트 생성(FUTURE)→항목 담기(storyPointsSum 계산)→시작(ACTIVE, board.sprintId 스코프 전환)→완료(carriedOverCount=1 백로그 이월) 전 흐름 확인, 테스트 데이터 원복.
+- **영향 설계서**: 없음(T3-3 기존 §보드·§백로그 그대로 구현, 캐스케이드 불필요).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·풀 DnD·실 BE 결정) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

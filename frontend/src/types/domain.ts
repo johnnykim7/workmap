@@ -198,6 +198,49 @@ export interface ProjectSummary {
   progress: number;
 }
 
+// BE WorkItemDtos.Response 그대로 (T3-2 §F). 보드/백로그 카드·통합목록이 받는 실 계약.
+// 주의: 아래 WorkItem(목 도메인)과 달리 assigneeId/statusId 기반(이름·키 비정규화 없음).
+// 담당자 이름은 멤버 목록에서 assigneeId로 해소한다.
+export interface WorkItemResponse {
+  id: number;
+  key: string;
+  projectId: number;
+  issueType: IssueType;
+  parentId?: number | null;
+  epicId?: number | null;
+  title: string;
+  description?: string | null;
+  workflowId?: number | null;
+  statusId?: number | null;
+  commonStatus: WorkStatus;
+  priority: Priority;
+  assigneeId?: number | null;
+  reporterId?: number | null;
+  sprintId?: number | null;
+  storyPoints?: number | null;
+  estimateHours?: number | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  progress: number;
+  blockReason?: string | null;
+  measureUnitId?: number | null;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  labels?: string[] | null;
+  completedAt?: string | null;
+  createdBy?: number | null;
+  createdAt?: string | null;
+}
+
+// 기한 경과(미완료) 판정 — BE는 isDelayed를 안 주므로 클라에서 계산.
+export function isWorkItemDelayed(w: Pick<WorkItemResponse, 'dueDate' | 'commonStatus'>): boolean {
+  if (!w.dueDate) return false;
+  if (w.commonStatus === 'DONE' || w.commonStatus === 'OPS_APPLIED') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(w.dueDate) < today;
+}
+
 // work_item — Epic/Story/Task/Bug/Sub-task 통합 단일 엔티티 (BIZ-014/015)
 export interface WorkItem {
   id: number;
@@ -217,4 +260,26 @@ export interface WorkItem {
   isDelayed?: boolean;
   blockReason?: string;
   description?: string;
+}
+
+// ───────────────────────── 스프린트 (애자일, WMP-AGL) ─────────────────────────
+// BE SprintDtos.Response 그대로. status FSM: FUTURE→ACTIVE→COMPLETED (T1-5).
+export type SprintStatus = 'FUTURE' | 'ACTIVE' | 'COMPLETED';
+export const SPRINT_STATUS_LABEL: Record<SprintStatus, string> = {
+  FUTURE: '예정',
+  ACTIVE: '진행 중',
+  COMPLETED: '완료',
+};
+
+export interface Sprint {
+  id: number;
+  projectId: number;
+  name: string;
+  goal?: string | null;
+  status: SprintStatus;
+  startDate?: string | null;
+  endDate?: string | null;
+  sortOrder?: number | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
 }

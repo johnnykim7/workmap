@@ -26,6 +26,53 @@ export function ProjectCardGridSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
+/** 칸반 보드 스켈레톤 — 컬럼 3개 + 카드 placeholder(실제 레이아웃 골격) */
+export function BoardSkeleton({ columns = 3 }: { columns?: number }) {
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {Array.from({ length: columns }).map((_, c) => (
+        <div key={c} className="flex w-72 shrink-0 flex-col gap-2 rounded-lg bg-muted/40 p-2">
+          <div className="flex items-center justify-between px-1 py-1">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="size-5 rounded-full" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-md border border-border bg-card p-2.5">
+              <Skeleton className="mb-2 h-3 w-12" />
+              <Skeleton className="mb-2 h-4 w-full" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 백로그 스켈레톤 — 스프린트 헤더 + 항목 행 placeholder */
+export function BacklogSkeleton({ sections = 2 }: { sections?: number }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {Array.from({ length: sections }).map((_, s) => (
+        <div key={s} className="rounded-md border border-border">
+          <div className="flex items-center gap-3 rounded-t-md bg-muted/60 px-3 py-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="ml-auto h-7 w-24 rounded" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2 border-b border-border px-2 py-2 last:border-b-0">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="size-6 rounded-full" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** 멤버 목록 행 스켈레톤 */
 export function MemberRowsSkeleton({ count = 4 }: { count?: number }) {
   return (
