@@ -5,6 +5,7 @@ import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
 import java.util.List;
@@ -12,10 +13,12 @@ import java.util.List;
 /**
  * 공통 빈. Clock은 시간 의존 로직(completed_at, status_changed_at, 측정 갱신 시각)을
  * 테스트에서 Mock하기 위해 주입한다(T3-5 Clock Mock 전략).
- * @EnableAsync — 알림 유발 이벤트의 AFTER_COMMIT 비동기 리스너(@Async) 활성화(T1-6).
+ * @EnableAsync — 알림/번다운 유발 이벤트의 AFTER_COMMIT 비동기 리스너(@Async) 활성화(T1-6).
+ * @EnableScheduling — 번다운 일별 스냅샷 배치(@Scheduled) 활성화(CR-012, WMP-AGL-006).
  */
 @Configuration
 @EnableAsync
+@EnableScheduling
 public class AppConfig {
 
     @Bean

@@ -77,7 +77,14 @@ public enum WmpErrorCode implements ErrorCode {
     ISSUE_TYPE_CODE_DUPLICATED("WMP-7796", "이미 사용 중인 업무 유형 코드입니다.", HttpStatus.CONFLICT),
 
     // 양식 빌더 (7797~, WMP-ADM-005)
-    FORM_NOT_FOUND("WMP-7797", "양식을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+    FORM_NOT_FOUND("WMP-7797", "양식을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
+    // Phase 2 잔여 3종 (7798~, CR-012)
+    SPRINT_NOT_STARTED("WMP-7798", "아직 시작되지 않은 스프린트의 번다운은 조회할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    FIELD_VERIFICATION_NOT_FOUND("WMP-7799", "현장검증 기록을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    FIELD_VERIFICATION_RESULT_INVALID("WMP-7800", "검증 결과는 PASS/FAIL/PARTIAL 중 하나여야 합니다.", HttpStatus.BAD_REQUEST),
+    SAVED_FILTER_NOT_FOUND("WMP-7801", "저장 필터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    SAVED_FILTER_FORBIDDEN("WMP-7802", "본인이 만든 저장 필터만 수정·삭제할 수 있습니다.", HttpStatus.FORBIDDEN);
 
     private final String code;
     private final String message;

@@ -43,6 +43,12 @@
         LIMIT 1
     </select>
 
+    <select id="findAllActive" resultMap="sprintMap">
+        SELECT * FROM sprints
+        WHERE status = 'ACTIVE'
+        ORDER BY id ASC
+    </select>
+
     <update id="updateStart" parameterType="com.therecommerce.workmap.agile.domain.Sprint">
         UPDATE sprints
         SET status     = 'ACTIVE',

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.burndown.mapper.BurndownMapper">
+
+    <resultMap id="snapshotMap" type="com.therecommerce.workmap.burndown.domain.BurndownSnapshot">
+        <id     property="id"               column="id"/>
+        <result property="sprintId"         column="sprint_id"/>
+        <result property="snapshotDate"     column="snapshot_date"/>
+        <result property="remainingPoints"  column="remaining_points"/>
+        <result property="completedPoints"  column="completed_points"/>
+        <result property="totalPoints"      column="total_points"/>
+        <result property="snapshotType"     column="snapshot_type"/>
+        <result property="createdAt"        column="created_at"/>
+    </resultMap>
+
+    <!-- 같은 (sprint_id, snapshot_date)면 갱신(멱등). 같은 날 DAILY 재실행/START·COMPLETE 겹침 대응 -->
+    <insert id="upsert">
+        INSERT INTO burndown_snapshots
+            (sprint_id, snapshot_date, remaining_points, completed_points, total_points, snapshot_type)
+        VALUES
+            (#{sprintId}, #{snapshotDate}, #{remainingPoints}, #{completedPoints}, #{totalPoints}, #{snapshotType})
+        ON CONFLICT (sprint_id, snapshot_date) DO UPDATE SET
+            remaining_points = EXCLUDED.remaining_points,
+            completed_points = EXCLUDED.completed_points,
+            total_points     = EXCLUDED.total_points,
+            snapshot_type    = EXCLUDED.snapshot_type
+    </insert>
+
+    <select id="findBySprint" resultMap="snapshotMap">
+        SELECT * FROM burndown_snapshots
+        WHERE sprint_id = #{sprintId}
+        ORDER BY snapshot_date ASC, id ASC
+    </select>
+
+    <!-- 벨로시티: 프로젝트의 완료 스프린트별 COMPLETE 스냅샷(스프린트당 1행) -->
+    <select id="findCompletedByProject" resultMap="snapshotMap">
+        SELECT bs.* FROM burndown_snapshots bs
+        JOIN sprints s ON s.id = bs.sprint_id
+        WHERE s.project_id = #{projectId}
+          AND bs.snapshot_type = 'COMPLETE'
+        ORDER BY s.sort_order ASC, bs.snapshot_date ASC
+    </select>
+
+</mapper>

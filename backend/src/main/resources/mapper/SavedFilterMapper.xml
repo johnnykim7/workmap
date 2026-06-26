@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.view.mapper.SavedFilterMapper">
+
+    <resultMap id="filterMap" type="com.therecommerce.workmap.view.domain.SavedFilter">
+        <id     property="id"        column="id"/>
+        <result property="ownerId"   column="owner_id"/>
+        <result property="name"      column="name"/>
+        <result property="query"     column="query"/>
+        <result property="shared"    column="is_shared"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- query는 JSONB 원본 String 패스스루(JDBC stringtype=unspecified, forms.fields와 동일) -->
+    <insert id="insert" parameterType="com.therecommerce.workmap.view.domain.SavedFilter"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO saved_filters (owner_id, name, query, is_shared)
+        VALUES (#{ownerId}, #{name}, #{query}, #{shared})
+    </insert>
+
+    <select id="findById" resultMap="filterMap">
+        SELECT * FROM saved_filters WHERE id = #{id}
+    </select>
+
+    <!-- 내 것 + 공유된 것 -->
+    <select id="findVisible" resultMap="filterMap">
+        SELECT * FROM saved_filters
+        WHERE owner_id = #{viewerId} OR is_shared = true
+        ORDER BY name ASC, id ASC
+    </select>
+
+    <update id="update" parameterType="com.therecommerce.workmap.view.domain.SavedFilter">
+        UPDATE saved_filters
+        SET name      = #{name},
+            query     = #{query},
+            is_shared = #{shared}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM saved_filters WHERE id = #{id}
+    </delete>
+
+</mapper>

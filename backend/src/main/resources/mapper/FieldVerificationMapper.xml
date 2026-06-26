@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.ops.mapper.FieldVerificationMapper">
+
+    <resultMap id="verifMap" type="com.therecommerce.workmap.ops.domain.FieldVerification">
+        <id     property="id"           column="id"/>
+        <result property="workItemId"   column="work_item_id"/>
+        <result property="verifier"     column="verifier"/>
+        <result property="verifiedDate" column="verified_date"/>
+        <result property="location"     column="location"/>
+        <result property="environment"  column="environment"/>
+        <result property="testContent"  column="test_content"/>
+        <result property="result"       column="result"/>
+        <result property="issuesFound"  column="issues_found"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.ops.domain.FieldVerification"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO field_verifications
+            (work_item_id, verifier, verified_date, location, environment, test_content, result, issues_found)
+        VALUES
+            (#{workItemId}, #{verifier}, #{verifiedDate}, #{location}, #{environment},
+             #{testContent}, #{result}, #{issuesFound})
+    </insert>
+
+    <select id="findById" resultMap="verifMap">
+        SELECT * FROM field_verifications WHERE id = #{id}
+    </select>
+
+    <select id="findByWorkItem" resultMap="verifMap">
+        SELECT * FROM field_verifications
+        WHERE work_item_id = #{workItemId}
+        ORDER BY verified_date DESC, id DESC
+    </select>
+
+</mapper>

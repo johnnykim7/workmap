@@ -62,6 +62,9 @@ class UserControllerTest {
     @MockBean com.therecommerce.workmap.admin.mapper.IssueTypeMapper issueTypeMapper;
     @MockBean com.therecommerce.workmap.admin.mapper.FormMapper formMapper;
     @MockBean com.therecommerce.workmap.view.mapper.ViewMapper viewMapper;
+    @MockBean com.therecommerce.workmap.view.mapper.SavedFilterMapper savedFilterMapper;
+    @MockBean com.therecommerce.workmap.burndown.mapper.BurndownMapper burndownMapper;
+    @MockBean com.therecommerce.workmap.ops.mapper.FieldVerificationMapper fieldVerificationMapper;
 
     @Test
     @WithMockUser(roles = "ADMIN")

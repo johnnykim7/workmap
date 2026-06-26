@@ -65,6 +65,9 @@ class ProjectControllerTest {
     @MockBean com.therecommerce.workmap.admin.mapper.IssueTypeMapper issueTypeMapper;
     @MockBean com.therecommerce.workmap.admin.mapper.FormMapper formMapper;
     @MockBean com.therecommerce.workmap.view.mapper.ViewMapper viewMapper;
+    @MockBean com.therecommerce.workmap.view.mapper.SavedFilterMapper savedFilterMapper;
+    @MockBean com.therecommerce.workmap.burndown.mapper.BurndownMapper burndownMapper;
+    @MockBean com.therecommerce.workmap.ops.mapper.FieldVerificationMapper fieldVerificationMapper;
 
     @Test
     @DisplayName("C-PRJ: POST /projects 201 + id + active_tabs 템플릿 복사")

@@ -20,6 +20,9 @@ public interface SprintMapper {
     /** 프로젝트의 ACTIVE 스프린트(없으면 null) — 동시 ACTIVE 1개 보장 검증용. */
     Sprint findActiveByProject(@Param("projectId") Long projectId);
 
+    /** 전 프로젝트의 ACTIVE 스프린트 목록 — 번다운 일별 스냅샷 배치용(CR-012). */
+    List<Sprint> findAllActive();
+
     /** 시작: status/기간/started_at 고정. */
     void updateStart(Sprint sprint);
 
