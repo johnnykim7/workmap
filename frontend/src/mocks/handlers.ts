@@ -60,6 +60,14 @@ const pageOf = <T>(arr: T[], page: number, size: number) => ({
   page, pageSize: size, totalPages: Math.max(1, Math.ceil(arr.length / size)),
 });
 
+// ── 받은함(§받은함) dev 미러용 mock 알림. recipientId=수신자(currentUser와 매칭). ──
+const seedInbox = [
+  { id: 701, recipientId: 1, type: 'ASSIGNED', workItemId: 901, message: '업무가 배정되었습니다.', isRead: false, createdAt: '2026-06-27T09:10:00Z' },
+  { id: 702, recipientId: 1, type: 'BLOCKED', workItemId: 902, message: '업무가 막혔습니다: 디자인 확정 대기', isRead: false, createdAt: '2026-06-27T08:40:00Z' },
+  { id: 703, recipientId: 1, type: 'MENTIONED', workItemId: 905, message: '댓글에서 언급되었습니다.', isRead: true, createdAt: '2026-06-26T17:20:00Z' },
+];
+let inboxNotis = seedInbox.map((n) => ({ ...n }));
+
 export const handlers = [
   // ── A. 인증 ──
   http.post(`${BASE}/auth/login`, async ({ request }) => {
@@ -234,6 +242,36 @@ export const handlers = [
     const url = new URL(request.url);
     return ok(pageOf(pickDash('unassigned'), Number(url.searchParams.get('page') ?? 0), Number(url.searchParams.get('size') ?? 20)));
   }),
+
+  // 업무 단건(받은함 알림 클릭 시 workItemId→key 해소). dev 미러는 dashItems 기준.
+  http.get(`${BASE}/work-items/:id`, ({ request, params }) => {
+    if (!currentUser(request)) return fail(401, 'WMP-7700', '인증이 필요합니다.');
+    const wi = dashItems.find((w) => w.id === Number(params.id));
+    if (!wi) return fail(404, 'WMP-7730', '업무를 찾을 수 없습니다.');
+    return ok(wi);
+  }),
+
+  // ── H. 받은함/알림(§받은함, WMP-NOTI-001) ──
+  http.get(`${BASE}/inbox`, ({ request }) => {
+    const me = currentUser(request);
+    if (!me) return fail(401, 'WMP-7700', '인증이 필요합니다.');
+    const url = new URL(request.url);
+    const isReadRaw = url.searchParams.get('isRead');
+    let mine = inboxNotis.filter((n) => n.recipientId === me.id);
+    if (isReadRaw != null) mine = mine.filter((n) => n.isRead === (isReadRaw === 'true'));
+    const page = Number(url.searchParams.get('page') ?? 0);
+    const size = Number(url.searchParams.get('size') ?? 20);
+    const unreadCount = inboxNotis.filter((n) => n.recipientId === me.id && !n.isRead).length;
+    return ok({ notifications: pageOf(mine, page, size), unreadCount });
+  }),
+  http.patch(`${BASE}/notifications/:id/read`, ({ request, params }) => {
+    const me = currentUser(request);
+    if (!me) return fail(401, 'WMP-7700', '인증이 필요합니다.');
+    const n = inboxNotis.find((x) => x.id === Number(params.id) && x.recipientId === me.id);
+    if (!n) return fail(404, 'WMP-7731', '알림을 찾을 수 없습니다.');
+    n.isRead = true;
+    return ok(null);
+  }),
 ];
 
 export function __resetMockState() {
@@ -241,4 +279,5 @@ export function __resetMockState() {
   projects = [...seedProjects];
   members = [...seedMembers];
   projectSeq = projects.length;
+  inboxNotis = seedInbox.map((n) => ({ ...n }));
 }

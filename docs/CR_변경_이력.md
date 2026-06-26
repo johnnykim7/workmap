@@ -350,6 +350,23 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 소규모·BE 무변경) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
 
+### CR-018 — FE Sprint 5 2차: 받은함(§받은함) 알림·멘션·배정 통합
+
+- **변경 타입**: 신규 | **영향도**: Low
+- **배경**: Sprint 5 2차. `/inbox`(받은함)가 StubPage였음. T3-3 §받은함 이미 v0.4 확정 → **설계 캐스케이드 불필요(구현만)**. BE `InboxController`(`GET /inbox` = 목록+안읽음 배지 통합, CR-011) + `NotificationController`(`PATCH /notifications/{id}/read`, CR-009) 이미 구현·운영. 사용자 결정(2026-06-27): **소규모·BE 무변경**. LNB 두 번째 진입점.
+- **변경 내용(FE)**:
+  - **신규 feature `inbox`**: `api.ts`(GET `/inbox`(isRead 필터·페이징, InboxResponse=notifications+unreadCount), PATCH `/notifications/{id}/read`) + `hooks.ts`(`useInbox(filter,page)`, `useMarkRead` — 낙관적 isRead=true·배지-1, 실패 롤백+토스트, 성공/실패 모두 `['inbox']` invalidate).
+  - **신규 composite**: `NotificationRow`(유형 아이콘·색 신호 — ASSIGNED=파랑·BLOCKED=빨강·MENTIONED=보라, 안읽음 점+진한 톤, 메시지+시각, 읽음 버튼. 클릭 시 workItemId→단건 조회(`workItemApi.get`)로 key 해소 후 `/work-items/{key}` 이동 — 알림은 workItemId만 보유).
+  - **화면 구현**: `pages/InboxPage.tsx`(StubPage→실구현). 헤더 안읽음 배지 + 필터 토글(전체/안읽음) + 알림 목록 + 페이징. 로딩=Skeleton, 빈 상태=EmptyState.
+  - **MSW**: `/inbox`·`/notifications/{id}/read`·`/work-items/{id}` 단건(알림 클릭 이동용) 핸들러 + mock 알림 3종(seedInbox, `__resetMockState`에 리셋 추가).
+  - **UI 규칙 준수(CLAUDE.md)**: 색 절제(유형 신호만), 로딩=Skeleton, 네이티브 위젯 0, 토글/페이저 관용구 일치(ApprovalsView/ListView).
+  - **범위 밖(차기 CR)**: LNB 받은함 메뉴의 안읽음 배지 — AppShell `MENU` 정적 상수 동적화 필요하여 별도 CR. 본 CR은 받은함 화면 내 배지만.
+- **스키마/BE**: 무변경(기존 받은함·알림 계약 소비).
+- **검증**: `tsc --noEmit` PASS, `pnpm build` PASS, vitest 45/45 PASS(신규 inbox 계약 5개 포함). 라우트(`/inbox`)·LNB 연결·런타임 빌드 확인. 운영 적용=`./deploy.sh fe`.
+- **영향 설계서**: 없음(T3-3 §받은함 그대로 구현).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 소규모·BE 무변경·승인 생략 진행) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---
