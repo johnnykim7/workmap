@@ -35,11 +35,11 @@ export function HomePage() {
       {/* 막힘/지연/미배정 패널(WMP-HOME-002) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <DashboardListPanel kind="blocked" title="막힌 업무" tone="red"
-          icon={<Ban className="size-4 text-red-500" />} />
+          icon={<Ban className="size-4 text-red-500" />} quickHref="/search?quick=blocked" />
         <DashboardListPanel kind="delayed" title="지연 업무" tone="amber"
           icon={<Clock className="size-4 text-amber-500" />} />
         <DashboardListPanel kind="unassigned" title="미배정 업무" tone="amber"
-          icon={<UserX className="size-4 text-amber-500" />} />
+          icon={<UserX className="size-4 text-amber-500" />} quickHref="/search?quick=unassigned" />
       </div>
     </div>
   );

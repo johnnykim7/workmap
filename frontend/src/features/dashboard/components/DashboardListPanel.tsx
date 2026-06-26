@@ -1,6 +1,7 @@
 // 회사홈 막힘/지연/미배정 패널(§9.2) — 상위 N건 미리보기 + 건수 배지.
 // 로딩=Skeleton, 빈 상태=인라인 안내. 행은 WorkItemMiniRow(클릭→업무 상세).
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Skeleton } from '@therecommerce/ds-ui';
 import { useDashboardList } from '../hooks';
 import type { DashboardListKind } from '../api';
@@ -9,12 +10,13 @@ import { WorkItemMiniRow } from './WorkItemMiniRow';
 const PREVIEW = 5;
 
 export function DashboardListPanel({
-  kind, title, icon, tone,
+  kind, title, icon, tone, quickHref,
 }: {
   kind: DashboardListKind;
   title: string;
   icon: ReactNode;
   tone?: 'red' | 'amber';
+  quickHref?: string; // 있으면 "모두 보기"가 검색(/search?quick=)으로 이동(§9.2 카드→검색)
 }) {
   const { data, isPending, isError } = useDashboardList(kind, PREVIEW);
   const items = data?.items ?? [];
@@ -46,10 +48,19 @@ export function DashboardListPanel({
       ) : (
         <div className="divide-y divide-border">
           {items.map((it) => <WorkItemMiniRow key={it.id} item={it} />)}
-          {total > items.length && (
-            <div className="px-3 py-1.5 text-center text-[11px] text-muted-foreground">
-              외 {total - items.length}건
-            </div>
+          {quickHref ? (
+            <Link
+              to={quickHref}
+              className="block px-3 py-1.5 text-center text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            >
+              {total > items.length ? `외 ${total - items.length}건 — 모두 보기` : '모두 보기'}
+            </Link>
+          ) : (
+            total > items.length && (
+              <div className="px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+                외 {total - items.length}건
+              </div>
+            )
           )}
         </div>
       )}

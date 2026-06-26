@@ -22,6 +22,7 @@
 | CR-010 | P2 BE 구현 — 링크·타임라인/캘린더·업무유형 마스터·양식 빌더(+제출) | 신규 | Medium | v2.0 |
 | CR-011 | 설계 대비 미구현 BE 3종 마감 — 프로젝트 수정·보관 + 받은함 | 신규 | Medium | v2.0 |
 | CR-012 | Phase 2 잔여 BE 3종 — 번다운/번업·벨로시티 + 현장검증 기록 + 저장 필터 | 신규 | Medium | v2.0 |
+| CR-017 | 검색 keyword 범위 확장(설명·댓글) — §13.9 충족 BE 보정 | 설계보정 | Low | v2.0 |
 
 ---
 
@@ -335,6 +336,24 @@
 - **변경 일자**: 2026-06-27
 
 > **참고(2026-06-27 결정)**: CR-013~016(및 이후 FE Sprint 화면)은 **이미 v0.4에 계획·설계 확정된 Sprint를 그대로 구현하는 실행 단계**다. CR(Change Request)은 계획에 없던 변경을 추적하는 체계이므로, 계획된 Sprint 구현에는 CR 번호를 부여하지 않는다(진척은 git 커밋 + CLAUDE.md "현재 진행 상태"로 기록). CR-013~016은 이 결정 전에 부여된 것이며 소급 삭제하지 않고 둔다. 차기 CR 번호는 **설계 개정·계획 외 변경이 실제로 발생할 때** CR-017부터 부여한다.
+
+### CR-017 — 검색 keyword 범위 확장(설명·댓글) — §13.9 충족 BE 보정
+
+- **변경 타입**: 설계보정 | **영향도**: Low
+- **배경**: Sprint 5 검색 화면(`/search`) 구현 중 실측 발견. T3-3 §13.9는 "**제목·설명·댓글** 전체 텍스트 검색"을 명시하나, BE 통합목록 `GET /work-items`의 keyword 절이 **제목·key만** ILIKE 검색([WorkItemMapper.xml searchWhere])했다. 계획된 화면이 요구하는 검색 범위를 BE가 미달 → **계획 외 BE 보정**이라 CR 부여(위 원칙: 설계와 어긋난 보정에만 CR). 사용자 결정(2026-06-27): 설명·댓글까지 풀 구현·소규모.
+  - **실측 정정**: 전사 검색(projectId 미지정)은 BE가 **이미 지원**한다(`SearchParams.projectId`는 `@NotNull` 아님 — `@NotNull`은 별개 record `CreateRequest`. mapper `searchWhere`는 projectId null이면 `visibleProjectIds`(BIZ-108) 전체 검색). 따라서 전사 검색엔 BE 변경 불필요.
+- **변경 내용(BE)**:
+  - `WorkItemMapper.xml` `searchWhere`의 keyword 절을 `title·key·**description** ILIKE + comments(content) **EXISTS** 서브쿼리`로 확장. `search`/`countSearch`가 `searchWhere`를 공유하므로 한 곳 수정으로 목록·카운트 동시 반영. DTO·service·스키마 **무변경**.
+- **변경 내용(FE — 계획된 Sprint 5 검색 화면, CR 대상 아님이나 같은 커밋)**:
+  - 신규 feature `search`: `api.ts`(projectId optional SearchParams + `toQuery`), `hooks.ts`(`useSearch`, placeholderData 유지).
+  - `pages/SearchPage.tsx`(StubPage→실구현): 검색 바 + 유형/상태/우선순위 Select + 퀵필터(내 항목/최근 업데이트/막힌 것/미배정) + 결과 표(WorkItemTable 읽기전용 재사용, 전사 담당자 이름은 `GET /users` 전체 맵으로 해소) + 페이징. 회사 홈 카드 도착지(`?quick=blocked|unassigned` 진입 시 퀵필터 선점).
+  - 회사 홈 `DashboardListPanel`에 `quickHref` 추가 → 막힘/미배정 패널 "모두 보기"가 `/search?quick=`로 이동(§9.2 카드→검색 연결, 이전 미연결분 마감).
+  - MSW: `GET /work-items`(검색) 핸들러 추가(dashItems 기반 keyword·필터·페이징).
+- **단위테스트 한계**: keyword mapper SQL은 Testcontainers/실DB 테스트 인프라 부재로 단위검증 불가(기존 전략 — Mapper 테스트는 복잡쿼리만·실DB 없음). FE 계약은 MSW로 5건 PASS. **mapper의 description·댓글 검색은 운영 E2E로 검증 필요**(미수행 — `./deploy.sh be` 후 확인).
+- **검증**: FE `tsc --noEmit` PASS, `pnpm build` PASS, vitest 50/50 PASS(신규 search 계약 5). BE: 컴파일·운영배포는 별도 승인 후. 라우트(`/search`)·헤더 검색버튼·회사홈 연결 확인.
+- **영향 설계서**: 없음(T3-3 §13.9 그대로 충족 — 설계는 원래 제목·설명·댓글을 명시했고 BE가 따라온 것).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 설명·댓글 풀 구현·소규모) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 

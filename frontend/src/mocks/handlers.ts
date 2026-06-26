@@ -243,6 +243,28 @@ export const handlers = [
     return ok(pageOf(pickDash('unassigned'), Number(url.searchParams.get('page') ?? 0), Number(url.searchParams.get('size') ?? 20)));
   }),
 
+  // 통합목록/검색(§9.5·§13.9, GET /work-items). dev 미러는 dashItems 기준 — keyword(제목·key·설명)·필터·페이징.
+  http.get(`${BASE}/work-items`, ({ request }) => {
+    if (!currentUser(request)) return fail(401, 'WMP-7700', '인증이 필요합니다.');
+    const url = new URL(request.url);
+    const kw = (url.searchParams.get('keyword') ?? '').toLowerCase();
+    const issueType = url.searchParams.get('issueType');
+    const commonStatus = url.searchParams.get('commonStatus');
+    const priority = url.searchParams.get('priority');
+    const assigneeId = url.searchParams.get('assigneeId');
+    const projectId = url.searchParams.get('projectId');
+    let rows = dashItems.filter((w) => {
+      if (kw && !(`${w.title} ${w.key}`.toLowerCase().includes(kw))) return false;
+      if (issueType && w.issueType !== issueType) return false;
+      if (commonStatus && w.commonStatus !== commonStatus) return false;
+      if (priority && w.priority !== priority) return false;
+      if (assigneeId && w.assigneeId !== Number(assigneeId)) return false;
+      if (projectId && w.projectId !== Number(projectId)) return false;
+      return true;
+    });
+    return ok(pageOf(rows, Number(url.searchParams.get('page') ?? 0), Number(url.searchParams.get('size') ?? 20)));
+  }),
+
   // 업무 단건(받은함 알림 클릭 시 workItemId→key 해소). dev 미러는 dashItems 기준.
   http.get(`${BASE}/work-items/:id`, ({ request, params }) => {
     if (!currentUser(request)) return fail(401, 'WMP-7700', '인증이 필요합니다.');

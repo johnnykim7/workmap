@@ -252,8 +252,18 @@
         <if test="c.assigneeId != null">AND assignee_id = #{c.assigneeId}</if>
         <if test="c.sprintId != null">AND sprint_id = #{c.sprintId}</if>
         <if test="c.epicId != null">AND epic_id = #{c.epicId}</if>
+        <!-- 전체 텍스트 검색(§13.9): 제목·key·설명 + 댓글(content) EXISTS. -->
         <if test="c.keyword != null and c.keyword != ''">
-            AND (title ILIKE '%' || #{c.keyword} || '%' OR key ILIKE '%' || #{c.keyword} || '%')
+            AND (
+                title ILIKE '%' || #{c.keyword} || '%'
+                OR key ILIKE '%' || #{c.keyword} || '%'
+                OR description ILIKE '%' || #{c.keyword} || '%'
+                OR EXISTS (
+                    SELECT 1 FROM comments cm
+                    WHERE cm.work_item_id = work_items.id
+                      AND cm.content ILIKE '%' || #{c.keyword} || '%'
+                )
+            )
         </if>
     </sql>
 
