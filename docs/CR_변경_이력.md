@@ -334,38 +334,7 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 순서대로 진행) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
 
-### CR-017 — FE Sprint 5 1차: 회사 홈(§9.2) 막힘 중심 대시보드
-
-- **변경 타입**: 신규 | **영향도**: Low
-- **배경**: Sprint 5 진입 1차. `/`(회사 홈)이 StubPage였음. T3-3 §9.2(막힘 중심 대시보드) 이미 v0.4 확정 → **설계 캐스케이드 불필요(구현만)**. BE `DashboardController`(metrics·blocked·delayed·unassigned + `?projectId=` 옵션, 가시성 BIZ-108 BE 처리) 이미 구현·운영(CR-009). 사용자 결정(2026-06-27): **소규모·BE 무변경**. LNB 첫 진입점이라 체감 큼.
-- **변경 내용(FE)**:
-  - **신규 feature `dashboard`**: `api.ts`(GET `/dashboard/metrics`·`/dashboard/{blocked|delayed|unassigned}` — PageResponse, `?projectId=` 옵션) + `hooks.ts`(`useDashboardMetrics`, `useDashboardList(kind, size)` — 패널은 상위 5건 미리보기).
-  - **신규 composite(features/dashboard/components)**: `MetricCard`(SummaryView Metric 톤 일치, 신호색만) · `WorkItemMiniRow`(한 줄 미리보기 — 유형/key/제목/막힘사유/우선순위/기한, 지연=빨강, 클릭→`/work-items/{key}`) · `DashboardListPanel`(상위 N건 + 총건수 배지, 로딩=Skeleton, 빈 상태=인라인 안내).
-  - **화면 구현**: `pages/HomePage.tsx`(StubPage→실구현). 상단 지표 카드 5개(진행중·오늘마감·이번주마감·미배정·장기미변경, WMP-HOME-001) + 하단 막힘/지연/미배정 3패널(WMP-HOME-002). 카드 클릭→`/search` 도착지는 SearchPage가 아직 Stub이라 미연결(차기 CR에서 연결).
-  - **MSW**: dev 화면 확인용 `/dashboard/*` 4종 핸들러 + 인라인 mock work_items(막힘2·지연2·미배정2). 실 BE엔 work_items 테이블 존재, 미러는 화면 확인 목적.
-  - **UI 규칙 준수(CLAUDE.md)**: 색 절제(주의 지표·막힘만 amber/red, 본문 중립), div+border 패널 관용구(SummaryView 일치), 로딩=Skeleton, 네이티브 위젯 0.
-- **스키마/BE**: 무변경(기존 대시보드 계약 소비).
-- **검증**: `tsc --noEmit` PASS, `pnpm build` PASS, vitest 40/40 PASS(신규 dashboard 계약 5개 포함). 라우트(`/` index)·LNB 연결·런타임 빌드까지 확인. 운영 적용=`./deploy.sh fe`.
-- **영향 설계서**: 없음(T3-3 §9.2 그대로 구현).
-- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 소규모·BE 무변경) | **적용 버전**: v2.0
-- **변경 일자**: 2026-06-27
-
-### CR-018 — FE Sprint 5 2차: 받은함(§받은함) 알림·멘션·배정 통합
-
-- **변경 타입**: 신규 | **영향도**: Low
-- **배경**: Sprint 5 2차. `/inbox`(받은함)가 StubPage였음. T3-3 §받은함 이미 v0.4 확정 → **설계 캐스케이드 불필요(구현만)**. BE `InboxController`(`GET /inbox` = 목록+안읽음 배지 통합, CR-011) + `NotificationController`(`PATCH /notifications/{id}/read`, CR-009) 이미 구현·운영. 사용자 결정(2026-06-27): **소규모·BE 무변경**. LNB 두 번째 진입점.
-- **변경 내용(FE)**:
-  - **신규 feature `inbox`**: `api.ts`(GET `/inbox`(isRead 필터·페이징, InboxResponse=notifications+unreadCount), PATCH `/notifications/{id}/read`) + `hooks.ts`(`useInbox(filter,page)`, `useMarkRead` — 낙관적 isRead=true·배지-1, 실패 롤백+토스트, 성공/실패 모두 `['inbox']` invalidate).
-  - **신규 composite**: `NotificationRow`(유형 아이콘·색 신호 — ASSIGNED=파랑·BLOCKED=빨강·MENTIONED=보라, 안읽음 점+진한 톤, 메시지+시각, 읽음 버튼. 클릭 시 workItemId→단건 조회(`workItemApi.get`)로 key 해소 후 `/work-items/{key}` 이동 — 알림은 workItemId만 보유).
-  - **화면 구현**: `pages/InboxPage.tsx`(StubPage→실구현). 헤더 안읽음 배지 + 필터 토글(전체/안읽음) + 알림 목록 + 페이징. 로딩=Skeleton, 빈 상태=EmptyState.
-  - **MSW**: `/inbox`·`/notifications/{id}/read`·`/work-items/{id}` 단건(알림 클릭 이동용) 핸들러 + mock 알림 3종(seedInbox, `__resetMockState`에 리셋 추가).
-  - **UI 규칙 준수(CLAUDE.md)**: 색 절제(유형 신호만), 로딩=Skeleton, 네이티브 위젯 0, 토글/페이저 관용구 일치(ApprovalsView/ListView).
-  - **범위 밖(차기 CR)**: LNB 받은함 메뉴의 안읽음 배지 — AppShell `MENU` 정적 상수 동적화 필요하여 별도 CR. 본 CR은 받은함 화면 내 배지만.
-- **스키마/BE**: 무변경(기존 받은함·알림 계약 소비).
-- **검증**: `tsc --noEmit` PASS, `pnpm build` PASS, vitest 45/45 PASS(신규 inbox 계약 5개 포함). 라우트(`/inbox`)·LNB 연결·런타임 빌드 확인. 운영 적용=`./deploy.sh fe`.
-- **영향 설계서**: 없음(T3-3 §받은함 그대로 구현).
-- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 소규모·BE 무변경·승인 생략 진행) | **적용 버전**: v2.0
-- **변경 일자**: 2026-06-27
+> **참고(2026-06-27 결정)**: CR-013~016(및 이후 FE Sprint 화면)은 **이미 v0.4에 계획·설계 확정된 Sprint를 그대로 구현하는 실행 단계**다. CR(Change Request)은 계획에 없던 변경을 추적하는 체계이므로, 계획된 Sprint 구현에는 CR 번호를 부여하지 않는다(진척은 git 커밋 + CLAUDE.md "현재 진행 상태"로 기록). CR-013~016은 이 결정 전에 부여된 것이며 소급 삭제하지 않고 둔다. 차기 CR 번호는 **설계 개정·계획 외 변경이 실제로 발생할 때** CR-017부터 부여한다.
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
