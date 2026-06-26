@@ -11,6 +11,7 @@ import { CommentThread } from './CommentThread';
 import { ActivityFeed } from './ActivityFeed';
 import { ApprovalBanner } from './ApprovalBanner';
 import { FieldVerifications } from '@/features/ops/components/FieldVerifications';
+import { PromoteToBacklog } from '@/features/ops/components/PromoteToBacklog';
 
 // 운영형(접수·처리·현장) 워크플로 상태 — 현장검증 섹션 노출 신호(WMP-OPS-004).
 const OPS_STATUSES = new Set<WorkStatus>([
@@ -35,6 +36,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
       <LinkedItems item={item} addRef={addLinkRef} />
       {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
+      {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
       <CommentThread item={item} />
       <ActivityFeed item={item} />
     </div>

@@ -89,4 +89,37 @@ describe('P2 API 계약', () => {
     expect(last().url).toContain('/admin/forms?');
     expect(last().url).toContain('projectId=5');
   });
+
+  it('업무유형_생성_POST_code·depth바디', async () => {
+    await adminApi.issueTypes.create({ code: 'INCIDENT', label: '장애', depth: 1 });
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/admin\/issue-types$/);
+    expect(last().body).toMatchObject({ code: 'INCIDENT', depth: 1 });
+  });
+
+  it('업무유형_수정_PUT_id경로', async () => {
+    await adminApi.issueTypes.update(4, { code: 'INCIDENT', label: '장애', depth: 1 });
+    expect(last().method).toBe('PUT');
+    expect(last().url).toMatch(/\/admin\/issue-types\/4$/);
+  });
+
+  it('처리량_GET_from·to쿼리', async () => {
+    await opsApi.throughput(7, '2026-06-01', '2026-06-27');
+    expect(last().method).toBe('GET');
+    expect(last().url).toContain('/projects/7/throughput?');
+    expect(last().url).toContain('from=2026-06-01');
+    expect(last().url).toContain('to=2026-06-27');
+  });
+
+  it('처리량_기간미지정_쿼리없음', async () => {
+    await opsApi.throughput(7);
+    expect(last().url).toMatch(/\/projects\/7\/throughput$/);
+  });
+
+  it('백로그전환_POST_targetProject·issueType바디', async () => {
+    await opsApi.promoteToBacklog(50, { targetProjectId: 9, issueType: 'STORY', title: 'x' });
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/work-items\/50\/promote-to-backlog$/);
+    expect(last().body).toMatchObject({ targetProjectId: 9, issueType: 'STORY' });
+  });
 });

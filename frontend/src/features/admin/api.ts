@@ -83,6 +83,26 @@ export interface WorkflowTransitionRequest {
   toStatusId: number;
 }
 
+// ───────────────────────── 업무 유형 마스터 (WMP-ADM-004) ─────────────────────────
+export interface IssueTypeMasterResponse {
+  id: number;
+  code: string;
+  label: string;
+  depth: number;          // 0~2 계층(BIZ-103)
+  color: string | null;
+  icon: string | null;
+  isSystem: boolean;
+  sortOrder: number;
+}
+export interface IssueTypeMasterRequest {
+  code: string;           // 생성 시만 사용(update는 식별자라 무시)
+  label: string;
+  depth: number;
+  color?: string | null;
+  icon?: string | null;
+  sortOrder?: number | null;
+}
+
 // ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
 export interface FormResponse {
   id: number;
@@ -161,6 +181,16 @@ export const adminApi = {
       api.post<WorkflowTransitionResponse>(`/admin/workflows/${id}/transitions`, body),
     removeTransition: (id: number, transitionId: number) =>
       api.delete<void>(`/admin/workflows/${id}/transitions/${transitionId}`),
+  },
+  // 업무 유형 마스터 (WMP-ADM-004)
+  issueTypes: {
+    list: (page = 0, size = 20) =>
+      api.get<PageResponse<IssueTypeMasterResponse>>(`/admin/issue-types?${pageQs(page, size)}`),
+    create: (body: IssueTypeMasterRequest) =>
+      api.post<IssueTypeMasterResponse>('/admin/issue-types', body),
+    update: (id: number, body: IssueTypeMasterRequest) =>
+      api.put<IssueTypeMasterResponse>(`/admin/issue-types/${id}`, body),
+    remove: (id: number) => api.delete<void>(`/admin/issue-types/${id}`),
   },
   // 양식 빌더 (WMP-ADM-005)
   forms: {

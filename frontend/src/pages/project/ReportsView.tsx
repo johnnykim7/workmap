@@ -11,6 +11,7 @@ import { useProjectByKey } from '@/features/projects/hooks';
 import { useProjectReport } from '@/features/dashboard/hooks';
 import { useSprints } from '@/features/agile/hooks';
 import { useBurndown, useVelocity } from '@/features/burndown/hooks';
+import { useThroughput } from '@/features/ops/hooks';
 import { BurndownChart } from '@/features/burndown/components/BurndownChart';
 import { VelocityChart } from '@/features/burndown/components/VelocityChart';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
@@ -40,6 +41,9 @@ export function ReportsView() {
   const { data: burndown } = useBurndown(effectiveSprintId);
   const { data: velocity } = useVelocity(projectId);
   const sprintName = (id: number) => sprints.find((s) => s.id === id)?.name;
+
+  // P2 처리량(WMP-OPS-002) — 전체 기간(from/to 미지정) 담당자별 완료 건수.
+  const { data: throughput } = useThroughput(projectId);
 
   if (projectPending || (projectId && isPending && !report)) {
     return (
@@ -113,6 +117,16 @@ export function ReportsView() {
           title="담당자 부하"
           items={report.byAssignee}
           labelOf={assigneeLabel}
+        />
+        {/* 처리량(WMP-OPS-002): 담당자별 완료 건수 */}
+        <DistributionBars
+          title={`처리량 (완료 ${throughput?.totalDone ?? 0}건)`}
+          items={(throughput?.byAssignee ?? []).map((a) => ({
+            key: a.assigneeId != null ? String(a.assigneeId) : '0',
+            count: a.doneCount,
+          }))}
+          labelOf={assigneeLabel}
+          emptyText="완료 이력 없음"
         />
       </div>
 

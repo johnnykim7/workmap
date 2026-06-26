@@ -26,6 +26,7 @@ export const ROUTES = {
     measureUnits: '/admin/measure-units',
     fieldSchemes: '/admin/field-schemes',
     workflows: '/admin/workflows',
+    issueTypes: '/admin/issue-types',
     forms: '/admin/forms',
   },
 } as const;

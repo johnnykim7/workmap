@@ -11,6 +11,7 @@ import {
   type WorkflowTransitionRequest,
   type FormRequest,
   type FormSubmitRequest,
+  type IssueTypeMasterRequest,
 } from './api';
 
 const msg = (err: unknown, fallback: string) =>
@@ -157,6 +158,37 @@ export function useWorkflowDetailMutations(workflowId?: number) {
     onError: (e) => toast.error(msg(e, '전이 삭제에 실패했습니다.')),
   });
   return { addStatus, removeStatus, addTransition, removeTransition };
+}
+
+// ───────────────────────── 업무 유형 마스터 (WMP-ADM-004) ─────────────────────────
+export function useIssueTypes(page = 0, size = 20) {
+  return useQuery({
+    queryKey: ['admin', 'issue-types', page],
+    queryFn: () => adminApi.issueTypes.list(page, size),
+  });
+}
+
+export function useIssueTypeMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'issue-types'] });
+
+  const create = useMutation({
+    mutationFn: (body: IssueTypeMasterRequest) => adminApi.issueTypes.create(body),
+    onSuccess: () => { invalidate(); toast.success('업무 유형을 추가했습니다.'); },
+    onError: (e) => toast.error(msg(e, '추가에 실패했습니다.')),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: IssueTypeMasterRequest }) =>
+      adminApi.issueTypes.update(id, body),
+    onSuccess: () => { invalidate(); toast.success('업무 유형을 수정했습니다.'); },
+    onError: (e) => toast.error(msg(e, '수정에 실패했습니다.')),
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => adminApi.issueTypes.remove(id),
+    onSuccess: () => { invalidate(); toast.success('업무 유형을 삭제했습니다.'); },
+    onError: (e) => toast.error(msg(e, '삭제에 실패했습니다.')),
+  });
+  return { create, update, remove };
 }
 
 // ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
