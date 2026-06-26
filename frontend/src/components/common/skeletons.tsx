@@ -116,3 +116,28 @@ export function WorkItemDetailSkeleton() {
     </div>
   );
 }
+
+/** 통합 목록 표 스켈레톤 — 헤더 + 행 8개 회색 바(§9.5) */
+export function WorkListTableSkeleton({ rows = 8 }: { rows?: number }) {
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="flex items-center gap-3 border-b border-border px-3 py-2.5">
+        {['w-6', 'w-12', 'w-20', 'flex-1', 'w-20', 'w-24', 'w-16', 'w-20'].map((w, i) => (
+          <Skeleton key={i} className={`h-4 ${w}`} />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex items-center gap-3 px-3 py-2.5">
+          <Skeleton className="size-4 rounded" />
+          <Skeleton className="h-5 w-12 rounded" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 flex-1" />
+          <Skeleton className="h-5 w-20 rounded" />
+          <Skeleton className="h-5 w-24 rounded-full" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}

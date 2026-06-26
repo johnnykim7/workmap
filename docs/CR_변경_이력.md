@@ -303,6 +303,22 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·핵심 섹션 전부) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-27
 
+### CR-015 — FE 목록 뷰(§9.5): 통합 목록(표) ⇄ 분할뷰
+
+- **변경 타입**: 신규 | **영향도**: Medium
+- **배경**: Sprint4 잔여 화면. `/projects/:key/list`가 StubPage였음. T3-3 §9.5(목록 뷰 — 표/분할 토글)·§9.3(분할 우측 상세) 이미 v0.4 확정 → **설계 캐스케이드 불필요(구현만)**. BE 통합목록 검색·벌크편집 계약 이미 운영 배포(CR-008). 사용자 결정(2026-06-27): 중규모·BE 무변경. 분할뷰 우측은 CR-014에서 만든 §9.3 상세 컴포넌트 재사용.
+- **변경 내용(FE)**:
+  - **workitem feature 확장**: `list-api.ts`(GET `/work-items` 통합목록 검색 — projectId·issueType·commonStatus·priority·assigneeId·sprintId·keyword·sort(createdAt/dueDate/priority/statusChangedAt/updatedAt)·direction·page·size, PATCH `/work-items/bulk` 벌크편집) + `list-hooks.ts`(`useWorkItems` 페이징 검색(placeholderData 유지), `useBulkUpdate` — 성공 시 목록 invalidate·실패 분리 토스트).
+  - **신규 composite(features/workitem/components)**: `WorkItemTable`(ds-ui Table — 선택 체크박스·유형/key/제목/상태/담당자/우선순위/기한 컬럼, 정렬 헤더, 행 클릭) · `WorkListFilterBar`(QuickFilterBar — 유형·상태·우선순위·담당자 Select + SearchInput) · `BulkEditBar`(선택 N건 → 상태/담당자/스프린트/우선순위 일괄, 실패 분리 보고) · `SplitView`(좌 리스트 + 우 §9.3 상세 패널, 리스트 클릭 시 우측 즉시 갱신, 페이지 이동 없음).
+  - **화면 구현**: `pages/project/ListView.tsx`(StubPage→실구현, 우상단 표⇄분할 모드 토글, 페이징·정렬·퀵필터·벌크편집·스켈레톤·EmptyState).
+  - **공통 보강**: `skeletons.tsx` `WorkListTableSkeleton`(표 헤더+행), 분할 우측은 기존 `WorkItemDetailSkeleton` 재사용.
+  - **UI 규칙 준수(CLAUDE.md)**: ds-ui Table/Pagination/Select/Checkbox만(네이티브 위젯 0), 색 절제(상태/우선순위 신호만), 버튼 variant 고정(벌크 적용=primary·취소=ghost), 로딩=스켈레톤, 공통 컴포넌트 재사용.
+- **스키마/BE**: 무변경(기존 통합목록·벌크 계약 그대로 소비).
+- **검증**: `tsc -b` PASS, `pnpm build` PASS, vitest PASS(신규 hook/필터 단위테스트 포함). 운영 적용은 `./deploy.sh fe`.
+- **영향 설계서**: 없음(T3-3 §9.5 그대로 구현).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-27, 중규모·BE 무변경) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-27
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---
