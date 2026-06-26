@@ -121,9 +121,11 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
   - Sprint 5 BE 신규 모듈: `dashboard`(막힘/지연/미배정·지표·프로젝트보고서, 가시성 BIZ-108 필터 + `?projectId=` 옵션), `admin`(측정단위/필드스킴/워크플로 CRUD, `@PreAuthorize` OWNER/ADMIN) + `notification` 수신 조회(GET/PATCH read). 발행은 Sprint 3 기존.
   - **P2 BE 신규(CR-010)**: F1 링크 전체 API(`work-items/{id}/links` GET/POST/DELETE, 양방향 자동 BIZ-109) + `view` 모듈(`projects/{id}/timeline·calendar`, 가시성 가드=대시보드와 동일) + admin 확장 `issue-types`(WMP-ADM-004, 시스템 5종 보호) + `forms` CRUD+제출(WMP-ADM-005, `forms/{id}/submit`은 인증사용자 누구나, WorkItemService.create 위임). 에러코드 7790번대 9종 신규. 스키마 무변경(work_item_links/issue_type/forms 기존).
   - **CR-011 잔여 BE 3종**: `PATCH /projects/{id}`(부분수정 — name/active_tabs/기간/설명, `<set>` 동적 XML, Manager 가드) + `PATCH /projects/{id}/archive`(소프트 보관, FSM 가드 경유 — PLANNING→ARCHIVED 거부) + `GET /inbox`(받은함 = 알림 목록 + 안읽음 배지 통합, NotificationService 재사용 별칭). 신규 매퍼 없음·스키마 무변경·에러코드 신규 없음(기존 재사용). Project 도메인에 `@NoArgsConstructor @AllArgsConstructor` 보강.
-  - 단위테스트 전체 `./gradlew test` PASS(130/130 — CR-011 신규 8개 포함). **런타임 E2E(서버 8186 기동·curl) 완료**: inbox 통합응답·PATCH 부분수정(미전달 필드 보존)·archive FSM 거부/허용 전부 확인. CR-010 E2E는 여전히 미수행.
-- **다음 작업 = FE 구현(Sprint 4 백로그/보드/벌크편집 · Sprint 5 회사홈·관리자·알림 받은함 · P2 타임라인/캘린더·링크·양식빌더 화면). BE는 Phase1 + P2 100% 완료.**
-- 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 feat/SPR-{N} 브랜치에서.
+  - **CR-012 Phase 2 잔여 BE 3종(2026-06-27 완료, 중규모)**: `burndown`(WMP-AGL-006 — `GET /sprints/{id}/burndown`·`GET /projects/{id}/velocity` + **burndown_snapshots 신규 테이블 V3** + 이벤트 리스너(`SprintStarted→START`·`SprintCompleted→COMPLETE`, `@TransactionalEventListener AFTER_COMMIT`+`@Async`) + 일별 스케줄러(`@Scheduled` cron, `@EnableScheduling`)) + `ops` 현장검증(WMP-OPS-004 — `GET·POST /work-items/{id}/field-verifications`, 발견이슈→후속 BUG 생성+양방향 RELATES_TO, 상태전이는 별도 FSM 경유) + `view` 저장필터(WMP-VIEW-004 — `saved-filters` CRUD, query JSONB 패스스루, 수정·삭제 소유자 가드). 에러코드 WMP-7798~7802. 단위테스트 148/148 PASS. **운영 E2E(deploy.sh be) 완료** — 이벤트→스냅샷 적재·벨로시티·후속업무 생성·소유자 가드 전부 운영 검증.
+    - **CR-012 중 발견·수정**: docker-compose.prod.yml `DB_URL`에 `?stringtype=unspecified` 누락(기존 인프라 버그) → active_tabs/saved_filters.query JSONB insert 운영 500. 수정+재배포 완료(커밋 1f36bb8).
+  - 단위테스트 전체 `./gradlew test` PASS(148/148 — CR-011 8개 + CR-012 18개 포함). **런타임 E2E 완료**: CR-011(inbox·PATCH·archive) + CR-012(번다운/현장검증/저장필터 운영 8186). CR-010 E2E는 여전히 미수행.
+- **다음 작업 = FE 구현(Sprint 4 백로그/보드/벌크편집 · Sprint 5 회사홈·관리자·알림 받은함 · P2 타임라인/캘린더·링크·양식빌더·번다운/벨로시티·현장검증·저장필터 화면). BE는 Phase1 + P2(CR-012 포함) 100% 완료.**
+- 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 develop 브랜치(CR-007~012 누적 푸시 완료, 최신 1f36bb8).
 - **착수 시 첫 읽기 순서**: 이 CLAUDE.md → docs/origins/2026-06-23_세션인계_v0.4설계완료_구현착수전.md(직전 세션 인계) → docs/execution-spec.md(§5 Sprint별 가이드) → 해당 Sprint의 T3-1/T3-2/T1-5/T3-5.
 
 ## 참조 문서 (전부 v0.4/CR-006 기준)
