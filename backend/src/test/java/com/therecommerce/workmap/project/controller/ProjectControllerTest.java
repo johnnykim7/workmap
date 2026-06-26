@@ -60,6 +60,10 @@ class ProjectControllerTest {
     @MockBean com.therecommerce.workmap.dashboard.mapper.DashboardMapper dashboardMapper;
     @MockBean com.therecommerce.workmap.admin.mapper.FieldSchemeMapper fieldSchemeMapper;
     @MockBean com.therecommerce.workmap.admin.mapper.AdminWorkflowMapper adminWorkflowMapper;
+    // P2 신규 매퍼(@MapperScan이 슬라이스에도 적용되므로 목으로 대체)
+    @MockBean com.therecommerce.workmap.admin.mapper.IssueTypeMapper issueTypeMapper;
+    @MockBean com.therecommerce.workmap.admin.mapper.FormMapper formMapper;
+    @MockBean com.therecommerce.workmap.view.mapper.ViewMapper viewMapper;
 
     @Test
     @DisplayName("C-PRJ: POST /projects 201 + id + active_tabs 템플릿 복사")

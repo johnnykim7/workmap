@@ -63,7 +63,21 @@ public enum WmpErrorCode implements ErrorCode {
     WORKFLOW_STATUS_IN_USE("WMP-7778", "업무 항목이 사용 중인 상태는 삭제할 수 없습니다.", HttpStatus.CONFLICT),
     WORKFLOW_TRANSITION_NOT_FOUND("WMP-7779", "워크플로 전이를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     WORKFLOW_TRANSITION_DUPLICATED("WMP-7780", "이미 존재하는 전이입니다.", HttpStatus.CONFLICT),
-    WORKFLOW_STATUS_MISMATCH("WMP-7781", "전이의 상태가 해당 워크플로에 속하지 않습니다.", HttpStatus.BAD_REQUEST);
+    WORKFLOW_STATUS_MISMATCH("WMP-7781", "전이의 상태가 해당 워크플로에 속하지 않습니다.", HttpStatus.BAD_REQUEST),
+
+    // 링크 (7790번대, WMP-WI-013, BIZ-109)
+    LINK_SELF_REFERENCE("WMP-7790", "자기 자신과는 링크할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    LINK_NOT_FOUND("WMP-7791", "링크를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    LINK_TYPE_INVALID("WMP-7792", "지원하지 않는 링크 유형입니다.", HttpStatus.BAD_REQUEST),
+
+    // 업무 유형 마스터 (7793~, WMP-ADM-004)
+    ISSUE_TYPE_NOT_FOUND("WMP-7793", "업무 유형을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    ISSUE_TYPE_SYSTEM_PROTECTED("WMP-7794", "시스템 기본 업무 유형은 수정·삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    ISSUE_TYPE_IN_USE("WMP-7795", "사용 중인 업무 유형은 삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    ISSUE_TYPE_CODE_DUPLICATED("WMP-7796", "이미 사용 중인 업무 유형 코드입니다.", HttpStatus.CONFLICT),
+
+    // 양식 빌더 (7797~, WMP-ADM-005)
+    FORM_NOT_FOUND("WMP-7797", "양식을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

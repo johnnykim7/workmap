@@ -9,4 +9,38 @@
         ON CONFLICT (source_id, target_id, link_type) DO NOTHING
     </insert>
 
+    <resultMap id="linkMap" type="com.therecommerce.workmap.workitem.domain.WorkItemLink">
+        <id     property="id"        column="id"/>
+        <result property="sourceId"  column="source_id"/>
+        <result property="targetId"  column="target_id"/>
+        <result property="linkType"  column="link_type"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="linkMap">
+        SELECT * FROM work_item_links WHERE id = #{id}
+    </select>
+
+    <!-- 연결 목록: source 기준 + 연결된 target 항목 메타(삭제된 항목 제외) -->
+    <select id="findBySource" resultType="com.therecommerce.workmap.workitem.dto.LinkDtos$LinkView">
+        SELECT l.id                AS linkId,
+               l.link_type         AS linkType,
+               t.id                AS targetId,
+               t.key               AS targetKey,
+               t.title             AS targetTitle,
+               t.issue_type        AS targetIssueType,
+               t.common_status     AS targetCommonStatus
+        FROM work_item_links l
+        JOIN work_items t ON t.id = l.target_id AND t.deleted_at IS NULL
+        WHERE l.source_id = #{sourceId}
+        ORDER BY l.created_at ASC, l.id ASC
+    </select>
+
+    <!-- 양방향 1쌍 삭제: 정방향(source→target, linkType) + 역방향(target→source, inverseType) -->
+    <delete id="deletePair">
+        DELETE FROM work_item_links
+        WHERE (source_id = #{sourceId} AND target_id = #{targetId} AND link_type = #{linkType})
+           OR (source_id = #{targetId} AND target_id = #{sourceId} AND link_type = #{inverseType})
+    </delete>
+
 </mapper>

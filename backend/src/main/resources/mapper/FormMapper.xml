@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.admin.mapper.FormMapper">
+
+    <resultMap id="formMap" type="com.therecommerce.workmap.admin.domain.Form">
+        <id     property="id"            column="id"/>
+        <result property="projectId"     column="project_id"/>
+        <result property="issueTypeCode" column="issue_type_code"/>
+        <result property="name"          column="name"/>
+        <result property="fields"        column="fields"/>
+        <result property="isPublic"      column="is_public"/>
+        <result property="createdAt"     column="created_at"/>
+        <result property="updatedAt"     column="updated_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="formMap">
+        SELECT * FROM forms
+        <where>
+            <if test="projectId != null">project_id = #{projectId}</if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT count(*) FROM forms
+        <where>
+            <if test="projectId != null">project_id = #{projectId}</if>
+        </where>
+    </select>
+
+    <select id="findById" resultMap="formMap">
+        SELECT * FROM forms WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.admin.domain.Form"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO forms (project_id, issue_type_code, name, fields, is_public)
+        VALUES (#{projectId}, #{issueTypeCode}, #{name}, #{fields}, #{isPublic})
+    </insert>
+
+    <update id="update" parameterType="com.therecommerce.workmap.admin.domain.Form">
+        UPDATE forms
+        SET issue_type_code = #{issueTypeCode},
+            name            = #{name},
+            fields          = #{fields},
+            is_public       = #{isPublic},
+            updated_at      = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM forms WHERE id = #{id}
+    </delete>
+
+</mapper>

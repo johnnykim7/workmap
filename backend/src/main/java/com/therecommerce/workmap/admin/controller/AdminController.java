@@ -3,12 +3,17 @@ package com.therecommerce.workmap.admin.controller;
 import com.therecommerce.common.paging.PageRequest;
 import com.therecommerce.common.paging.PageResponse;
 import com.therecommerce.common.response.ResponseDto;
+import com.therecommerce.common.security.auth.AuthUserInfo;
 import com.therecommerce.workmap.admin.dto.AdminDtos;
 import com.therecommerce.workmap.admin.service.AdminFieldSchemeService;
+import com.therecommerce.workmap.admin.service.AdminFormService;
+import com.therecommerce.workmap.admin.service.AdminIssueTypeService;
 import com.therecommerce.workmap.admin.service.AdminMeasureService;
 import com.therecommerce.workmap.admin.service.AdminWorkflowService;
+import com.therecommerce.workmap.workitem.dto.WorkItemDtos;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +35,8 @@ public class AdminController {
     private final AdminMeasureService measureService;
     private final AdminFieldSchemeService fieldSchemeService;
     private final AdminWorkflowService workflowService;
+    private final AdminIssueTypeService issueTypeService;
+    private final AdminFormService formService;
 
     // ───────────────────────── 측정 단위 (WMP-ADM-001) ─────────────────────────
 
@@ -156,5 +163,79 @@ public class AdminController {
     public ResponseDto<Void> deleteTransition(@PathVariable Long id, @PathVariable Long transitionId) {
         workflowService.deleteTransition(id, transitionId);
         return ResponseDto.success(null);
+    }
+
+    // ───────────────────────── 업무 유형 마스터 (WMP-ADM-004) ─────────────────────────
+
+    @GetMapping("/issue-types")
+    public ResponseDto<PageResponse<AdminDtos.IssueTypeResponse>> listIssueTypes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseDto.success(issueTypeService.list(new PageRequest(page, size)));
+    }
+
+    @PostMapping("/issue-types")
+    public ResponseDto<AdminDtos.IssueTypeResponse> createIssueType(
+            @Valid @RequestBody AdminDtos.IssueTypeRequest req) {
+        return ResponseDto.success(issueTypeService.create(req));
+    }
+
+    @PutMapping("/issue-types/{id}")
+    public ResponseDto<AdminDtos.IssueTypeResponse> updateIssueType(
+            @PathVariable Long id, @Valid @RequestBody AdminDtos.IssueTypeRequest req) {
+        return ResponseDto.success(issueTypeService.update(id, req));
+    }
+
+    @DeleteMapping("/issue-types/{id}")
+    public ResponseDto<Void> deleteIssueType(@PathVariable Long id) {
+        issueTypeService.delete(id);
+        return ResponseDto.success(null);
+    }
+
+    // ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
+
+    @GetMapping("/forms")
+    public ResponseDto<PageResponse<AdminDtos.FormResponse>> listForms(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseDto.success(formService.list(projectId, new PageRequest(page, size)));
+    }
+
+    @GetMapping("/forms/{id}")
+    public ResponseDto<AdminDtos.FormResponse> getForm(@PathVariable Long id) {
+        return ResponseDto.success(formService.get(id));
+    }
+
+    @PostMapping("/forms")
+    public ResponseDto<AdminDtos.FormResponse> createForm(
+            @Valid @RequestBody AdminDtos.FormRequest req) {
+        return ResponseDto.success(formService.create(req));
+    }
+
+    @PutMapping("/forms/{id}")
+    public ResponseDto<AdminDtos.FormResponse> updateForm(
+            @PathVariable Long id, @Valid @RequestBody AdminDtos.FormRequest req) {
+        return ResponseDto.success(formService.update(id, req));
+    }
+
+    @DeleteMapping("/forms/{id}")
+    public ResponseDto<Void> deleteForm(@PathVariable Long id) {
+        formService.delete(id);
+        return ResponseDto.success(null);
+    }
+
+    /**
+     * 양식 제출(WMP-ADM-005): 양식으로 work_item 생성. 관리자 전용이 아닌 인증 사용자 누구나 제출 가능 —
+     * 클래스 레벨 {@code hasAnyRole('OWNER','ADMIN')}을 메서드 레벨 {@code isAuthenticated()}로 완화한다.
+     */
+    @PostMapping("/forms/{id}/submit")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseDto<WorkItemDtos.Response> submitForm(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminDtos.FormSubmitRequest req,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(formService.submit(id, req, userId));
     }
 }

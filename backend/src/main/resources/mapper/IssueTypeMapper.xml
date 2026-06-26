@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.admin.mapper.IssueTypeMapper">
+
+    <resultMap id="issueTypeMap" type="com.therecommerce.workmap.admin.domain.IssueTypeMaster">
+        <id     property="id"        column="id"/>
+        <result property="code"      column="code"/>
+        <result property="label"     column="label"/>
+        <result property="depth"     column="depth"/>
+        <result property="color"     column="color"/>
+        <result property="icon"      column="icon"/>
+        <result property="isSystem"  column="is_system"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="issueTypeMap">
+        SELECT * FROM issue_type
+        ORDER BY sort_order ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT count(*) FROM issue_type
+    </select>
+
+    <select id="findById" resultMap="issueTypeMap">
+        SELECT * FROM issue_type WHERE id = #{id}
+    </select>
+
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM issue_type WHERE code = #{code})
+    </select>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.admin.domain.IssueTypeMaster"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO issue_type (code, label, depth, color, icon, is_system, sort_order)
+        VALUES (#{code}, #{label}, #{depth}, #{color}, #{icon}, #{isSystem}, #{sortOrder})
+    </insert>
+
+    <update id="update" parameterType="com.therecommerce.workmap.admin.domain.IssueTypeMaster">
+        UPDATE issue_type
+        SET label      = #{label},
+            depth      = #{depth},
+            color      = #{color},
+            icon       = #{icon},
+            sort_order = #{sortOrder}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM issue_type WHERE id = #{id}
+    </delete>
+
+    <select id="isInUse" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM work_items WHERE issue_type = #{code} AND deleted_at IS NULL
+        )
+    </select>
+
+</mapper>

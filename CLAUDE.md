@@ -116,11 +116,12 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 
 ## 현재 진행 상태
 - **설계: v0.4(Jira 애자일) 전면 개정 완료 (2026-06-23, CR-006).** ClickUp(v0.3) → Jira 전환. T1~T3 + execution-spec 모두 v0.4 기준.
-- **구현 진척**: Sprint 1(세팅)·2(인증·WS·프로젝트·멤버, CR-007)·3(work_item 코어)·4(애자일·운영 실행 BE, CR-008)·**5(회사홈/보고·관리자 마스터·알림 수신 BE, CR-009) 완료.**
+- **구현 진척**: Sprint 1(세팅)·2(인증·WS·프로젝트·멤버, CR-007)·3(work_item 코어)·4(애자일·운영 실행 BE, CR-008)·5(회사홈/보고·관리자 마스터·알림 수신 BE, CR-009)·**P2 BE(링크·타임라인/캘린더·업무유형·양식빌더, CR-010) 완료.**
   - Sprint 4 BE 신규 모듈: `agile`(스프린트 FSM·백로그), `board`(보드), `ops`(처리량·백로그전환), `approval`(승인 게이트) + work_item 통합목록·벌크편집. 승인 게이트는 사용자 결정(2026-06-26)으로 Sprint 4 포함.
-  - Sprint 5 BE 신규 모듈: `dashboard`(막힘/지연/미배정·지표·프로젝트보고서, 가시성 BIZ-108 필터 + `?projectId=` 옵션), `admin`(측정단위/필드스킴/워크플로 CRUD, `@PreAuthorize` OWNER/ADMIN) + `notification` 수신 조회(GET/PATCH read). 발행은 Sprint 3 기존. P2(timeline/calendar, issue-types/forms, 링크 API)는 범위 제외.
-  - 단위테스트 전체 `./gradlew test` PASS(99/99 — Sprint 5 신규 22개 포함). **런타임 E2E(서버 기동·curl)는 미수행** — 사용자 승인 후 진행.
-- **다음 작업 = Sprint 4 FE(백로그/보드/벌크편집) 또는 Sprint 5 FE(회사홈·관리자·알림 받은함) 또는 P2 BE(보기 timeline/calendar·연결 링크 API·issue-types/forms 관리).**
+  - Sprint 5 BE 신규 모듈: `dashboard`(막힘/지연/미배정·지표·프로젝트보고서, 가시성 BIZ-108 필터 + `?projectId=` 옵션), `admin`(측정단위/필드스킴/워크플로 CRUD, `@PreAuthorize` OWNER/ADMIN) + `notification` 수신 조회(GET/PATCH read). 발행은 Sprint 3 기존.
+  - **P2 BE 신규(CR-010)**: F1 링크 전체 API(`work-items/{id}/links` GET/POST/DELETE, 양방향 자동 BIZ-109) + `view` 모듈(`projects/{id}/timeline·calendar`, 가시성 가드=대시보드와 동일) + admin 확장 `issue-types`(WMP-ADM-004, 시스템 5종 보호) + `forms` CRUD+제출(WMP-ADM-005, `forms/{id}/submit`은 인증사용자 누구나, WorkItemService.create 위임). 에러코드 7790번대 9종 신규. 스키마 무변경(work_item_links/issue_type/forms 기존).
+  - 단위테스트 전체 `./gradlew test` PASS(122/122 — P2 신규 24개 포함). **런타임 E2E(서버 기동·curl)는 미수행** — 사용자 승인 후 진행.
+- **다음 작업 = FE 구현(Sprint 4 백로그/보드/벌크편집 · Sprint 5 회사홈·관리자·알림 받은함 · P2 타임라인/캘린더·링크·양식빌더 화면). BE는 Phase1 + P2 완료.**
 - 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 feat/SPR-{N} 브랜치에서.
 - **착수 시 첫 읽기 순서**: 이 CLAUDE.md → docs/origins/2026-06-23_세션인계_v0.4설계완료_구현착수전.md(직전 세션 인계) → docs/execution-spec.md(§5 Sprint별 가이드) → 해당 Sprint의 T3-1/T3-2/T1-5/T3-5.
 

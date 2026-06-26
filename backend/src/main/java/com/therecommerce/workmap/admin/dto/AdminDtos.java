@@ -1,5 +1,7 @@
 package com.therecommerce.workmap.admin.dto;
 
+import com.therecommerce.workmap.admin.domain.Form;
+import com.therecommerce.workmap.admin.domain.IssueTypeMaster;
 import com.therecommerce.workmap.measure.domain.MeasureUnit;
 import com.therecommerce.workmap.workflow.domain.WorkflowStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -114,5 +116,62 @@ public final class AdminDtos {
             Long workflowId,
             Long fromStatusId,
             Long toStatusId
+    ) {}
+
+    // ───────────────────────── 업무 유형 마스터 (WMP-ADM-004) ─────────────────────────
+
+    public record IssueTypeRequest(
+            @NotBlank @Size(max = 20) String code,   // 생성 시만 사용(update는 무시 — 식별자)
+            @NotBlank @Size(max = 40) String label,
+            int depth,                                // 0~2 (계층 정합성 BIZ-103)
+            @Size(max = 20) String color,
+            @Size(max = 40) String icon,
+            Integer sortOrder
+    ) {}
+
+    public record IssueTypeResponse(
+            Long id,
+            String code,
+            String label,
+            int depth,
+            String color,
+            String icon,
+            boolean isSystem,
+            int sortOrder
+    ) {
+        public static IssueTypeResponse from(IssueTypeMaster t) {
+            return new IssueTypeResponse(t.getId(), t.getCode(), t.getLabel(), t.getDepth(),
+                    t.getColor(), t.getIcon(), t.isSystem(), t.getSortOrder());
+        }
+    }
+
+    // ───────────────────────── 양식 빌더 (WMP-ADM-005) ─────────────────────────
+
+    public record FormRequest(
+            @NotNull Long projectId,
+            @NotBlank @Size(max = 20) String issueTypeCode,   // 제출 시 생성할 유형
+            @NotBlank @Size(max = 100) String name,
+            @NotBlank String fields,                          // JSONB 원본(필드 배치/도움말/필수)
+            Boolean isPublic
+    ) {}
+
+    public record FormResponse(
+            Long id,
+            Long projectId,
+            String issueTypeCode,
+            String name,
+            String fields,
+            boolean isPublic
+    ) {
+        public static FormResponse from(Form f) {
+            return new FormResponse(f.getId(), f.getProjectId(), f.getIssueTypeCode(),
+                    f.getName(), f.getFields(), f.isPublic());
+        }
+    }
+
+    /** 양식 제출(WMP-ADM-005): 양식 정의(issue_type/project)로 work_item 생성. */
+    public record FormSubmitRequest(
+            @NotBlank @Size(max = 300) String title,
+            String description
     ) {}
 }
