@@ -18,4 +18,43 @@
         SELECT * FROM measure_unit WHERE id = #{id}
     </select>
 
+    <select id="findAll" resultMap="measureUnitMap">
+        SELECT * FROM measure_unit
+        ORDER BY sort_order ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT count(*) FROM measure_unit
+    </select>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.measure.domain.MeasureUnit"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO measure_unit (name, value_type, suffix, options, is_system, sort_order)
+        VALUES (
+            #{name}, #{valueType}, #{suffix},
+            #{options, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            #{isSystem}, #{sortOrder})
+    </insert>
+
+    <update id="update" parameterType="com.therecommerce.workmap.measure.domain.MeasureUnit">
+        UPDATE measure_unit
+        SET name       = #{name},
+            value_type = #{valueType},
+            suffix     = #{suffix},
+            options    = #{options, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            sort_order = #{sortOrder}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM measure_unit WHERE id = #{id}
+    </delete>
+
+    <select id="isInUse" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM work_items WHERE measure_unit_id = #{id} AND deleted_at IS NULL
+        )
+    </select>
+
 </mapper>

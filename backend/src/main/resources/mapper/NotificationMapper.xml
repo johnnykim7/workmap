@@ -3,10 +3,58 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.therecommerce.workmap.notification.mapper.NotificationMapper">
 
+    <resultMap id="notificationMap" type="com.therecommerce.workmap.notification.domain.Notification">
+        <id     property="id"          column="id"/>
+        <result property="recipientId" column="recipient_id"/>
+        <result property="type"        column="type"/>
+        <result property="workItemId"  column="work_item_id"/>
+        <result property="message"     column="message"/>
+        <result property="isRead"      column="is_read"/>
+        <result property="createdAt"   column="created_at"/>
+    </resultMap>
+
     <insert id="insert" parameterType="com.therecommerce.workmap.notification.domain.Notification"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO notifications (recipient_id, type, work_item_id, message, is_read)
         VALUES (#{recipientId}, #{type}, #{workItemId}, #{message}, #{isRead})
     </insert>
+
+    <select id="findByRecipient" resultMap="notificationMap">
+        SELECT id, recipient_id, type, work_item_id, message, is_read, created_at
+        FROM notifications
+        WHERE recipient_id = #{recipientId}
+        <if test="isRead != null">
+            AND is_read = #{isRead}
+        </if>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByRecipient" resultType="long">
+        SELECT count(*)
+        FROM notifications
+        WHERE recipient_id = #{recipientId}
+        <if test="isRead != null">
+            AND is_read = #{isRead}
+        </if>
+    </select>
+
+    <select id="findById" resultMap="notificationMap">
+        SELECT id, recipient_id, type, work_item_id, message, is_read, created_at
+        FROM notifications
+        WHERE id = #{id}
+    </select>
+
+    <update id="markRead">
+        UPDATE notifications
+        SET is_read = true
+        WHERE id = #{id} AND recipient_id = #{recipientId}
+    </update>
+
+    <select id="countUnread" resultType="long">
+        SELECT count(*)
+        FROM notifications
+        WHERE recipient_id = #{recipientId} AND is_read = false
+    </select>
 
 </mapper>

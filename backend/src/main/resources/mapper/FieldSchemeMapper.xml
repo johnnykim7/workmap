@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.admin.mapper.FieldSchemeMapper">
+
+    <resultMap id="fieldSchemeMap" type="com.therecommerce.workmap.admin.domain.FieldScheme">
+        <id     property="id"            column="id"/>
+        <result property="projectId"     column="project_id"/>
+        <result property="issueTypeCode" column="issue_type_code"/>
+        <result property="fieldKey"      column="field_key"/>
+        <result property="isVisible"     column="is_visible"/>
+        <result property="isRequired"    column="is_required"/>
+        <result property="sortOrder"     column="sort_order"/>
+    </resultMap>
+
+    <sql id="filter">
+        <where>
+            <if test="projectId != null">AND project_id = #{projectId}</if>
+            <if test="issueTypeCode != null and issueTypeCode != ''">
+                AND issue_type_code = #{issueTypeCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="find" resultMap="fieldSchemeMap">
+        SELECT * FROM field_scheme
+        <include refid="filter"/>
+        ORDER BY project_id NULLS FIRST, issue_type_code, sort_order ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT count(*) FROM field_scheme
+        <include refid="filter"/>
+    </select>
+
+    <select id="findById" resultMap="fieldSchemeMap">
+        SELECT * FROM field_scheme WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.admin.domain.FieldScheme"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO field_scheme (project_id, issue_type_code, field_key, is_visible, is_required, sort_order)
+        VALUES (#{projectId}, #{issueTypeCode}, #{fieldKey}, #{isVisible}, #{isRequired}, #{sortOrder})
+    </insert>
+
+    <update id="update" parameterType="com.therecommerce.workmap.admin.domain.FieldScheme">
+        UPDATE field_scheme
+        SET project_id      = #{projectId},
+            issue_type_code = #{issueTypeCode},
+            field_key       = #{fieldKey},
+            is_visible      = #{isVisible},
+            is_required     = #{isRequired},
+            sort_order      = #{sortOrder}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM field_scheme WHERE id = #{id}
+    </delete>
+
+</mapper>

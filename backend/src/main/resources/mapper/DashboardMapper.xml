@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.dashboard.mapper.DashboardMapper">
+
+    <!--
+      막힘/지연/미배정 목록 (WMP-HOME-001·002).
+      가시성(BIZ-108): visibleProjectIds 안에 든 항목만. 빈 목록이면 결과 0건.
+      mode 필터:
+        BLOCKED    = common_status = 'BLOCKED'
+        DELAYED    = due_date < CURRENT_DATE AND common_status NOT IN ('DONE','HOLD')  (POL-002)
+        UNASSIGNED = assignee_id IS NULL AND common_status <> 'DONE'
+      목록 항목은 WorkItem 도메인으로 매핑(WorkItemMapper.workItemMap 재사용).
+    -->
+    <sql id="modeWhere">
+        wi.deleted_at IS NULL
+        <choose>
+            <when test="visibleProjectIds == null or visibleProjectIds.isEmpty()">
+                AND 1 = 0
+            </when>
+            <otherwise>
+                AND wi.project_id IN
+                <foreach collection="visibleProjectIds" item="pid" open="(" separator="," close=")">
+                    #{pid}
+                </foreach>
+            </otherwise>
+        </choose>
+        <if test="projectId != null">
+            AND wi.project_id = #{projectId}
+        </if>
+        <choose>
+            <when test="mode == 'BLOCKED'">
+                AND wi.common_status = 'BLOCKED'
+            </when>
+            <when test="mode == 'DELAYED'">
+                AND wi.due_date &lt; CURRENT_DATE
+                AND wi.common_status NOT IN ('DONE', 'HOLD')
+            </when>
+            <when test="mode == 'UNASSIGNED'">
+                AND wi.assignee_id IS NULL
+                AND wi.common_status &lt;&gt; 'DONE'
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="findByMode"
+            resultMap="com.therecommerce.workmap.workitem.mapper.WorkItemMapper.workItemMap">
+        SELECT wi.*
+        FROM work_items wi
+        WHERE
+        <include refid="modeWhere"/>
+        ORDER BY wi.priority DESC, wi.due_date ASC NULLS LAST, wi.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByMode" resultType="long">
+        SELECT count(*)
+        FROM work_items wi
+        WHERE
+        <include refid="modeWhere"/>
+    </select>
+
+    <!--
+      지표 카드 (WMP-HOME-001): 진행중/오늘마감/이번주마감/미배정/장기미변경(POL-003).
+      가시성은 visibleProjectIds로 강제. 빈 목록이면 1=0 → 모두 0.
+    -->
+    <select id="metrics" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Metrics">
+        SELECT
+            count(*) FILTER (WHERE wi.common_status = 'IN_PROGRESS')                               AS in_progress,
+            count(*) FILTER (WHERE wi.due_date = CURRENT_DATE
+                              AND wi.common_status NOT IN ('DONE', 'HOLD'))                         AS due_today,
+            count(*) FILTER (WHERE wi.due_date &gt;= CURRENT_DATE
+                              AND wi.due_date &lt; CURRENT_DATE + INTERVAL '7 day'
+                              AND wi.common_status NOT IN ('DONE', 'HOLD'))                         AS due_this_week,
+            count(*) FILTER (WHERE wi.assignee_id IS NULL AND wi.common_status &lt;&gt; 'DONE')     AS unassigned,
+            count(*) FILTER (WHERE wi.status_changed_at &lt; now() - (#{staleDays} || ' day')::interval
+                              AND wi.common_status NOT IN ('DONE', 'HOLD'))                         AS stale
+        FROM work_items wi
+        WHERE wi.deleted_at IS NULL
+        <choose>
+            <when test="visibleProjectIds == null or visibleProjectIds.isEmpty()">
+                AND 1 = 0
+            </when>
+            <otherwise>
+                AND wi.project_id IN
+                <foreach collection="visibleProjectIds" item="pid" open="(" separator="," close=")">
+                    #{pid}
+                </foreach>
+            </otherwise>
+        </choose>
+        <if test="projectId != null">
+            AND wi.project_id = #{projectId}
+        </if>
+    </select>
+
+    <!-- 프로젝트 보고서 분포(WMP-HOME-003). 가시성은 서비스가 사전 검증(프로젝트 단건). -->
+    <select id="distributionByStatus" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
+        SELECT common_status AS key, count(*) AS count
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        GROUP BY common_status
+        ORDER BY count DESC
+    </select>
+
+    <select id="distributionByType" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
+        SELECT issue_type AS key, count(*) AS count
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        GROUP BY issue_type
+        ORDER BY count DESC
+    </select>
+
+    <select id="distributionByAssignee" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
+        SELECT CAST(assignee_id AS varchar) AS key, count(*) AS count
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        GROUP BY assignee_id
+        ORDER BY count DESC
+    </select>
+
+</mapper>

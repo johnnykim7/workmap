@@ -45,6 +45,12 @@ logging:
     include-body: false
     max-body-length: 1000
 
+# WorkMap 도메인 설정
+workmap:
+  # 장기 미변경(정체) 기준 일수(POL-003). 회사홈 지표/검토 정체 판정 기준. 기본 7.
+  stale:
+    threshold-days: ${WORKMAP_STALE_DAYS:7}
+
 management:
   endpoints:
     web:

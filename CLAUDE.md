@@ -116,10 +116,11 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 
 ## 현재 진행 상태
 - **설계: v0.4(Jira 애자일) 전면 개정 완료 (2026-06-23, CR-006).** ClickUp(v0.3) → Jira 전환. T1~T3 + execution-spec 모두 v0.4 기준.
-- **구현 진척**: Sprint 1(세팅)·2(인증·WS·프로젝트·멤버, CR-007)·3(work_item 코어)·**4(애자일·운영 실행 BE, CR-008) 완료.**
+- **구현 진척**: Sprint 1(세팅)·2(인증·WS·프로젝트·멤버, CR-007)·3(work_item 코어)·4(애자일·운영 실행 BE, CR-008)·**5(회사홈/보고·관리자 마스터·알림 수신 BE, CR-009) 완료.**
   - Sprint 4 BE 신규 모듈: `agile`(스프린트 FSM·백로그), `board`(보드), `ops`(처리량·백로그전환), `approval`(승인 게이트) + work_item 통합목록·벌크편집. 승인 게이트는 사용자 결정(2026-06-26)으로 Sprint 4 포함.
-  - 단위테스트 전체 `./gradlew test` PASS(Sprint 4 신규 25개 포함). **런타임 E2E(서버 기동·curl)는 미수행** — 사용자 승인 후 진행.
-- **다음 작업 = Sprint 4 FE(백로그/보드/벌크편집 화면) 또는 Sprint 5 BE(보기·검색·회사홈·관리자·알림).**
+  - Sprint 5 BE 신규 모듈: `dashboard`(막힘/지연/미배정·지표·프로젝트보고서, 가시성 BIZ-108 필터 + `?projectId=` 옵션), `admin`(측정단위/필드스킴/워크플로 CRUD, `@PreAuthorize` OWNER/ADMIN) + `notification` 수신 조회(GET/PATCH read). 발행은 Sprint 3 기존. P2(timeline/calendar, issue-types/forms, 링크 API)는 범위 제외.
+  - 단위테스트 전체 `./gradlew test` PASS(99/99 — Sprint 5 신규 22개 포함). **런타임 E2E(서버 기동·curl)는 미수행** — 사용자 승인 후 진행.
+- **다음 작업 = Sprint 4 FE(백로그/보드/벌크편집) 또는 Sprint 5 FE(회사홈·관리자·알림 받은함) 또는 P2 BE(보기 timeline/calendar·연결 링크 API·issue-types/forms 관리).**
 - 설계 baseline은 git push 완료(johnnykim7/workmap, main). 구현은 feat/SPR-{N} 브랜치에서.
 - **착수 시 첫 읽기 순서**: 이 CLAUDE.md → docs/origins/2026-06-23_세션인계_v0.4설계완료_구현착수전.md(직전 세션 인계) → docs/execution-spec.md(§5 Sprint별 가이드) → 해당 Sprint의 T3-1/T3-2/T1-5/T3-5.
 
@@ -174,6 +175,9 @@ WorkMap (업무지도) — 당사 내부의 개발·운영·고객사 대응·�
 - **(CR-008) JSONB List TypeHandler는 자동 스캔 금지.** `mybatis.type-handlers-package` 자동 스캔은 하위 패키지까지 재귀 등록하며, `BaseTypeHandler<List<X>>` 핸들러를 raw `List` 키로 등록한다. String/Long 두 리스트 핸들러가 공존하면 나중 등록이 다른 것을 가로채 역직렬화 500(예: active_tabs를 Long 핸들러가 파싱). → 자동 스캔 제거하고 `AppConfig.ConfigurationCustomizer`에서 `StringListJsonTypeHandler`만 `List`에 명시 등록, 그 외 리스트 핸들러는 스캔 밖(`common.mybatis.scalar`)에 두고 매퍼 XML에서 명시 지정. **새 JSONB List 컬럼/핸들러 추가 시 이 규칙 준수.**
 - **(CR-008) NOT NULL JSONB 배열 컬럼은 서비스에서 빈 리스트 기본값.** `work_items.labels/related_solutions`는 `NOT NULL DEFAULT '[]'`이지만 INSERT가 `#{...}`로 컬럼을 항상 포함하므로 null이면 DB default가 무시돼 위반. create 시 `null → List.of()` 보정 필요.
 - **(CR-008) MyBatis 도메인 매핑은 setter 기반 — `@NoArgsConstructor` 권장.** 기존 도메인 다수가 `@Builder`만 보유. 자동 스캔 시절엔 우연히 동작했으나, 핸들러 명시 등록으로 바꾸면 no-arg 생성자 + setter 매핑이 안전(신규 도메인 Sprint/Approval은 `@NoArgsConstructor @AllArgsConstructor @Builder` 모두 부여).
+- **(CR-009) 신규 매퍼 추가 시 기존 `@WebMvcTest` 슬라이스에 `@MockBean` 동반 등록 필수.** 메인 앱 `@MapperScan("com.therecommerce.workmap.**.mapper")`이 컨트롤러 슬라이스 컨텍스트에도 적용되어, 신규 매퍼 빈을 SqlSessionFactory 없이 생성하려다 컨텍스트 로딩 실패(`Property 'sqlSessionFactory' or 'sqlSessionTemplate' are required` — 알파벳 첫 매퍼가 대표로 던짐). → User/Project/WorkItem ControllerTest 등 `@WebMvcTest`에 신규 매퍼 `@MockBean`을 추가해야 한다. (이 에러는 특정 XML 문법오류처럼 보이지만 실제론 매퍼 빈 mock 누락이 원인.)
+- **(CR-009) 관리자 권한 가드는 `hasAnyRole`(ROLE_ 접두 O — 런타임 실측).** bp-common-lib **0.1.0**(실제 resolved 버전) `JwtFilter`는 `new SimpleGrantedAuthority("ROLE_" + role)`로 세팅(상수풀 `ROLE_` = makeConcatWithConstants 확인). 따라서 `@PreAuthorize("hasAnyRole('OWNER','ADMIN')")` 사용(UserController와 동일 컨벤션). **함정: gradle 캐시에 0.5.x jar도 있어 javap 대상을 잘못 고르면 "접두 없음"으로 오판함 — 반드시 resolved 0.1.0 jar를 디컴파일하거나 E2E(ADMIN 토큰으로 403/200)로 확정할 것.** ADMIN 토큰으로 admin API 403이면 가드가 hasAuthority로 잘못된 것.
+- **(CR-009) 외부 namespace resultMap 재사용 가능.** DashboardMapper.xml이 `resultMap="com.therecommerce.workmap.workitem.mapper.WorkItemMapper.workItemMap"`로 WorkItem 매핑(JSONB typeHandler 포함)을 재사용 — work_items 전체 컬럼 매핑을 중복 정의하지 않는다. `SELECT wi.*` + 외부 resultMap 조합 동작 확인됨.
 
 ## bp-common-lib 기여 후보
 > 구현 중 2개 이상 프로젝트 공통 필요 코드 발견 시 기록. 스프린트 종료 시 전달.

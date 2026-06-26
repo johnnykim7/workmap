@@ -45,7 +45,25 @@ public enum WmpErrorCode implements ErrorCode {
     APPROVAL_NOT_FOUND("WMP-7750", "승인 요청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     NOT_AUTHORIZED_APPROVER("WMP-7751", "지정된 승인자만 처리할 수 있습니다.", HttpStatus.FORBIDDEN),
     APPROVAL_PENDING("WMP-7752", "승인 대기 중입니다. 승인 완료 후 다음 상태로 전이할 수 있습니다.", HttpStatus.CONFLICT),
-    APPROVAL_ALREADY_DECIDED("WMP-7753", "이미 처리된 승인 요청입니다.", HttpStatus.CONFLICT);
+    APPROVAL_ALREADY_DECIDED("WMP-7753", "이미 처리된 승인 요청입니다.", HttpStatus.CONFLICT),
+
+    // 알림 (7760번대, WMP-NOTI-001)
+    NOTIFICATION_NOT_FOUND("WMP-7760", "알림을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    NOTIFICATION_FORBIDDEN("WMP-7761", "본인에게 온 알림만 처리할 수 있습니다.", HttpStatus.FORBIDDEN),
+
+    // 관리자 마스터 (7770번대, WMP-ADM-001~003)
+    MEASURE_UNIT_NOT_FOUND("WMP-7770", "측정 단위를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    MEASURE_UNIT_SYSTEM_PROTECTED("WMP-7771", "시스템 기본 측정 단위는 수정·삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    MEASURE_UNIT_IN_USE("WMP-7772", "사용 중인 측정 단위는 삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    FIELD_SCHEME_NOT_FOUND("WMP-7773", "필드 스킴을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    WORKFLOW_NOT_FOUND("WMP-7774", "워크플로를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    WORKFLOW_SYSTEM_PROTECTED("WMP-7775", "시스템 기본 워크플로는 수정·삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    WORKFLOW_IN_USE("WMP-7776", "프로젝트가 사용 중인 워크플로는 삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    WORKFLOW_STATUS_NOT_FOUND("WMP-7777", "워크플로 상태를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    WORKFLOW_STATUS_IN_USE("WMP-7778", "업무 항목이 사용 중인 상태는 삭제할 수 없습니다.", HttpStatus.CONFLICT),
+    WORKFLOW_TRANSITION_NOT_FOUND("WMP-7779", "워크플로 전이를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    WORKFLOW_TRANSITION_DUPLICATED("WMP-7780", "이미 존재하는 전이입니다.", HttpStatus.CONFLICT),
+    WORKFLOW_STATUS_MISMATCH("WMP-7781", "전이의 상태가 해당 워크플로에 속하지 않습니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

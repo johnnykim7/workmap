@@ -54,6 +54,10 @@ class UserControllerTest {
     @MockBean com.therecommerce.workmap.agile.mapper.SprintMapper sprintMapper;
     @MockBean com.therecommerce.workmap.approval.mapper.ApprovalMapper approvalMapper;
     @MockBean com.therecommerce.workmap.workitem.mapper.WorkItemLinkMapper workItemLinkMapper;
+    // Sprint 5 신규 매퍼(@MapperScan이 슬라이스에도 적용되므로 목으로 대체)
+    @MockBean com.therecommerce.workmap.dashboard.mapper.DashboardMapper dashboardMapper;
+    @MockBean com.therecommerce.workmap.admin.mapper.FieldSchemeMapper fieldSchemeMapper;
+    @MockBean com.therecommerce.workmap.admin.mapper.AdminWorkflowMapper adminWorkflowMapper;
 
     @Test
     @WithMockUser(roles = "ADMIN")

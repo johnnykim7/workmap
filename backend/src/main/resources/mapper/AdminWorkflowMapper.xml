@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.admin.mapper.AdminWorkflowMapper">
+
+    <resultMap id="workflowMap" type="com.therecommerce.workmap.workflow.domain.Workflow">
+        <id     property="id"       column="id"/>
+        <result property="name"     column="name"/>
+        <result property="isSystem" column="is_system"/>
+    </resultMap>
+
+    <resultMap id="statusMap" type="com.therecommerce.workmap.workflow.domain.WorkflowStatus">
+        <id     property="id"           column="id"/>
+        <result property="workflowId"   column="workflow_id"/>
+        <result property="code"         column="code"/>
+        <result property="label"        column="label"/>
+        <result property="commonStatus" column="common_status"/>
+        <result property="isStart"      column="is_start"/>
+        <result property="isDone"       column="is_done"/>
+        <result property="isApproval"   column="is_approval"/>
+        <result property="approverRole" column="approver_role"/>
+        <result property="sortOrder"    column="sort_order"/>
+    </resultMap>
+
+    <resultMap id="transitionMap" type="com.therecommerce.workmap.workflow.domain.WorkflowTransition">
+        <id     property="id"           column="id"/>
+        <result property="workflowId"   column="workflow_id"/>
+        <result property="fromStatusId" column="from_status_id"/>
+        <result property="toStatusId"   column="to_status_id"/>
+    </resultMap>
+
+    <!-- ───────── workflow ───────── -->
+    <select id="findAllWorkflows" resultMap="workflowMap">
+        SELECT * FROM workflow ORDER BY id ASC LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countWorkflows" resultType="long">
+        SELECT count(*) FROM workflow
+    </select>
+
+    <select id="findWorkflowById" resultMap="workflowMap">
+        SELECT * FROM workflow WHERE id = #{id}
+    </select>
+
+    <insert id="insertWorkflow" parameterType="com.therecommerce.workmap.workflow.domain.Workflow"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO workflow (name, is_system) VALUES (#{name}, #{isSystem})
+    </insert>
+
+    <update id="updateWorkflow" parameterType="com.therecommerce.workmap.workflow.domain.Workflow">
+        UPDATE workflow SET name = #{name} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteWorkflow">
+        DELETE FROM workflow WHERE id = #{id}
+    </delete>
+
+    <select id="isWorkflowInUse" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM projects WHERE workflow_id = #{id})
+    </select>
+
+    <!-- ───────── workflow_status ───────── -->
+    <select id="findStatuses" resultMap="statusMap">
+        SELECT * FROM workflow_status WHERE workflow_id = #{workflowId} ORDER BY sort_order, id
+    </select>
+
+    <select id="findStatusById" resultMap="statusMap">
+        SELECT * FROM workflow_status WHERE id = #{id}
+    </select>
+
+    <insert id="insertStatus" parameterType="com.therecommerce.workmap.workflow.domain.WorkflowStatus"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO workflow_status
+            (workflow_id, code, label, common_status, is_start, is_done, is_approval, approver_role, sort_order)
+        VALUES
+            (#{workflowId}, #{code}, #{label}, #{commonStatus}, #{isStart}, #{isDone},
+             #{isApproval}, #{approverRole}, #{sortOrder})
+    </insert>
+
+    <update id="updateStatus" parameterType="com.therecommerce.workmap.workflow.domain.WorkflowStatus">
+        UPDATE workflow_status
+        SET code          = #{code},
+            label         = #{label},
+            common_status = #{commonStatus},
+            is_start      = #{isStart},
+            is_done       = #{isDone},
+            is_approval   = #{isApproval},
+            approver_role = #{approverRole},
+            sort_order    = #{sortOrder}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteStatus">
+        DELETE FROM workflow_status WHERE id = #{id}
+    </delete>
+
+    <select id="isStatusInUse" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM work_items WHERE status_id = #{id} AND deleted_at IS NULL
+        )
+    </select>
+
+    <delete id="deleteTransitionsByStatus">
+        DELETE FROM workflow_transition
+        WHERE from_status_id = #{statusId} OR to_status_id = #{statusId}
+    </delete>
+
+    <!-- ───────── workflow_transition ───────── -->
+    <select id="findTransitions" resultMap="transitionMap">
+        SELECT * FROM workflow_transition WHERE workflow_id = #{workflowId} ORDER BY id
+    </select>
+
+    <select id="findTransitionById" resultMap="transitionMap">
+        SELECT * FROM workflow_transition WHERE id = #{id}
+    </select>
+
+    <select id="transitionExists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM workflow_transition
+            WHERE workflow_id = #{workflowId}
+              AND from_status_id = #{fromStatusId}
+              AND to_status_id = #{toStatusId}
+        )
+    </select>
+
+    <insert id="insertTransition" parameterType="com.therecommerce.workmap.workflow.domain.WorkflowTransition"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO workflow_transition (workflow_id, from_status_id, to_status_id)
+        VALUES (#{workflowId}, #{fromStatusId}, #{toStatusId})
+    </insert>
+
+    <delete id="deleteTransition">
+        DELETE FROM workflow_transition WHERE id = #{id}
+    </delete>
+
+</mapper>
