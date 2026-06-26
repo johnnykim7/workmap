@@ -8,14 +8,15 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, toast,
 } from '@therecommerce/ds-ui';
 import {
-  ChevronUp, ChevronDown, Eye, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace,
+  ChevronUp, ChevronDown, Eye, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace, Trash2,
 } from 'lucide-react';
 import { TypeBadge } from '@/components/badges';
 import { ROUTES } from '@/lib/route-paths';
 import { useBoard } from '@/features/board/hooks';
 import { type WorkItemResponse } from '@/types/domain';
-import { useUpdateWorkItem, useChangeStatus } from '../hooks';
+import { useUpdateWorkItem, useChangeStatus, useDeleteWorkItem } from '../hooks';
 import { BlockReasonDialog } from '@/features/board/components/BlockReasonDialog';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ConvertDialog } from './ConvertDialog';
 
 interface Props {
@@ -29,6 +30,7 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
   const navigate = useNavigate();
   const update = useUpdateWorkItem(item.id, item.key);
   const changeStatus = useChangeStatus(item.id, item.key);
+  const deleteItem = useDeleteWorkItem(item.id);
   // 워크플로 상태 목록 = 보드 컬럼(같은 프로젝트). 상태 전이 옵션·라벨 출처.
   const { data: board } = useBoard(item.projectId);
   const columns = board?.columns ?? [];
@@ -37,6 +39,7 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
   const [title, setTitle] = useState(item.title);
   const [pendingBlockStatusId, setPendingBlockStatusId] = useState<number | null>(null);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   useEffect(() => { setTitle(item.title); }, [item.title]);
 
   // 목록 내 이전/다음 = 같은 프로젝트 카드 순서(보드 평탄화 기준). 보드 미로딩 시 비활성.
@@ -118,6 +121,9 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
                 <DropdownMenuItem onClick={() => setConvertOpen(true)}>
                   <Replace className="size-4" /> 유형 전환
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive">
+                  <Trash2 className="size-4" /> 삭제
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -167,6 +173,20 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
       </div>
 
       <ConvertDialog item={item} open={convertOpen} onOpenChange={setConvertOpen} />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="업무 삭제"
+        description={`'${item.title}' 업무를 삭제합니다(소프트 삭제). 목록에서 사라집니다.`}
+        confirmLabel="삭제"
+        busy={deleteItem.isPending}
+        onConfirm={() =>
+          deleteItem.mutate(undefined, {
+            onSuccess: () => { setDeleteOpen(false); navigate(ROUTES.projects); },
+          })
+        }
+      />
 
       <BlockReasonDialog
         open={pendingBlockStatusId != null}

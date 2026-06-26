@@ -6,6 +6,7 @@ import { opsApi } from '@/features/ops/api';
 import { savedFilterApi } from './api';
 import { adminApi } from '@/features/admin/api';
 import { workItemApi } from '@/features/workitem/api';
+import { userApi } from '@/features/user/api';
 import { useAuthStore } from '@/store/auth-store';
 
 interface Captured { url: string; method: string; body: unknown }
@@ -142,5 +143,36 @@ describe('P2 API 계약', () => {
     expect(last().method).toBe('PATCH');
     expect(last().url).toMatch(/\/work-items\/33\/convert$/);
     expect(last().body).toMatchObject({ issueType: 'STORY', epicId: 5 });
+  });
+
+  it('업무삭제_DELETE_본체경로(links 아님)', async () => {
+    await workItemApi.remove(33);
+    expect(last().method).toBe('DELETE');
+    expect(last().url).toMatch(/\/work-items\/33$/);
+  });
+
+  it('사용자_검색_GET_keyword·페이징쿼리', async () => {
+    await userApi.search('kim', 1, 50);
+    expect(last().method).toBe('GET');
+    expect(last().url).toContain('/users?');
+    expect(last().url).toContain('keyword=kim');
+    expect(last().url).toContain('page=1');
+  });
+
+  it('사용자_생성_POST_email·password바디', async () => {
+    await userApi.create({ email: 'a@b.com', password: 'pw12345678', name: '김', role: 'MEMBER' });
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/users$/);
+    expect(last().body).toMatchObject({ email: 'a@b.com', name: '김', role: 'MEMBER' });
+  });
+
+  it('사용자_수정·비활성화_PATCH_id경로', async () => {
+    await userApi.update(8, { name: '김수정' });
+    expect(last().method).toBe('PATCH');
+    expect(last().url).toMatch(/\/users\/8$/);
+
+    await userApi.deactivate(8);
+    expect(last().method).toBe('PATCH');
+    expect(last().url).toMatch(/\/users\/8\/deactivate$/);
   });
 });

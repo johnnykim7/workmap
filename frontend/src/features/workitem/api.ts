@@ -120,6 +120,9 @@ export const workItemApi = {
   convert: (id: number, body: ConvertRequest) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/convert`, body),
 
+  // 소프트 삭제(WMP-WI-003, BIZ-009 deleted_at).
+  remove: (id: number) => api.delete<void>(`/work-items/${id}`),
+
   listActivities: (id: number) => api.get<Activity[]>(`/work-items/${id}/activities`),
 
   listApprovals: (id: number) => api.get<Approval[]>(`/work-items/${id}/approvals`),

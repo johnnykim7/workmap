@@ -2,7 +2,7 @@
 // route-paths.ts ROUTES.admin 상수만 참조(경로 직접 작성 금지).
 import { NavLink } from 'react-router-dom';
 import { cn } from '@therecommerce/ds-ui';
-import { Ruler, ListChecks, GitBranch, Shapes, FileText } from 'lucide-react';
+import { Ruler, ListChecks, GitBranch, Shapes, FileText, Users } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import type { ReactNode } from 'react';
 
@@ -12,6 +12,7 @@ const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: ROUTES.admin.workflows, label: '워크플로', icon: <GitBranch className="size-4" /> },
   { to: ROUTES.admin.issueTypes, label: '업무 유형', icon: <Shapes className="size-4" /> },
   { to: ROUTES.admin.forms, label: '양식 빌더', icon: <FileText className="size-4" /> },
+  { to: ROUTES.admin.users, label: '사용자', icon: <Users className="size-4" /> },
 ];
 
 export function AdminTabs() {

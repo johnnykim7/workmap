@@ -28,5 +28,6 @@ export const ROUTES = {
     workflows: '/admin/workflows',
     issueTypes: '/admin/issue-types',
     forms: '/admin/forms',
+    users: '/admin/users',
   },
 } as const;

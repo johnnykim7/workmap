@@ -173,6 +173,21 @@ export function useCreateAttachment(id: number) {
   });
 }
 
+// ── 삭제 (WMP-WI-003, 소프트) ──
+export function useDeleteWorkItem(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => workItemApi.remove(id),
+    onSuccess: () => {
+      // 목록/보드/백로그 캐시 폭넓게 무효화(상세는 화면 이탈로 자연 정리).
+      qc.invalidateQueries({ queryKey: ['work-items'] });
+      qc.invalidateQueries({ queryKey: ['board'] });
+      toast.success('업무를 삭제했습니다.');
+    },
+    onError: (e) => toast.error(errMsg(e, '삭제에 실패했습니다.')),
+  });
+}
+
 // ── 유형 전환 (WMP-WI-014) ──
 export function useConvert(id: number, key?: string) {
   const invalidate = useInvalidateDetail(id, key);

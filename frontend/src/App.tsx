@@ -26,6 +26,7 @@ import { FieldSchemesPage } from '@/pages/admin/FieldSchemesPage';
 import { WorkflowsPage } from '@/pages/admin/WorkflowsPage';
 import { IssueTypesPage } from '@/pages/admin/IssueTypesPage';
 import { FormsPage } from '@/pages/admin/FormsPage';
+import { UsersPage } from '@/pages/admin/UsersPage';
 
 // v0.4 Jira 라우팅. 글로벌 LNB 1개 + /projects/:key/탭(가로 탭) + /work-items/:key.
 const router = createBrowserRouter([
@@ -69,6 +70,7 @@ const router = createBrowserRouter([
           { path: 'admin/workflows', element: <WorkflowsPage /> },
           { path: 'admin/issue-types', element: <IssueTypesPage /> },
           { path: 'admin/forms', element: <FormsPage /> },
+          { path: 'admin/users', element: <UsersPage /> },
 
           { path: '*', element: <Navigate to="/" replace /> },
         ],
