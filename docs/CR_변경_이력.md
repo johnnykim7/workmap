@@ -20,6 +20,8 @@
 | CR-008 | Sprint 4 BE 구현 — 애자일·운영 실행(스프린트/보드/목록/벌크/OPS/승인) | 신규 | High | v2.0 |
 | CR-009 | Sprint 5 BE 구현 — 회사홈/보고·관리자 마스터·알림 수신 | 신규 | Medium | v2.0 |
 | CR-010 | P2 BE 구현 — 링크·타임라인/캘린더·업무유형 마스터·양식 빌더(+제출) | 신규 | Medium | v2.0 |
+| CR-011 | 설계 대비 미구현 BE 3종 마감 — 프로젝트 수정·보관 + 받은함 | 신규 | Medium | v2.0 |
+| CR-012 | Phase 2 잔여 BE 3종 — 번다운/번업·벨로시티 + 현장검증 기록 + 저장 필터 | 신규 | Medium | v2.0 |
 
 ---
 
@@ -248,6 +250,24 @@
   - 단위테스트 신규 8개 PASS — ProjectServiceTest +4(부분수정 갱신·없는프로젝트 NOT_FOUND·ACTIVE 보관 성공·PLANNING 보관 거부), ProjectControllerTest +2(PATCH /{id} 200·PATCH /archive 200), InboxServiceTest 2(목록+배지 통합·빈상태). 전체 `./gradlew test` BUILD SUCCESSFUL(130 PASS, 0 fail).
   - **런타임 E2E(curl, 서버 8186 기동) 완료**: ① GET /inbox → `{notifications:{items,totalCount,...}, unreadCount}` 통합 응답 정상. ② PATCH /projects/1 → name·activeTabs(JSONB)·description 반영, 미전달 visibility/status 보존. ③ PATCH /projects/3/archive(PLANNING) → WMP-7711 거부, PATCH /projects/1/archive(ACTIVE) → ARCHIVED+archived_at, DB 확인. 테스트 후 데이터 원복.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-26, 중규모 결정 + 권한 방식 A 결정) | **적용 버전**: v2.0
+- **변경 일자**: 2026-06-26
+
+### CR-012 — Phase 2 잔여 BE 3종 (번다운/번업·벨로시티 + 현장검증 기록 + 저장 필터)
+
+- **변경 타입**: 신규 | **영향도**: Medium
+- **배경**: CR-011로 Phase 1 + P2 BE를 100% 마감한 뒤, Phase 2 Medium 기능 중 BE가 비어 있던 마지막 3종(WMP-AGL-006 번다운/벨로시티, WMP-OPS-004 현장검증 기록, WMP-VIEW-004 저장 필터)을 구현. T1(기능요구사항·FSM·이벤트 계약)은 이미 v0.4에 정의돼 있어 T1 무변경, **T3(데이터 모델·API)만 캐스케이드**. 번다운만 스냅샷 테이블 신규 필요(실측: `field_verifications` V1:281·`saved_filters` V1:323 존재, 번다운 스냅샷 테이블 부재).
+- **변경 내용**:
+  - **번다운/번업·벨로시티(WMP-AGL-006, P2)** — `burndown_snapshots` 테이블 신규(마이그레이션 V3). `GET /api/v1/sprints/{id}/burndown`(일자별 잔여/누적완료/기준선) + `GET /api/v1/projects/{id}/velocity`(완료 스프린트별 completed_points + 평균). **스냅샷 적재 = 이벤트 + 일별 스케줄러**(사용자 결정 2026-06-26):
+    - `SprintStarted` 소비 → START 스냅샷(기준선 total_points 고정, remaining=total, completed=0).
+    - 일별 스케줄러(`@Scheduled`) → ACTIVE 스프린트마다 당일 DAILY 스냅샷(remaining=미완료 SP 합, completed=완료 SP 누적). UNIQUE(sprint_id, snapshot_date)로 UPSERT 멱등.
+    - `SprintCompleted` 소비 → COMPLETE 스냅샷(완료 시점 최종). 벨로시티 = COMPLETE 스냅샷들의 completed_points 평균.
+    - 리스너는 `@TransactionalEventListener(AFTER_COMMIT)` + `@Async`(NotificationEventListener 패턴) — SprintService는 리스너를 모른다(인터페이스 바인딩, T1-6).
+  - **현장검증 기록(WMP-OPS-004, P2)** — `GET·POST /api/v1/work-items/{id}/field-verifications`. 검증자/검증일/장소/환경/테스트내용/결과(PASS/FAIL/PARTIAL)/발견이슈를 `field_verifications`에 기록. `createFollowUp=true`면 발견 이슈를 후속 업무 항목으로 생성(원본↔후속 RELATES_TO 양방향 링크 — OperationsService.promoteToBacklog와 동일 패턴, WorkItemService.create 위임). **상태 전이는 기록이 직접 하지 않음** — DEV_DONE→FIELD_VERIFYING→OPS_APPLIED(T1-5 현장검증형)는 별도 `PATCH /status`(FSM 가드)로(BIZ-010 직접 status UPDATE 금지).
+  - **저장 필터(WMP-VIEW-004, P2)** — `GET·POST·PUT·DELETE /api/v1/saved-filters`. `saved_filters` CRUD. 목록 = 내 것(owner_id) + 공유된 것(is_shared=true). query(JSONB, `StringList`이 아닌 자유 JSON → `JsonTypeHandler` 또는 Map 핸들러). 수정·삭제는 **소유자만**(owner_id 일치 검증, 불일치 FORBIDDEN). Phase 1 기본/전문/퀵필터(`/work-items`)는 그대로 — 저장/공유 부분만 추가.
+- **스키마**: `field_verifications`·`saved_filters` 기존(V1) → 무변경. `burndown_snapshots`만 **신규(V3 마이그레이션)**.
+- **영향 모듈**: BE — 신규 모듈 `burndown`(domain/mapper/service/controller/listener/scheduler), `ops`에 현장검증 추가(또는 `verification` 신규), `view`에 saved-filter 추가(또는 `filter` 신규). 에러코드 WMP-7798~ 추가. FE 무변경(별도 FE 작업).
+- **영향 설계서**: T3-1(burndown_snapshots 테이블 + ER 관계 추가), T3-2(G 번다운/벨로시티 2행·H 현장검증 2행·I 저장필터 4행 + 각 메모). T1~T2 무변경.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-26, 중규모 결정 + 스냅샷 적재=이벤트+일별 스케줄러 결정) | **적용 버전**: v2.0
 - **변경 일자**: 2026-06-26
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->

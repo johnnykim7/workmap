@@ -128,6 +128,10 @@
 | POST | /sprints/{id}/complete | 스프린트 완료(미완료 이월) | 🔒 | P1 | WMP-AGL-004 |
 | PATCH | /work-items/{id}/sprint | 스프린트 담기/빼기(백로그↔스프린트 이동) | 🔒 | P1 | WMP-AGL-002 |
 | GET | /projects/{id}/board | 보드(스크럼/칸반 컬럼별 카드) | 🔒 | P1 | WMP-AGL-005·OPS-001 |
+| GET | /sprints/{id}/burndown | 번다운/번업(일자별 잔여/누적완료/기준선) | 🔒 | P2 | WMP-AGL-006 |
+| GET | /projects/{id}/velocity | 벨로시티(완료 스프린트별 완료포인트 + 평균) | 🔒 | P2 | WMP-AGL-006 |
+
+> **번다운(CR-012)**: `burndown_snapshots`(T3-1) 시계열 조회. 스냅샷은 `SprintStarted`(START 기준선)·일별 스케줄러(DAILY)·`SprintCompleted`(COMPLETE) 이벤트/배치가 적재 — 조회 API는 적재하지 않는다(읽기 전용). 벨로시티 = 해당 프로젝트 COMPLETE 스냅샷들의 `completed_points` 목록 + 평균.
 
 ## H. 운영 실행 (Operations)
 
@@ -135,8 +139,11 @@
 |--------|------|------|------|----------|-------------|
 | GET | /projects/{id}/throughput | 일일/주간 처리량(담당자별 계획 대비 완료) | 🔒 | P1 | WMP-OPS-002 |
 | POST | /work-items/{id}/promote-to-backlog | 현장 이슈→개발 백로그 전환(원본 링크 유지) | 🔒 | P1 | WMP-OPS-003 |
+| GET | /work-items/{id}/field-verifications | 현장검증 기록 목록 | 🔒 | P2 | WMP-OPS-004 |
+| POST | /work-items/{id}/field-verifications | 현장검증 기록(검증자/검증일/결과/발견이슈) + 후속업무 옵션 | 🔒 | P2 | WMP-OPS-004 |
 
-> 운영형 보드는 G. 보드(`GET /projects/{id}/board`)를 워크플로(운영형) 기준으로 공유. 현장검증 기록(WMP-OPS-004)은 P2.
+> 운영형 보드는 G. 보드(`GET /projects/{id}/board`)를 워크플로(운영형) 기준으로 공유.
+> **현장검증(WMP-OPS-004, CR-012)**: 검증 기록 저장은 단순 체크박스가 아니라 검증자/검증일/장소/환경/테스트내용/결과(PASS/FAIL/PARTIAL)/발견이슈를 기록(`field_verifications`, T3-1). 발견 이슈가 있으면 `createFollowUp=true`로 후속 업무 항목을 생성(원본↔후속 RELATES_TO 링크, BIZ-109 — promote-to-backlog와 동일 패턴). 결과에 따른 상태 전이(DEV_DONE→FIELD_VERIFYING→OPS_APPLIED, T1-5 현장검증형)는 별도 `PATCH /work-items/{id}/status`(FSM 가드 경유)로 수행 — 기록 저장이 상태를 직접 바꾸지 않는다(직접 status UPDATE 금지, BIZ-010).
 
 ### H1. 승인 (Approvals)
 
@@ -157,8 +164,12 @@
 | GET | /work-items | 목록 뷰(표/분할, 검색·필터·퀵필터) — F 모듈 공유 | 🔒 | P1 | WMP-VIEW-001·004 |
 | GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) | 🔒 | P2 | WMP-VIEW-002 |
 | GET | /projects/{id}/calendar | 캘린더(기한 기준 월별) | 🔒 | P2 | WMP-VIEW-003 |
+| GET | /saved-filters | 저장 필터 목록(내 것 + 공유된 것) | 🔒 | P2 | WMP-VIEW-004 |
+| POST | /saved-filters | 저장 필터 생성(name, query, isShared) | 🔒 | P2 | WMP-VIEW-004 |
+| PUT | /saved-filters/{id} | 저장 필터 수정(소유자만) | 🔒 | P2 | WMP-VIEW-004 |
+| DELETE | /saved-filters/{id} | 저장 필터 삭제(소유자만) | 🔒 | P2 | WMP-VIEW-004 |
 
-## J. 회사 홈 / 보고 (Dashboard / Report)
+> **저장 필터(WMP-VIEW-004, CR-012)**: `saved_filters`(T3-1) CRUD. `query`(JSONB)는 목록 필터 조건(유형·상태·담당자·우선순위·라벨·스프린트·Epic·기한·막힘·검색어)을 그대로 저장. `is_shared=true`면 전 사용자 목록에 노출, false면 owner만. 수정·삭제는 **소유자만**(owner_id 일치 검증). Phase 1의 기본/전문/퀵필터(WMP-VIEW-001·004)는 이미 `/work-items`에서 제공 — 저장/공유 부분만 여기서 추가.
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
