@@ -47,7 +47,13 @@
     <select id="findVisible" resultMap="projectMap">
         SELECT p.* FROM projects p
         <where>
-            (
+            <!-- 1차 격리 경계: 내가 멤버인 WS의 프로젝트만(BIZ-112, CR-018). 비멤버 WS면 PUBLIC이어도 안 보임 -->
+            EXISTS (
+                SELECT 1 FROM workspace_members wm
+                WHERE wm.workspace_id = p.workspace_id AND wm.user_id = #{viewerId}
+            )
+            <!-- 2차: 그 WS 안에서 프로젝트 가시성(BIZ-108) -->
+            AND (
                 p.visibility = 'PUBLIC'
                 OR p.created_by = #{viewerId}
                 OR EXISTS (

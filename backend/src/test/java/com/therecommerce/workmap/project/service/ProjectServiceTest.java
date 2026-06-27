@@ -32,6 +32,7 @@ class ProjectServiceTest {
     @Mock ProjectMapper projectMapper;
     @Mock ProjectTemplateMapper templateMapper;
     @Mock ProjectMemberMapper memberMapper;
+    @Mock com.therecommerce.workmap.workspace.mapper.WorkspaceMemberMapper workspaceMemberMapper;
 
     @InjectMocks ProjectService projectService;
 

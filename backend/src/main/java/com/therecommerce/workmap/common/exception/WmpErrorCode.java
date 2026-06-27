@@ -84,7 +84,12 @@ public enum WmpErrorCode implements ErrorCode {
     FIELD_VERIFICATION_NOT_FOUND("WMP-7799", "현장검증 기록을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     FIELD_VERIFICATION_RESULT_INVALID("WMP-7800", "검증 결과는 PASS/FAIL/PARTIAL 중 하나여야 합니다.", HttpStatus.BAD_REQUEST),
     SAVED_FILTER_NOT_FOUND("WMP-7801", "저장 필터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    SAVED_FILTER_FORBIDDEN("WMP-7802", "본인이 만든 저장 필터만 수정·삭제할 수 있습니다.", HttpStatus.FORBIDDEN);
+    SAVED_FILTER_FORBIDDEN("WMP-7802", "본인이 만든 저장 필터만 수정·삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
+
+    // 워크스페이스 멤버십 격리 (7803~, WMP-WS-007/008, BIZ-112, CR-018)
+    WORKSPACE_ACCESS_DENIED("WMP-7803", "이 워크스페이스에 접근할 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    WORKSPACE_MEMBER_NOT_FOUND("WMP-7804", "워크스페이스 멤버를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    WORKSPACE_MEMBER_DUPLICATED("WMP-7805", "이미 워크스페이스 멤버입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;

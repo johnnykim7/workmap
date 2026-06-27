@@ -26,6 +26,14 @@
         SELECT * FROM workspaces ORDER BY id
     </select>
 
+    <!-- 내가 속한 WS만 (BIZ-112 격리). 전사 Admin도 멤버 WS만 — 무차별 조회 금지. -->
+    <select id="findByMember" resultMap="workspaceMap">
+        SELECT w.* FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE wm.user_id = #{userId}
+        ORDER BY w.id
+    </select>
+
     <update id="update" parameterType="com.therecommerce.workmap.workspace.domain.Workspace">
         UPDATE workspaces
         SET name        = #{name},

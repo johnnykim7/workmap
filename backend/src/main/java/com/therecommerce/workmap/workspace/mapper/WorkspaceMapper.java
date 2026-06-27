@@ -18,5 +18,8 @@ public interface WorkspaceMapper {
 
     List<Workspace> findAll();
 
+    /** 내가 속한 WS만 (BIZ-112 격리, WMP-WS-008 선택 가능 목록). */
+    List<Workspace> findByMember(@Param("userId") Long userId);
+
     void update(Workspace workspace);
 }

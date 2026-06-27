@@ -12,6 +12,7 @@ import com.therecommerce.workmap.project.dto.ProjectDtos;
 import com.therecommerce.workmap.project.dto.ProjectSummary;
 import com.therecommerce.workmap.project.mapper.ProjectMapper;
 import com.therecommerce.workmap.project.mapper.ProjectTemplateMapper;
+import com.therecommerce.workmap.workspace.mapper.WorkspaceMemberMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
     private final ProjectTemplateMapper templateMapper;
     private final ProjectMemberMapper memberMapper;
+    private final WorkspaceMemberMapper workspaceMemberMapper;
 
     @Transactional
     public ProjectDtos.Response create(ProjectDtos.CreateRequest req, Long actorId) {
@@ -158,8 +160,15 @@ public class ProjectService {
         return s;
     }
 
-    /** BIZ-108: 비공개 프로젝트는 멤버/생성자만 조회 가능. */
+    /**
+     * 가시성 가드 — 2단 경계(CR-018).
+     * 1차(BIZ-112): 그 프로젝트의 WS 멤버가 아니면 WORKSPACE_ACCESS_DENIED(비멤버는 PUBLIC이어도 차단).
+     * 2차(BIZ-108): 그 WS 안에서 비공개 프로젝트는 멤버/생성자만.
+     */
     private void assertVisible(Project p, Long viewerId) {
+        if (!workspaceMemberMapper.exists(p.getWorkspaceId(), viewerId)) {
+            throw new BusinessException(WmpErrorCode.WORKSPACE_ACCESS_DENIED);
+        }
         if (Visibility.PUBLIC.name().equals(p.getVisibility())) {
             return;
         }

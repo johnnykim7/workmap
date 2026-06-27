@@ -53,6 +53,7 @@ class WorkItemControllerTest {
     // @MapperScan이 슬라이스에도 적용되므로 MyBatis 매퍼 빈을 목으로 대체
     @MockBean com.therecommerce.workmap.user.mapper.UserMapper userMapper;
     @MockBean com.therecommerce.workmap.workspace.mapper.WorkspaceMapper workspaceMapper;
+    @MockBean com.therecommerce.workmap.workspace.mapper.WorkspaceMemberMapper workspaceMemberMapper;
     @MockBean com.therecommerce.workmap.project.mapper.ProjectMapper projectMapper;
     @MockBean com.therecommerce.workmap.project.mapper.ProjectTemplateMapper projectTemplateMapper;
     @MockBean com.therecommerce.workmap.member.mapper.ProjectMemberMapper projectMemberMapper;

@@ -372,7 +372,7 @@
   - **T1-3**: BIZ-108 가시성 **2단 경계로 개정** + 신규 **BIZ-112(WS 멤버십 격리 — 전 목록/검색/대시보드/받은함 스코프, 서버 강제)**. (주의: BIZ-110은 기존 승인게이트 규칙이라 112로 신설.)
   - **T1-4**: POL-004에 WS 멤버십 권한·2단 가시성·전사Admin 단일 권한 보강.
   - **T3-1**: `workspace_members` 테이블 신설(workspace_id+user_id PK, role 없음) + **Flyway V4**(+백필: 기존 project_members→workspace 멤버 승격, 격리 차단 방지).
-  - **T3-2**: `GET·POST·DELETE /workspaces/{id}/members` + `GET /workspaces`를 "내 WS만"으로 + 전 목록 API **WS 격리 가드(BIZ-112)** 명시 + 에러코드 **WMP-7800~7802**.
+  - **T3-2**: `GET·POST·DELETE /workspaces/{id}/members` + `GET /workspaces`를 "내 WS만"으로 + 전 목록 API **WS 격리 가드(BIZ-112)** 명시 + 에러코드 **WMP-7803~7805**(7800~02는 CR-012 선점, 구현 중 실측 정정).
   - **T3-3**: §9.1 LNB IA 개정(WS 스위처+프로젝트 나열 ⓐ) + 신규 라우트 `/select-workspace`(WMP-WS-008)·`/workspaces/:wsId/members`(WMP-WS-007). 홈/검색/프로젝트목록 WS 스코프 표기.
   - **execution-spec**: §5에 "CR-018 — WS 격리 경계 + 진입감 IA(횡단)" 가이드 추가(BE 본체: V4+백필·WS멤버 도메인·격리 가드·에러코드 / FE: 선택화면·LNB 스위처·컨텍스트 스코프 / 함정: 백필 누락·클라wsId 신뢰 금지·전사집계 멤버WS범위).
 - **구현 시 핵심 함정(execution-spec에 상세)**: ① V4 백필 누락 시 기존 운영 사용자 전원 격리 차단(배포 전 필수) ② 격리 가드를 클라 wsId만 믿으면 무력화 — 서버 멤버십 교집합 강제 ③ 회사홈 전사집계도 멤버 WS 범위(전 WS 무차별 금지).

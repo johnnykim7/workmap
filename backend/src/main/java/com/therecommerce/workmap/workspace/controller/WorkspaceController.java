@@ -22,9 +22,10 @@ public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
 
+    /** 내가 속한 WS만 (BIZ-112, WMP-WS-008 선택 가능 목록). */
     @GetMapping
-    public ResponseDto<List<WorkspaceDtos.Response>> list() {
-        return ResponseDto.success(workspaceService.list());
+    public ResponseDto<List<WorkspaceDtos.Response>> list(@AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(workspaceService.list(userId));
     }
 
     @PostMapping
@@ -36,9 +37,11 @@ public class WorkspaceController {
         return ResponseDto.success(workspaceService.create(req, userId));
     }
 
+    /** 상세 — 비멤버 403(BIZ-112). */
     @GetMapping("/{id}")
-    public ResponseDto<WorkspaceDtos.Response> get(@PathVariable Long id) {
-        return ResponseDto.success(workspaceService.get(id));
+    public ResponseDto<WorkspaceDtos.Response> get(
+            @PathVariable Long id, @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(workspaceService.get(id, userId));
     }
 
     @PatchMapping("/{id}")
@@ -46,5 +49,28 @@ public class WorkspaceController {
     public ResponseDto<WorkspaceDtos.Response> update(
             @PathVariable Long id, @Valid @RequestBody WorkspaceDtos.UpdateRequest req) {
         return ResponseDto.success(workspaceService.update(id, req));
+    }
+
+    // ── WS 멤버 관리 (WMP-WS-007, CR-018) — 전사 Admin만(POL-004) ──
+
+    @GetMapping("/{id}/members")
+    public ResponseDto<List<WorkspaceDtos.MemberResponse>> listMembers(@PathVariable Long id) {
+        return ResponseDto.success(workspaceService.listMembers(id));
+    }
+
+    @PostMapping("/{id}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseDto<Void> addMember(
+            @PathVariable Long id, @Valid @RequestBody WorkspaceDtos.AddMemberRequest req) {
+        workspaceService.addMember(id, req.userId());
+        return ResponseDto.success(null);
+    }
+
+    @DeleteMapping("/{id}/members/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseDto<Void> removeMember(@PathVariable Long id, @PathVariable Long userId) {
+        workspaceService.removeMember(id, userId);
+        return ResponseDto.success(null);
     }
 }

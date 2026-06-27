@@ -58,7 +58,7 @@
 |--------|------|------|------|----------|-------------|
 | GET | /workspaces | 워크스페이스 목록 — **내가 속한 WS만**(BIZ-112). Admin도 멤버 WS만 | 🔒 | P1 | WMP-WS-001·008 |
 | POST | /workspaces | 워크스페이스 생성(생성자 자동 멤버 추가) | 🔒 Admin | P1 | WMP-WS-001 |
-| GET | /workspaces/{id} | 워크스페이스 상세 — **비멤버 403**(WMP-7800) | 🔒 | P1 | WMP-WS-001 |
+| GET | /workspaces/{id} | 워크스페이스 상세 — **비멤버 403**(WMP-7803) | 🔒 | P1 | WMP-WS-001 |
 | PATCH | /workspaces/{id} | 워크스페이스 수정 | 🔒 Admin | P1 | WMP-WS-001 |
 | GET | /workspaces/{id}/members | WS 멤버 목록 | 🔒 | P1 | WMP-WS-007 |
 | POST | /workspaces/{id}/members | WS 멤버 추가(전사 Admin만) | 🔒 Admin | P1 | WMP-WS-007 |
@@ -67,7 +67,7 @@
 > **WS 격리 가드(BIZ-112, CR-018) — 전 목록 API 공통.** `GET /projects`·`/work-items`·`/search`·`/inbox`·`/dashboard/*`는 호출자의 `workspace_members` 교집합으로 1차 필터(서버 강제). 클라이언트가 보낸 `?workspaceId=`는 "멤버인 WS 중 더 좁히기"로만 작동 — 멤버 아닌 WS면 빈 결과(또는 403). 비멤버가 wsId를 위조해도 데이터 노출 0. 가시성 2차(PUBLIC/PRIVATE)는 이 1차 통과 후 적용(BIZ-108).
 > **WS 선택/전환(WMP-WS-008)은 별도 API 없음** — 선택은 클라이언트 상태(localStorage), 진입 시 위 가드가 멤버십을 서버에서 재검증한다. 선택 가능 목록 = `GET /workspaces`(내 WS만).
 >
-> **신규 에러코드(CR-018, WMP-7800~7802)**: `WORKSPACE_NOT_FOUND`(WMP-7800 직전 WS 미존재용은 기존 재사용 검토), `WORKSPACE_ACCESS_DENIED`(WMP-7800, 비멤버 접근 403), `WORKSPACE_MEMBER_NOT_FOUND`(WMP-7801, 제거 대상 없음 404), `WORKSPACE_MEMBER_DUPLICATED`(WMP-7802, 이미 멤버 409). 현재 코드 마지막=WMP-7799(CR-012).
+> **신규 에러코드(CR-018, WMP-7803~7805)**: `WORKSPACE_ACCESS_DENIED`(WMP-7803, 비멤버 접근 403), `WORKSPACE_MEMBER_NOT_FOUND`(WMP-7804, 제거 대상 없음 404), `WORKSPACE_MEMBER_DUPLICATED`(WMP-7805, 이미 멤버 409). WS 미존재는 기존 `WORKSPACE_NOT_FOUND`(WMP-7722) 재사용. (실측 정정: 코드 마지막은 WMP-7799가 아니라 **WMP-7802** — 7800~7802는 CR-012 현장검증/저장필터가 선점. WS는 7803부터.)
 
 ## D. 프로젝트 (Projects)
 
