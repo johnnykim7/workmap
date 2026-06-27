@@ -2,12 +2,13 @@
 // WS = 슬랙식 격리 작업공간. LNB 상단 WS 스위처 + 그 WS 프로젝트 나열(ⓐ).
 // WS 미선택이면 /select-workspace로. 선택 WS가 내 목록에 없으면(탈퇴 등) 무효화.
 import { useEffect, useMemo } from 'react';
-import { Link, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import {
   AdminShell,
   Button,
   Avatar,
   AvatarFallback,
+  Skeleton,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
 import { useLogout } from '@/features/auth/hooks';
 import { useWorkspaces } from '@/features/workspaces/hooks';
-import { useProjects } from '@/features/projects/hooks';
+import { useProjects, useProjectByKey } from '@/features/projects/hooks';
 import { CreateModal } from '@/components/common/create-modal';
 
 // 글로벌 LNB 고정 메뉴 (§9.1). 프로젝트 목록은 선택 WS 기준 children으로 동적 주입.
@@ -92,22 +93,52 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
   );
 }
 
+// 헤더 좌측 타이틀 — "지금 어느 화면인가"를 항상 표시(검색바 자리 대체).
+// 일반 화면은 경로→라벨, 프로젝트 화면은 프로젝트명(클릭=목록으로 이동, 본문 브레드크럼 제거 대체).
+function HeaderTitle() {
+  const { pathname } = useLocation();
+  const { key = '' } = useParams();
+  const { data: project, isPending } = useProjectByKey(key);
+
+  // 프로젝트 화면: 프로젝트명 + 목록 이동 링크.
+  if (pathname.startsWith('/projects/') && key) {
+    if (isPending) return <Skeleton className="h-5 w-40" />;
+    return (
+      <Link
+        to={ROUTES.projects}
+        className="truncate text-base font-semibold text-foreground outline-none hover:text-primary focus-visible:underline"
+      >
+        {project?.name ?? key}
+      </Link>
+    );
+  }
+
+  // 그 외 화면: 경로 → 화면명(LNB 메뉴 라벨과 동일 톤).
+  const label =
+    pathname === ROUTES.home
+      ? '회사 홈'
+      : pathname.startsWith(ROUTES.inbox)
+        ? '받은함'
+        : pathname.startsWith(ROUTES.search)
+          ? '검색'
+          : pathname.startsWith(ROUTES.projects)
+            ? '프로젝트'
+            : pathname.startsWith('/admin')
+              ? '설정'
+              : pathname.startsWith('/workspaces')
+                ? '워크스페이스'
+                : '';
+  return <span className="truncate text-base font-semibold text-foreground">{label}</span>;
+}
+
 function HeaderActions() {
-  const navigate = useNavigate();
   const openCreate = useUiStore((s) => s.openCreateModal);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
 
   return (
     <div className="flex w-full items-center justify-between gap-3">
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-72 justify-start text-muted-foreground"
-        onClick={() => navigate(ROUTES.search)}
-      >
-        <Search className="size-4" /> 검색…
-      </Button>
+      <HeaderTitle />
       <div className="flex items-center gap-3">
         {/* 생성/추가 = primary (CLAUDE.md 버튼 일관성) */}
         <Button variant="primary" size="sm" onClick={openCreate}>
