@@ -49,6 +49,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
     <div>
       <DetailHeader
         item={item}
+        showBack={!stacked}
         onAddSubtask={() => addSubtaskRef.current()}
         onAddLink={() => addLinkRef.current()}
         onAddAttachment={() => addAttachmentRef.current()}

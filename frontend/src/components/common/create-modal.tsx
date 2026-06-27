@@ -3,7 +3,7 @@
 // 유형별 풍부한 필드(인수조건/재현절차 등)는 모달에 없음 — 만든 뒤 상세에서 채움(§9.3).
 // 상태는 BE가 워크플로 시작 상태로 고정(status_id 입력 무시, WI-3).
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -57,10 +57,16 @@ export function CreateModal() {
   const open = useUiStore((s) => s.createModalOpen);
   const close = useUiStore((s) => s.closeCreateModal);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [keepOpen, setKeepOpen] = useState(false);
 
   const { data: projects = [] } = useProjects({});
   const createMut = useCreateWorkItem();
+
+  // 현재 프로젝트 컨텍스트 추론(#15) — /projects/:key/* 화면에서 열면 그 프로젝트로 프리셋·잠금.
+  // CreateModal은 AppShell(Outlet 바깥)에 마운트돼 useParams로는 :key를 못 받음 → pathname 파싱.
+  const ctxKey = pathname.match(/^\/projects\/([^/]+)/)?.[1];
+  const ctxProject = ctxKey ? projects.find((p) => p.key === ctxKey) : undefined;
 
   const { register, handleSubmit, reset, control, watch, formState: { errors } } =
     useForm<FormValues>({
@@ -68,10 +74,12 @@ export function CreateModal() {
       defaultValues: { ...EMPTY },
     });
 
-  // 모달이 닫히면 폼 초기화.
+  // 모달이 열리면 폼 초기화 + 프로젝트 컨텍스트가 있으면 그 프로젝트로 프리셋. 닫히면 비움.
   useEffect(() => {
-    if (!open) reset({ ...EMPTY });
-  }, [open, reset]);
+    if (open) reset({ ...EMPTY, projectId: ctxProject?.id });
+    else reset({ ...EMPTY });
+    // ctxProject는 projects 로딩 후 채워지므로 id도 의존성에 포함.
+  }, [open, ctxProject?.id, reset]);
 
   const projectIdRaw = watch('projectId');
   const selectedProjectId = projectIdRaw ? Number(projectIdRaw) : undefined;
@@ -150,6 +158,7 @@ export function CreateModal() {
                   <Select
                     value={field.value ? String(field.value) : ''}
                     onValueChange={(val) => field.onChange(Number(val))}
+                    disabled={!!ctxProject}
                   >
                     <SelectTrigger><SelectValue placeholder="프로젝트 선택" /></SelectTrigger>
                     <SelectContent>

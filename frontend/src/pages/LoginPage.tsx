@@ -53,8 +53,13 @@ export function LoginPage() {
           </Button>
         </form>
 
-        {/* 안내 계정. 운영 계정 정책 확정 시 제거. */}
+        {/* 가입 안내 — self-signup 부재(WMP-AUTH-004 관리자 초대 모델). #1 */}
         <p className="mt-4 text-center text-xs text-muted-foreground">
+          계정이 없으신가요? 관리자에게 계정 생성을 요청하세요.
+        </p>
+
+        {/* 안내 계정. 운영 계정 정책 확정 시 제거. */}
+        <p className="mt-2 text-center text-xs text-muted-foreground/70">
           admin@workmap.com / admin1234
         </p>
       </div>

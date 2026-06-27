@@ -8,7 +8,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, toast,
 } from '@therecommerce/ds-ui';
 import {
-  ChevronUp, ChevronDown, Eye, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace, Trash2,
+  ChevronUp, ChevronDown, ArrowLeft, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace, Trash2,
 } from 'lucide-react';
 import { TypeBadge } from '@/components/badges';
 import { ROUTES } from '@/lib/route-paths';
@@ -21,12 +21,14 @@ import { ConvertDialog } from './ConvertDialog';
 
 interface Props {
   item: WorkItemResponse;
+  // 풀페이지 진입(라우트)일 때만 뒤로가기 노출. 분할뷰(stacked)에선 같은 화면 패널이라 숨김. #4
+  showBack?: boolean;
   onAddSubtask: () => void;
   onAddLink: () => void;
   onAddAttachment: () => void;
 }
 
-export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }: Props) {
+export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, onAddAttachment }: Props) {
   const navigate = useNavigate();
   const update = useUpdateWorkItem(item.id, item.key);
   const changeStatus = useChangeStatus(item.id, item.key);
@@ -74,6 +76,11 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
         {/* 상단 액션 줄 */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            {showBack && (
+              <IconBtn label="뒤로 가기" onClick={() => navigate(-1)}>
+                <ArrowLeft className="size-4" />
+              </IconBtn>
+            )}
             <TypeBadge type={item.issueType} withLabel={false} />
             <span className="font-mono text-sm text-muted-foreground">{item.key}</span>
             <div className="flex items-center">
@@ -87,9 +94,7 @@ export function DetailHeader({ item, onAddSubtask, onAddLink, onAddAttachment }:
           </div>
 
           <div className="flex items-center gap-1">
-            <IconBtn label="구독(워치)" onClick={() => toast.info('워치 기능은 준비 중입니다.')}>
-              <Eye className="size-4" />
-            </IconBtn>
+            {/* 워치/구독은 T1-1 53종 밖 + 동작 없음(준비 중 토스트만) — 미완성 인상 방지 위해 숨김. #8 */}
             <IconBtn
               label="공유 링크 복사"
               onClick={() => {
