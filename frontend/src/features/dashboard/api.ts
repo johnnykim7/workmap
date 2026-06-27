@@ -40,19 +40,25 @@ export interface ProjectReport {
 // 막힘/지연/미배정 목록 종류.
 export type DashboardListKind = 'blocked' | 'delayed' | 'unassigned';
 
-function qs(projectId?: number, page = 0, size = 20) {
+function qs(projectId?: number, page = 0, size = 20, workspaceId?: number) {
   const p = new URLSearchParams({ page: String(page), size: String(size) });
   if (projectId != null) p.set('projectId', String(projectId));
+  if (workspaceId != null) p.set('workspaceId', String(workspaceId));
   return p.toString();
 }
 
 export const dashboardApi = {
-  // 지표 카드(WMP-HOME-001). projectId 미지정 = 전사.
-  metrics: (projectId?: number) =>
-    api.get<DashboardMetrics>(`/dashboard/metrics${projectId != null ? `?projectId=${projectId}` : ''}`),
+  // 지표 카드(WMP-HOME-001). workspaceId 지정 = 그 WS로 좁힘(CR-018), 미지정 = 내 WS 전체.
+  metrics: (projectId?: number, workspaceId?: number) => {
+    const p = new URLSearchParams();
+    if (projectId != null) p.set('projectId', String(projectId));
+    if (workspaceId != null) p.set('workspaceId', String(workspaceId));
+    const q = p.toString();
+    return api.get<DashboardMetrics>(`/dashboard/metrics${q ? `?${q}` : ''}`);
+  },
   // 막힘/지연/미배정 목록(PageResponse<WorkItemResponse>).
-  list: (kind: DashboardListKind, projectId?: number, page = 0, size = 20) =>
-    api.get<PageResponse<WorkItemResponse>>(`/dashboard/${kind}?${qs(projectId, page, size)}`),
+  list: (kind: DashboardListKind, projectId?: number, page = 0, size = 20, workspaceId?: number) =>
+    api.get<PageResponse<WorkItemResponse>>(`/dashboard/${kind}?${qs(projectId, page, size, workspaceId)}`),
   // 프로젝트 보고서(WMP-HOME-003) — 진행률/지연/막힘 + 상태·유형·담당자 분포.
   report: (projectId: number) =>
     api.get<ProjectReport>(`/projects/${projectId}/report`),

@@ -76,14 +76,13 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
             {ws.id === currentId && <Check className="size-4 text-primary" />}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate(ROUTES.selectWorkspace)}>
-          <ChevronsUpDown className="size-4" /> 워크스페이스 선택 화면
-        </DropdownMenuItem>
         {canManage && currentId && (
-          <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>
-            <Users className="size-4" /> 멤버 관리
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>
+              <Users className="size-4" /> 멤버 관리
+            </DropdownMenuItem>
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

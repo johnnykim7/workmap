@@ -143,6 +143,7 @@ public final class WorkItemDtos {
      */
     public record SearchParams(
             Long projectId,
+            Long workspaceId,   // CR-018: 선택 WS로 좁힘(없으면 내 WS 전체 — BIZ-112 격리는 항상 적용)
             String issueType,
             String commonStatus,
             String priority,

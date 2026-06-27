@@ -56,7 +56,7 @@ class DashboardServiceTest {
         when(dashboardMapper.countByMode(eq("BLOCKED"), anyList(), isNull(), eq(7))).thenReturn(1L);
 
         PageResponse<WorkItemDtos.Response> res =
-                service.list("BLOCKED", null, new PageRequest(0, 20), 1L);
+                service.list("BLOCKED", null, null, new PageRequest(0, 20), 1L);
 
         assertThat(res.getItems()).hasSize(1);
         assertThat(res.getTotalCount()).isEqualTo(1L);
@@ -68,7 +68,7 @@ class DashboardServiceTest {
         visible(5L, 6L);   // 99는 가시 목록에 없음
 
         PageResponse<WorkItemDtos.Response> res =
-                service.list("DELAYED", 99L, new PageRequest(0, 20), 1L);
+                service.list("DELAYED", 99L, null, new PageRequest(0, 20), 1L);
 
         assertThat(res.getItems()).isEmpty();
         assertThat(res.getTotalCount()).isZero();
@@ -80,7 +80,7 @@ class DashboardServiceTest {
     void 지표_미가시_제로() {
         visible(5L);
 
-        DashboardDtos.Metrics m = service.metrics(99L, 1L);
+        DashboardDtos.Metrics m = service.metrics(99L, null, 1L);
 
         assertThat(m.getInProgress()).isZero();
         assertThat(m.getStale()).isZero();

@@ -7,6 +7,7 @@ import type { WorkItemSortKey, SortDirection } from '@/features/workitem/list-ap
 // 전사 검색 파라미터 — list-api와 동일 화이트리스트지만 projectId optional.
 export interface SearchParams {
   keyword?: string;
+  workspaceId?: number; // CR-018: 선택 WS로 좁힘(없으면 내 WS 전체 — BIZ-112 격리는 항상)
   issueType?: IssueType;
   commonStatus?: WorkStatus;
   priority?: Priority;
@@ -20,6 +21,7 @@ export interface SearchParams {
 function toQuery(p: SearchParams): string {
   const sp = new URLSearchParams();
   if (p.keyword?.trim()) sp.set('keyword', p.keyword.trim());
+  if (p.workspaceId != null) sp.set('workspaceId', String(p.workspaceId));
   if (p.issueType) sp.set('issueType', p.issueType);
   if (p.commonStatus) sp.set('commonStatus', p.commonStatus);
   if (p.priority) sp.set('priority', p.priority);

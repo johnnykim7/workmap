@@ -42,9 +42,10 @@ public class WorkItemQueryService {
     public PageResponse<WorkItemDtos.Response> search(
             WorkItemDtos.SearchParams params, PageRequest page, Long viewerId) {
 
-        // 가시성(BIZ-108): viewer가 볼 수 있는 프로젝트 id 목록
+        // 가시성(BIZ-108) + WS 격리/선택(BIZ-112, CR-018): viewer가 볼 수 있는 프로젝트 id.
+        // workspaceId 지정 시 그 WS로 좁힘(findVisible이 WS 멤버십도 강제하므로 비멤버 WS는 0건).
         List<Long> visibleProjectIds = projectMapper
-                .findVisible(viewerId, null, null, null, true)
+                .findVisible(viewerId, params.workspaceId(), null, null, true)
                 .stream().map(Project::getId).toList();
 
         // 특정 프로젝트 지정 시 가시 목록에 포함되는지 확인(미포함이면 결과 0건)

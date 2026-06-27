@@ -36,17 +36,24 @@ public class DashboardService {
     @Value("${workmap.stale.threshold-days:7}")
     private int staleDays;
 
-    private List<Long> visibleProjectIds(Long viewerId) {
-        return projectMapper.findVisible(viewerId, null, null, null, true)
+    /**
+     * 가시 프로젝트 id. workspaceId 지정 시 그 WS로 좁힌다(CR-018, 선택 WS 컨텍스트).
+     * findVisible은 WS 멤버십(BIZ-112) 1차 격리를 이미 강제하므로, 비멤버 WS를 넘겨도 결과 0.
+     */
+    private List<Long> visibleProjectIds(Long viewerId, Long workspaceId) {
+        return projectMapper.findVisible(viewerId, workspaceId, null, null, true)
                 .stream().map(Project::getId).toList();
     }
 
     /** mode = BLOCKED | DELAYED | UNASSIGNED 목록. projectId 미가시면 결과 0건. */
     @Transactional(readOnly = true)
-    public PageResponse<WorkItemDtos.Response> list(String mode, Long projectId,
+    public PageResponse<WorkItemDtos.Response> list(String mode, Long projectId, Long workspaceId,
                                                     PageRequest page, Long viewerId) {
-        List<Long> visible = visibleProjectIds(viewerId);
+        List<Long> visible = visibleProjectIds(viewerId, workspaceId);
         if (projectId != null && !visible.contains(projectId)) {
+            return PageResponse.of(List.of(), 0L, page);
+        }
+        if (visible.isEmpty()) {
             return PageResponse.of(List.of(), 0L, page);
         }
         List<WorkItem> rows = dashboardMapper.findByMode(
@@ -60,10 +67,13 @@ public class DashboardService {
 
     /** 지표 카드(WMP-HOME-001). projectId 미가시면 빈 지표(모두 0). */
     @Transactional(readOnly = true)
-    public DashboardDtos.Metrics metrics(Long projectId, Long viewerId) {
-        List<Long> visible = visibleProjectIds(viewerId);
+    public DashboardDtos.Metrics metrics(Long projectId, Long workspaceId, Long viewerId) {
+        List<Long> visible = visibleProjectIds(viewerId, workspaceId);
         if (projectId != null && !visible.contains(projectId)) {
             return new DashboardDtos.Metrics();  // 모두 0
+        }
+        if (visible.isEmpty()) {
+            return new DashboardDtos.Metrics();
         }
         return dashboardMapper.metrics(visible, projectId, staleDays);
     }
@@ -76,7 +86,7 @@ public class DashboardService {
             throw new BusinessException(WmpErrorCode.PROJECT_NOT_FOUND);
         }
         // 가시성(BIZ-108): viewer가 볼 수 없는 비공개 프로젝트면 차단
-        boolean visible = visibleProjectIds(viewerId).contains(projectId);
+        boolean visible = visibleProjectIds(viewerId, null).contains(projectId);
         if (!visible) {
             throw new BusinessException(WmpErrorCode.NOT_PROJECT_MEMBER);
         }
