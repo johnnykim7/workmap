@@ -4,7 +4,9 @@ import com.therecommerce.common.response.ResponseDto;
 import com.therecommerce.common.security.auth.AuthUserInfo;
 import com.therecommerce.workmap.project.dto.ProjectDtos;
 import com.therecommerce.workmap.project.dto.ProjectSummary;
+import com.therecommerce.workmap.project.dto.ProjectTabDtos;
 import com.therecommerce.workmap.project.service.ProjectService;
+import com.therecommerce.workmap.project.service.ProjectTabService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectTabService projectTabService;
 
     @GetMapping
     public ResponseDto<List<ProjectDtos.Response>> list(
@@ -81,5 +84,32 @@ public class ProjectController {
     public ResponseDto<ProjectSummary> summary(
             @PathVariable Long id, @AuthUserInfo("userId") Long userId) {
         return ResponseDto.success(projectService.summary(id, userId));
+    }
+
+    // ─────────────── 탭 메뉴(Jira식, CR-020) ───────────────
+
+    /** 탭 메뉴 데이터(폴백 적용 표시명·기본탭). 이동·제거·기본값은 PATCH /projects/{id}. */
+    @GetMapping("/{id}/tabs")
+    public ResponseDto<ProjectTabDtos.TabsResponse> tabs(@PathVariable Long id) {
+        return ResponseDto.success(projectTabService.getTabs(id));
+    }
+
+    /** 탭 이름 바꾸기(프로젝트별 오버라이드). */
+    @PutMapping("/{id}/tabs/{code}/label")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")
+    public ResponseDto<Void> renameTab(
+            @PathVariable Long id, @PathVariable String code,
+            @Valid @RequestBody ProjectTabDtos.RenameRequest req) {
+        projectTabService.rename(id, code, req.label());
+        return ResponseDto.success(null);
+    }
+
+    /** 탭 이름 되돌리기(기본값 폴백). */
+    @DeleteMapping("/{id}/tabs/{code}/label")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','OWNER')")
+    public ResponseDto<Void> resetTabLabel(
+            @PathVariable Long id, @PathVariable String code) {
+        projectTabService.resetLabel(id, code);
+        return ResponseDto.success(null);
     }
 }

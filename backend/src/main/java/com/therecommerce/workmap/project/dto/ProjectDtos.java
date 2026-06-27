@@ -36,6 +36,7 @@ public final class ProjectDtos {
     public record UpdateRequest(
             @Size(max = 200) String name,
             List<String> activeTabs,
+            @Size(max = 30) String defaultTab,   // "기본값으로 설정"(CR-020). null이면 미변경.
             LocalDate startDate,
             LocalDate endDate,
             String description
@@ -59,6 +60,7 @@ public final class ProjectDtos {
             String visibility,
             Long workflowId,
             List<String> activeTabs,
+            String defaultTab,
             LocalDate startDate,
             LocalDate endDate,
             String description,
@@ -70,8 +72,8 @@ public final class ProjectDtos {
             return new Response(
                     p.getId(), p.getWorkspaceId(), p.getKey(), p.getName(), p.getTemplateId(),
                     p.getStatus(), p.getVisibility(), p.getWorkflowId(), p.getActiveTabs(),
-                    p.getStartDate(), p.getEndDate(), p.getDescription(), p.getCreatedBy(),
-                    p.getArchivedAt(), p.getCreatedAt());
+                    p.getDefaultTab(), p.getStartDate(), p.getEndDate(), p.getDescription(),
+                    p.getCreatedBy(), p.getArchivedAt(), p.getCreatedAt());
         }
     }
 }

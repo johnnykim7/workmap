@@ -76,10 +76,21 @@
 | GET | /projects | 프로젝트 목록(워크스페이스·유형·상태 필터, 보관 제외) | 🔒 | P1 | WMP-WS-003 |
 | POST | /projects | 프로젝트 생성(유형 프리셋→활성 탭) | 🔒 Manager | P1 | WMP-WS-002 |
 | GET | /projects/{id} | 프로젝트 상세 | 🔒 | P1 | WMP-WS-003 |
-| PATCH | /projects/{id} | 프로젝트 수정(탭 조합 편집) | 🔒 Manager | P2 | WMP-WS-004 |
+| PATCH | /projects/{id} | 프로젝트 수정(탭 조합·순서·기본탭 편집) | 🔒 Manager | P2 | WMP-WS-004 |
 | PATCH | /projects/{id}/archive | 보관(소프트) | 🔒 Manager | P2 | WMP-WS-004 |
 | PATCH | /projects/{id}/visibility | 가시성 변경(PUBLIC/PRIVATE) | 🔒 Manager | P1 | WMP-WS-006 |
 | GET | /projects/{id}/summary | 프로젝트 홈 요약(전체/완료/지연/막힘/진행률) | 🔒 | P1 | WMP-WS-003 |
+| GET | /projects/{id}/tabs | 탭 메뉴 데이터(코드·라벨·기본탭 — 폴백 적용된 표시명) | 🔒 | P2 | WMP-WS-004·CR-020 |
+| PUT | /projects/{id}/tabs/{code}/label | 탭 이름 바꾸기(프로젝트별 오버라이드 UPSERT) | 🔒 Manager | P2 | WMP-WS-004·CR-020 |
+| DELETE | /projects/{id}/tabs/{code}/label | 탭 이름 되돌리기(오버라이드 삭제→기본값 폴백) | 🔒 Manager | P2 | WMP-WS-004·CR-020 |
+
+> **Jira 탭 호버 `…` 메뉴(CR-020)의 동작 매핑**:
+> - **좌·우 이동 / 제거** = `PATCH /projects/{id}` body `activeTabs`(순서 바뀐/원소 제거된 전체 배열). summary는 이동·제거 불가(서버 가드). active_tabs 구조 무변경.
+> - **기본값으로 설정** = `PATCH /projects/{id}` body `defaultTab`(탭 코드). 진입 시 첫 화면.
+> - **이름 바꾸기** = `PUT /projects/{id}/tabs/{code}/label` body `{label}`. 되돌리기 = DELETE.
+> - 라벨 표시는 폴백: project_tab_label → tab_def → code. `GET /projects/{id}/tabs`가 폴백 적용된 최종 표시명을 내려준다(프런트가 상수 의존 제거).
+>
+> **신규 에러코드(CR-020, WMP-7806~7808)**: `TAB_NOT_FOUND`(WMP-7806, 알 수 없는 탭 코드 404), `TAB_LABEL_INVALID`(WMP-7807, 라벨 공백/길이 초과 400), `TAB_SUMMARY_LOCKED`(WMP-7808, summary는 제거·이동·기본해제 불가 400). 프로젝트 미존재는 기존 `PROJECT_NOT_FOUND` 재사용.
 
 ## E. 프로젝트 멤버 (Members)
 

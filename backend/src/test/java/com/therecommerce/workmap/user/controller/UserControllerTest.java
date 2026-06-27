@@ -66,6 +66,7 @@ class UserControllerTest {
     @MockBean com.therecommerce.workmap.view.mapper.SavedFilterMapper savedFilterMapper;
     @MockBean com.therecommerce.workmap.burndown.mapper.BurndownMapper burndownMapper;
     @MockBean com.therecommerce.workmap.ops.mapper.FieldVerificationMapper fieldVerificationMapper;
+    @MockBean com.therecommerce.workmap.project.mapper.TabMapper tabMapper;  // CR-020
 
     @Test
     @WithMockUser(roles = "ADMIN")

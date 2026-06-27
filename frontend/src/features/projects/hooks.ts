@@ -91,6 +91,45 @@ export function useArchiveProject() {
   });
 }
 
+// ─────────────── 탭 메뉴(Jira식, CR-020) ───────────────
+
+/** 탭 메뉴 데이터(폴백 적용 라벨·기본탭). */
+export function useProjectTabs(projectId?: number) {
+  return useQuery({
+    queryKey: ['project', projectId, 'tabs'],
+    queryFn: () => projectApi.tabs(projectId!),
+    enabled: !!projectId,
+  });
+}
+
+/** 탭 이름 바꾸기. 성공 시 tabs 쿼리 무효화. */
+export function useRenameTab() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, code, label }: { id: number; code: string; label: string }) =>
+      projectApi.renameTab(id, code, label),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: ['project', id, 'tabs'] });
+      toast.success('탭 이름을 변경했습니다.');
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '탭 이름 변경에 실패했습니다.'),
+  });
+}
+
+/** 탭 이름 되돌리기(기본값 폴백). */
+export function useResetTabLabel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, code }: { id: number; code: string }) =>
+      projectApi.resetTabLabel(id, code),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: ['project', id, 'tabs'] });
+      toast.success('탭 이름을 기본값으로 되돌렸습니다.');
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '되돌리기에 실패했습니다.'),
+  });
+}
+
 /** 프로젝트 가시성 변경(WMP-WS-006) — PUBLIC/PRIVATE. Manager 이상. */
 export function useChangeProjectVisibility() {
   const invalidate = useInvalidateProjects();

@@ -41,6 +41,7 @@ class ProjectControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean ProjectService projectService;
+    @MockBean com.therecommerce.workmap.project.service.ProjectTabService projectTabService;  // CR-020
     // @MapperScan(메인 앱)이 슬라이스에도 적용되므로 MyBatis 매퍼 빈을 목으로 대체
     @MockBean com.therecommerce.workmap.user.mapper.UserMapper userMapper;
     @MockBean com.therecommerce.workmap.workspace.mapper.WorkspaceMapper workspaceMapper;
@@ -69,6 +70,8 @@ class ProjectControllerTest {
     @MockBean com.therecommerce.workmap.view.mapper.SavedFilterMapper savedFilterMapper;
     @MockBean com.therecommerce.workmap.burndown.mapper.BurndownMapper burndownMapper;
     @MockBean com.therecommerce.workmap.ops.mapper.FieldVerificationMapper fieldVerificationMapper;
+    // CR-020 신규 매퍼(@MapperScan이 슬라이스에도 적용되므로 목으로 대체)
+    @MockBean com.therecommerce.workmap.project.mapper.TabMapper tabMapper;
 
     @Test
     @DisplayName("C-PRJ: POST /projects 201 + id + active_tabs 템플릿 복사")
@@ -77,7 +80,7 @@ class ProjectControllerTest {
                 5L, "ZGOH", "재고관리", 1L, null, null, null, null);
         ProjectDtos.Response created = new ProjectDtos.Response(
                 100L, 5L, "ZGOH", "재고관리", 1L, "PLANNING", "PUBLIC", 10L,
-                List.of("backlog", "board", "list"), null, null, null, 99L, null, OffsetDateTime.now());
+                List.of("backlog", "board", "list"), null, null, null, null, 99L, null, OffsetDateTime.now());
         when(projectService.create(any(), eq(99L))).thenReturn(created);
 
         mockMvc.perform(post("/api/v1/projects").with(csrf()).with(WmpAuth.user(99L, "MANAGER"))
@@ -94,10 +97,10 @@ class ProjectControllerTest {
     @DisplayName("C-PRJ: PATCH /projects/{id} 200 + 수정된 이름·탭 반영")
     void PATCH_projects_200() throws Exception {
         ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
-                "새이름", List.of("board", "list"), null, null, null);
+                "새이름", List.of("board", "list"), null, null, null, null);
         ProjectDtos.Response updated = new ProjectDtos.Response(
                 100L, 5L, "ZGOH", "새이름", 1L, "ACTIVE", "PUBLIC", 10L,
-                List.of("board", "list"), null, null, null, 99L, null, OffsetDateTime.now());
+                List.of("board", "list"), null, null, null, null, 99L, null, OffsetDateTime.now());
         when(projectService.update(eq(100L), any())).thenReturn(updated);
 
         mockMvc.perform(patch("/api/v1/projects/100").with(csrf()).with(WmpAuth.user(99L, "MANAGER"))
@@ -113,7 +116,7 @@ class ProjectControllerTest {
     void PATCH_archive_200() throws Exception {
         ProjectDtos.Response archived = new ProjectDtos.Response(
                 100L, 5L, "ZGOH", "재고관리", 1L, "ARCHIVED", "PUBLIC", 10L,
-                List.of("board"), null, null, null, 99L, OffsetDateTime.now(), OffsetDateTime.now());
+                List.of("board"), null, null, null, null, 99L, OffsetDateTime.now(), OffsetDateTime.now());
         when(projectService.archive(100L)).thenReturn(archived);
 
         mockMvc.perform(patch("/api/v1/projects/100/archive").with(csrf()).with(WmpAuth.user(99L, "MANAGER")))

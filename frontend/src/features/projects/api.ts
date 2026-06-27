@@ -27,9 +27,22 @@ export interface CreateProjectRequest {
 export interface UpdateProjectRequest {
   name?: string;
   activeTabs?: string[];
+  defaultTab?: string; // "기본값으로 설정"(CR-020). 진입 시 첫 화면.
   startDate?: string | null;
   endDate?: string | null;
   description?: string | null;
+}
+
+// 탭 메뉴(Jira식, CR-020) — GET /tabs 응답.
+export interface TabView {
+  code: string;
+  label: string; // 폴백 적용된 최종 표시명(project_tab_label → tab_def → code)
+  isDefault: boolean;
+  isCustom: boolean; // 프로젝트별 이름 오버라이드 존재(되돌리기 노출 판단)
+}
+export interface TabsResponse {
+  tabs: TabView[];
+  defaultTab: string | null;
 }
 
 function toQuery(f: ProjectFilter): string {
@@ -54,4 +67,11 @@ export const projectApi = {
   // 가시성 변경(WMP-WS-006) — PATCH /projects/{id}/visibility. PUBLIC/PRIVATE.
   changeVisibility: (id: number, visibility: Visibility) =>
     api.patch<Project>(`/projects/${id}/visibility`, { visibility }),
+
+  // 탭 메뉴(Jira식, CR-020)
+  tabs: (id: number) => api.get<TabsResponse>(`/projects/${id}/tabs`),
+  renameTab: (id: number, code: string, label: string) =>
+    api.put<void>(`/projects/${id}/tabs/${code}/label`, { label }),
+  resetTabLabel: (id: number, code: string) =>
+    api.delete<void>(`/projects/${id}/tabs/${code}/label`),
 };

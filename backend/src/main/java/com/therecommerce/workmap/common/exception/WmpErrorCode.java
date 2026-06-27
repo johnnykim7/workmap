@@ -89,7 +89,12 @@ public enum WmpErrorCode implements ErrorCode {
     // 워크스페이스 멤버십 격리 (7803~, WMP-WS-007/008, BIZ-112, CR-018)
     WORKSPACE_ACCESS_DENIED("WMP-7803", "이 워크스페이스에 접근할 권한이 없습니다.", HttpStatus.FORBIDDEN),
     WORKSPACE_MEMBER_NOT_FOUND("WMP-7804", "워크스페이스 멤버를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    WORKSPACE_MEMBER_DUPLICATED("WMP-7805", "이미 워크스페이스 멤버입니다.", HttpStatus.CONFLICT);
+    WORKSPACE_MEMBER_DUPLICATED("WMP-7805", "이미 워크스페이스 멤버입니다.", HttpStatus.CONFLICT),
+
+    // 탭 메뉴(Jira식) — 라벨/기본탭 (7806~, WMP-WS-004, CR-020)
+    TAB_NOT_FOUND("WMP-7806", "알 수 없는 탭 코드입니다.", HttpStatus.NOT_FOUND),
+    TAB_LABEL_INVALID("WMP-7807", "탭 이름은 1~60자여야 합니다.", HttpStatus.BAD_REQUEST),
+    TAB_SUMMARY_LOCKED("WMP-7808", "요약 탭은 제거·이동·기본해제할 수 없습니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.project.mapper.TabMapper">
+
+    <resultMap id="tabDefMap" type="com.therecommerce.workmap.project.domain.TabDef">
+        <id     property="code"      column="code"/>
+        <result property="label"     column="label"/>
+        <result property="icon"      column="icon"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <select id="findAllTabDefs" resultMap="tabDefMap">
+        SELECT code, label, icon, sort_order FROM tab_def ORDER BY sort_order
+    </select>
+
+    <select id="tabDefExists" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM tab_def WHERE code = #{code})
+    </select>
+
+    <select id="findProjectLabels" resultType="map">
+        SELECT tab_code AS "tabCode", label AS "label"
+        FROM project_tab_label
+        WHERE project_id = #{projectId}
+    </select>
+
+    <!-- UPSERT(PK project_id+tab_code) -->
+    <insert id="upsertLabel">
+        INSERT INTO project_tab_label (project_id, tab_code, label)
+        VALUES (#{projectId}, #{tabCode}, #{label})
+        ON CONFLICT (project_id, tab_code)
+        DO UPDATE SET label = EXCLUDED.label
+    </insert>
+
+    <delete id="deleteLabel">
+        DELETE FROM project_tab_label WHERE project_id = #{projectId} AND tab_code = #{tabCode}
+    </delete>
+
+</mapper>

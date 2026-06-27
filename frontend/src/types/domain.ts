@@ -83,20 +83,23 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
 };
 
 // ───────────────────────── 프로젝트 유형 (T3-3 §7 — 유형 프리셋) ─────────────────────────
-// 개발형 / 운영형 / 계획형. 유형이 기본 탭 조합과 워크플로를 정한다.
-export type ProjectType = 'DEV' | 'OPS' | 'PLAN';
+// 개발형 / 운영형 / 계획형 / 기본형. 유형이 기본 탭 조합과 워크플로를 정한다.
+export type ProjectType = 'DEV' | 'OPS' | 'PLAN' | 'DEFAULT';
 export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   DEV: '개발형',
   OPS: '운영형',
   PLAN: '계획형',
+  DEFAULT: '기본형',
 };
 
-// 유형별 본문 가로 탭 프리셋 (T3-3 §9.1, Phase1 고정 노출).
-// 값은 route-paths.ts ProjectTab 키와 일치.
+// 유형별 본문 가로 탭 프리셋 (T3-3 §9.1). 값은 route-paths.ts ProjectTab 키와 일치.
+// BE 시드 project_template.default_tabs와 일치(CR-019 정합 — BE가 정본).
 export const PROJECT_TAB_PRESET: Record<ProjectType, string[]> = {
   DEV: ['summary', 'backlog', 'board', 'timeline', 'reports'],
   OPS: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'],
   PLAN: ['summary', 'timeline', 'reports'],
+  // 기본형(Jira "빈 스페이스") — 8탭 전부, 생성 후 불필요 탭은 끔.
+  DEFAULT: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports'],
 };
 
 export const PROJECT_TAB_LABEL: Record<string, string> = {
@@ -183,7 +186,10 @@ export interface ProjectTemplate {
   issueTypeCodes: string[];
 }
 
+// 주의: id는 BE 시드 순서가 아니라 자체 매핑값. 실제 생성은 templateId(아래 id)를 BE로 전달.
+// BE 시드 default_tabs/issue_type_codes와 일치(CR-019 정합 — BE가 정본).
 export const PROJECT_TEMPLATES: ProjectTemplate[] = [
+  { id: 4, code: 'DEFAULT', name: '기본형', description: '모든 보기를 켠 범용 프로젝트(필요 없는 탭은 생성 후 끄기)', defaultTabs: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] },
   { id: 1, code: 'DEV', name: '개발형', description: '개발 프로젝트(백로그·스프린트·보드 중심)', defaultTabs: ['summary', 'backlog', 'board', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] },
   { id: 2, code: 'OPS', name: '운영형', description: '운영·고객대응(접수·처리·보류 워크플로)', defaultTabs: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['TASK', 'BUG'] },
   { id: 3, code: 'PLAN', name: '계획형', description: '계획·경영공통(타임라인·목록 중심)', defaultTabs: ['summary', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK'] },

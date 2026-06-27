@@ -51,7 +51,12 @@ export function ProjectLayout() {
       ) : (
         <h1 className="mb-3 text-xl font-semibold text-foreground">{title}</h1>
       )}
-      <ProjectTabs projectKey={key} tabs={tabs} />
+      <ProjectTabs
+        projectKey={key}
+        tabs={tabs}
+        projectId={project?.id}
+        activeTabs={project?.activeTabs}
+      />
 
       <Outlet />
     </div>

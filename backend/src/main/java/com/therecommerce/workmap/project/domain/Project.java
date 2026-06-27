@@ -33,6 +33,7 @@ public class Project {
     private String visibility;
     private Long workflowId;
     private List<String> activeTabs;
+    private String defaultTab;   // "기본값으로 설정"한 진입 탭(CR-020). null이면 summary 폴백.
     private int seqCounter;
     private LocalDate startDate;
     private LocalDate endDate;

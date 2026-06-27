@@ -16,7 +16,7 @@
 | 집계 | 공통상태가 권위 FSM | **워크플로 상태 → 공통 상태군 매핑**으로 회사홈 집계 |
 | 신규 | (없음) | **sprint FSM**(기획서 §6.1) 추가 |
 
-> **핵심 원칙: 워크플로는 코드 enum이 아니라 마스터 데이터다(POL-001).** `workflow(상태·전이)` 테이블에 유형/프로젝트별 워크플로를 시드로 등록하고, 관리자가 §13.5 워크플로 편집기로 상태·전이를 정의한다. 아래 워크플로 3종(개발형/운영형/현장검증형)은 **시스템 기본 시드**이며, 추가 워크플로는 행 추가로 확장(마이그레이션 불필요).
+> **핵심 원칙: 워크플로는 코드 enum이 아니라 마스터 데이터다(POL-001).** `workflow(상태·전이)` 테이블에 유형/프로젝트별 워크플로를 시드로 등록하고, 관리자가 §13.5 워크플로 편집기로 상태·전이를 정의한다. 아래 워크플로 4종(개발형/운영형/현장검증형/범용형)은 **시스템 기본 시드**이며, 추가 워크플로는 행 추가로 확장(마이그레이션 불필요).
 
 ---
 
@@ -27,6 +27,7 @@
 | work_item — 개발형 워크플로 | TODO →(SELECTED)→ IN_PROGRESS → IN_REVIEW → DONE |
 | work_item — 운영형 워크플로 | RECEIVED → CHECKING → PROCESSING → FIELD_CHECK → DONE / HOLD |
 | work_item — 현장검증형 워크플로 | TODO → IN_PROGRESS → DEV_DONE → FIELD_VERIFYING → OPS_APPLIED |
+| work_item — 범용 워크플로(CR-019) | TODO → IN_PROGRESS → DONE (되돌리기/재개 역전이 허용) |
 | work_item — 공통 횡단 상태 | BLOCKED (어느 상태에서든 진입, 해제 시 직전 상태 복귀) |
 | approval (승인 게이트, work_item 결합) | PENDING → APPROVED / REJECTED (게이트 상태의 전진 전이 조건) |
 | sprint (스프린트) | FUTURE → ACTIVE → COMPLETED |
@@ -135,6 +136,28 @@ stateDiagram-v2
 
 - 관련 기능 ID: WMP-WI-007, WMP-WI-016(측정), §10.2 현장검증 기록
 - OPS_APPLIED 진입 시 completed_at 자동(BIZ-006). 현장검증 기록(검증자/검증일/결과)이 전이 트리거.
+
+### 4) 범용 워크플로 (BASIC) — CR-019
+
+> 적용: 디폴트 템플릿(DEFAULT) 등 특정 흐름이 정해지지 않은 범용 프로젝트. Jira "빈 스페이스"의 기본 워크플로에 해당. 가장 단순한 3단계 흐름이며, 사용자가 워크플로 편집기(§13.5)로 가감해 자기 흐름을 만드는 출발점.
+
+```mermaid
+stateDiagram-v2
+    [*] --> TODO : 항목 생성
+    TODO --> IN_PROGRESS : 착수
+    IN_PROGRESS --> DONE : 완료
+    IN_PROGRESS --> TODO : 되돌리기
+    DONE --> IN_PROGRESS : 재개
+```
+
+| 상태 코드 | 진입 조건 | 허용 다음 상태(화이트리스트) | 공통상태군 |
+|-----------|-----------|------------------------------|-----------|
+| TODO (할 일) | 항목 생성 시 기본값 | IN_PROGRESS | 시작전 |
+| IN_PROGRESS (진행 중) | 착수 / 재개 | DONE, TODO | 진행중 |
+| DONE (완료) | 완료 | IN_PROGRESS(재개) | 완료 |
+
+- DONE 진입 시 completed_at 자동(BIZ-006). 되돌리기/재개로 역전이 허용(범용이라 유연).
+- 시스템 기본 시드(`workflow.is_system=true`). 디폴트 템플릿의 `default_workflow_id`로 참조.
 
 ### 공통 횡단 상태 — BLOCKED (막힘)
 

@@ -126,14 +126,14 @@ class ProjectServiceTest {
         when(projectMapper.findById(7L)).thenReturn(existing, updated);
 
         ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
-                "새이름", List.of("board", "list"), null, null, null);
+                "새이름", List.of("summary", "board", "list"), null, null, null, null);
 
         ProjectDtos.Response res = projectService.update(7L, req);
 
         ArgumentCaptor<Project> pc = ArgumentCaptor.forClass(Project.class);
         verify(projectMapper).updateProject(eq(7L), pc.capture());
         assertThat(pc.getValue().getName()).isEqualTo("새이름");
-        assertThat(pc.getValue().getActiveTabs()).containsExactly("board", "list");
+        assertThat(pc.getValue().getActiveTabs()).containsExactly("summary", "board", "list");
         assertThat(res.name()).isEqualTo("새이름");
     }
 
@@ -143,7 +143,7 @@ class ProjectServiceTest {
         when(projectMapper.findById(404L)).thenReturn(null);
 
         ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
-                "x", null, null, null, null);
+                "x", null, null, null, null, null);
 
         assertThatThrownBy(() -> projectService.update(404L, req))
                 .isInstanceOf(BusinessException.class)

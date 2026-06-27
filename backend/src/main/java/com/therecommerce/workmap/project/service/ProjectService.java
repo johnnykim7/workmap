@@ -98,13 +98,20 @@ public class ProjectService {
         return ProjectDtos.Response.from(p);
     }
 
-    /** 부분수정(WMP-WS-004): 이름/탭조합/기간/설명만. 가시성·상태는 전용 엔드포인트. */
+    /** 부분수정(WMP-WS-004): 이름/탭조합/기본탭/기간/설명만. 가시성·상태는 전용 엔드포인트. */
     @Transactional
     public ProjectDtos.Response update(Long id, ProjectDtos.UpdateRequest req) {
         getEntity(id);   // 존재 확인(PROJECT_NOT_FOUND)
+        // summary 가드(CR-020): 탭 조합 변경 시 summary는 항상 포함(제거·맨앞 보장 X지만 포함은 강제).
+        java.util.List<String> tabs = req.activeTabs();
+        if (tabs != null && !tabs.contains("summary")) {
+            throw new BusinessException(WmpErrorCode.TAB_SUMMARY_LOCKED,
+                    "요약(summary) 탭은 제거할 수 없습니다.");
+        }
         Project patch = Project.builder()
                 .name(req.name())
-                .activeTabs(req.activeTabs())
+                .activeTabs(tabs)
+                .defaultTab(req.defaultTab())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
                 .description(req.description())
