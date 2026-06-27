@@ -16,12 +16,17 @@ import { ProjectFilterBar } from '@/features/projects/components/ProjectFilterBa
 import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { ProjectCreateWizard } from '@/features/projects/components/ProjectCreateWizard';
 import { useAuthStore } from '@/store/auth-store';
+import { useWorkspaceStore } from '@/store/workspace-store';
 import type { ProjectFilter } from '@/features/projects/api';
 import type { Workspace } from '@/types/domain';
 import type { WorkspaceRequest } from '@/features/workspaces/api';
 
 export function ProjectsPage() {
-  const [filter, setFilter] = useState<ProjectFilter>({});
+  // 기본 필터 = 선택된 WS(CR-018) — 진입 시 그 WS 프로젝트만(BIZ-112). BE도 멤버십으로 강제.
+  const currentWorkspaceId = useWorkspaceStore((s) => s.currentWorkspaceId);
+  const [filter, setFilter] = useState<ProjectFilter>(
+    currentWorkspaceId ? { workspaceId: currentWorkspaceId } : {},
+  );
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wsDialogOpen, setWsDialogOpen] = useState(false);
   const [editingWs, setEditingWs] = useState<Workspace | null>(null);

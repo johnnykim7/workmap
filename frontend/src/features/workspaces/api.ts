@@ -10,9 +10,26 @@ export interface WorkspaceRequest {
   description?: string;
 }
 
+// BE WorkspaceDtos.MemberResponse (GET /workspaces/{id}/members, WMP-WS-007, CR-018)
+export interface WorkspaceMember {
+  userId: number;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export const workspaceApi = {
+  // 내가 속한 WS만(BIZ-112). WMP-WS-008 선택 가능 목록.
   list: () => api.get<Workspace[]>('/workspaces'),
+  detail: (id: number) => api.get<Workspace>(`/workspaces/${id}`),
   create: (body: WorkspaceRequest) => api.post<Workspace>('/workspaces', body),
   update: (id: number, body: WorkspaceRequest) =>
     api.patch<Workspace>(`/workspaces/${id}`, body),
+
+  // ── WS 멤버 관리 (WMP-WS-007) — 전사 Admin만(BE @PreAuthorize) ──
+  members: (id: number) => api.get<WorkspaceMember[]>(`/workspaces/${id}/members`),
+  addMember: (id: number, userId: number) =>
+    api.post<void>(`/workspaces/${id}/members`, { userId }),
+  removeMember: (id: number, userId: number) =>
+    api.delete<void>(`/workspaces/${id}/members/${userId}`),
 };

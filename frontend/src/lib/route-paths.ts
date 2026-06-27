@@ -14,6 +14,7 @@ export type ProjectTab =
 
 export const ROUTES = {
   login: '/login',
+  selectWorkspace: '/select-workspace',
   home: '/',
   inbox: '/inbox',
   search: '/search',
@@ -21,6 +22,7 @@ export const ROUTES = {
 
   project: (key: string, tab: ProjectTab = 'summary') => `/projects/${key}/${tab}`,
   workItem: (key: string) => `/work-items/${key}`,
+  workspaceMembers: (wsId: number | string) => `/workspaces/${wsId}/members`,
 
   admin: {
     measureUnits: '/admin/measure-units',

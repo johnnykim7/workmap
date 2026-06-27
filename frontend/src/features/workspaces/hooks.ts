@@ -39,3 +39,40 @@ export function useUpdateWorkspace() {
 export function useProjectTemplates() {
   return PROJECT_TEMPLATES;
 }
+
+// ── WS 멤버 관리 (WMP-WS-007, CR-018) ──
+
+export function useWorkspaceMembers(workspaceId: number | undefined) {
+  return useQuery({
+    queryKey: ['workspace-members', workspaceId],
+    queryFn: () => workspaceApi.members(workspaceId!),
+    enabled: !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+/** WS 멤버 추가 — 전사 Admin 전용. */
+export function useAddWorkspaceMember(workspaceId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => workspaceApi.addMember(workspaceId, userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] });
+      toast.success('멤버가 추가되었습니다.');
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : '멤버 추가에 실패했습니다.'),
+  });
+}
+
+/** WS 멤버 제거 — 전사 Admin 전용. */
+export function useRemoveWorkspaceMember(workspaceId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => workspaceApi.removeMember(workspaceId, userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] });
+      toast.success('멤버가 제거되었습니다.');
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : '멤버 제거에 실패했습니다.'),
+  });
+}

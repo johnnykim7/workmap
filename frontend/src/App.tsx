@@ -4,6 +4,8 @@ import { ProjectLayout } from '@/layout/ProjectLayout';
 import { RequireAuth } from '@/components/common/require-auth';
 
 import { LoginPage } from '@/pages/LoginPage';
+import { SelectWorkspacePage } from '@/pages/SelectWorkspacePage';
+import { WorkspaceMembersPage } from '@/pages/WorkspaceMembersPage';
 import { HomePage } from '@/pages/HomePage';
 import { InboxPage } from '@/pages/InboxPage';
 import { SearchPage } from '@/pages/SearchPage';
@@ -34,6 +36,8 @@ const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
+      // WS 선택 화면 — AppShell(WS 컨텍스트 필요) 밖. 인증만 필요(WMP-WS-008).
+      { path: '/select-workspace', element: <SelectWorkspacePage /> },
       {
         path: '/',
         element: <AppShell />,
@@ -43,6 +47,7 @@ const router = createBrowserRouter([
           { path: 'inbox', element: <InboxPage /> },
           { path: 'search', element: <SearchPage /> },
           { path: 'projects', element: <ProjectsPage /> },
+          { path: 'workspaces/:wsId/members', element: <WorkspaceMembersPage /> },
 
           // ── 프로젝트 본문 탭 (Jira식) ──
           {
