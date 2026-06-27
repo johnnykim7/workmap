@@ -14,8 +14,11 @@ export function ProjectLayout() {
   const { key = '' } = useParams();
   const { data: project, isPending } = useProjectByKey(key);
 
-  // 유형(templateId) 프리셋으로 탭 조합 결정(Phase1 고정). 로딩 중엔 DEV 프리셋 임시.
-  const tabs = project ? PROJECT_TAB_PRESET[templateType(project.templateId)] : PROJECT_TAB_PRESET.DEV;
+  // 탭 조합: 프로젝트 설정에서 저장한 activeTabs 우선, 없으면 유형(templateId) 프리셋 폴백.
+  // (#20 버그픽스: 설정에서 노출 탭을 바꿔 저장해도 화면이 프리셋만 봐서 반영 안 되던 문제)
+  const tabs = project
+    ? (project.activeTabs?.length ? project.activeTabs : PROJECT_TAB_PRESET[templateType(project.templateId)])
+    : PROJECT_TAB_PRESET.DEV;
   const title = project?.name ?? key;
 
   return (

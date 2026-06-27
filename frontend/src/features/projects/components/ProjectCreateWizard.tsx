@@ -4,11 +4,12 @@
 import { useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Stepper, Button, Input, Switch, Spinner,
+  Stepper, Button, Input, Switch, Spinner, DatePicker,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { Field } from '@/components/common/field';
+import { fromIso, toIso } from '@/lib/date';
 import { ProjectTypeBadge } from './ProjectTypeBadge';
 import { MemberPicker } from '@/features/members/components/MemberPicker';
 import { memberApi } from '@/features/members/api';
@@ -188,10 +189,20 @@ export function ProjectCreateWizard({
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="시작일" htmlFor="p-start">
-                  <Input id="p-start" type="date" value={s.startDate} onChange={(e) => patch({ startDate: e.target.value })} />
+                  <DatePicker
+                    className="w-full"
+                    placeholder="시작일 선택"
+                    value={fromIso(s.startDate)}
+                    onChange={(d) => patch({ startDate: toIso(d) })}
+                  />
                 </Field>
                 <Field label="종료일" htmlFor="p-end">
-                  <Input id="p-end" type="date" value={s.endDate} onChange={(e) => patch({ endDate: e.target.value })} />
+                  <DatePicker
+                    className="w-full"
+                    placeholder="종료일 선택"
+                    value={fromIso(s.endDate)}
+                    onChange={(d) => patch({ endDate: toIso(d) })}
+                  />
                 </Field>
               </div>
             </div>
