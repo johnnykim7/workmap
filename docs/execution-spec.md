@@ -94,6 +94,20 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - FE: T3-3 목록 분할뷰(§9.5)/검색·퀵필터/회사홈(막힘 중심)/관리자 마스터/알림·받은함
 - 핵심: 표⇄분할 토글, 퀵필터(SearchCondition), **막힘 중심 대시보드(§9.2)**, 지연/막힘/미배정 집계(POL-002/003), 관리자 마스터 CRUD(측정단위/필드스킴/워크플로 편집기), 알림 발행/수신
 
+### CR-018 — WS 격리 경계 + 진입감 IA (Phase1 설계 전환, 횡단)
+> Sprint 2~5가 끝난 뒤 진행하는 **횡단 작업**. 기존 전역 화면들을 WS 컨텍스트로 격리·스코프. T1(WMP-WS-001/007/008·BIZ-108/112·POL-004)→T3(T3-1 workspace_members·T3-2 §C·T3-3 §9.1) 캐스케이드 완료본 기준.
+- **BE (대규모, 본체)**:
+  1. **V4 마이그레이션** — `workspace_members` 테이블 + 백필(기존 project_members → workspace 멤버 승격, workspace.created_by). 안 하면 기존 사용자 격리 차단됨.
+  2. **WS 멤버 도메인** — WorkspaceMember 엔티티/Mapper/Service + `GET·POST·DELETE /workspaces/{id}/members`(전사 Admin 가드). `GET /workspaces`를 "내 WS만"으로 변경.
+  3. **WS 격리 가드(BIZ-112)** — `/projects`·`/work-items`·`/search`·`/inbox`·`/dashboard/*` 전 목록 쿼리에 호출자 workspace_members 교집합 필터(서버 강제). 클라 wsId는 "더 좁히기"로만. 비멤버 wsId 위조 시 빈 결과/403. 가시성 2차(BIZ-108)는 1차 통과 후 적용.
+  4. 에러코드 WMP-7800~7802(WORKSPACE_ACCESS_DENIED/MEMBER_NOT_FOUND/MEMBER_DUPLICATED).
+- **FE**:
+  1. `/select-workspace` 화면(WMP-WS-008) — 내 WS 카드, 0/1/다수 분기, localStorage 기억.
+  2. LNB **WS 스위처**(맨 위) + 그 WS **프로젝트 상시 나열**(ⓐ, AppShell 개조). 프로젝트 진입 후 LNB 유지·상단 가로탭 유지.
+  3. 홈·받은함·검색·프로젝트목록을 선택 WS 컨텍스트로. WS 멤버 관리 화면(`/workspaces/:wsId/members`, Admin).
+- **테스트(T3-5 보강)**: WS 비멤버 격리(목록 0건/403), wsId 위조 방어, 2단 가시성(WS멤버∩PRIVATE), 백필 정합.
+- **핵심 함정**: ① 백필 누락 시 기존 운영 사용자 전원 튕김(배포 전 필수). ② 가드를 클라 wsId만 믿으면 격리 무력화 — 반드시 서버 멤버십 교집합. ③ 회사홈 전사집계도 멤버 WS 범위(전 WS 무차별 금지, BIZ-112).
+
 ---
 
 ## 5-A. Sprint 완료 게이트
