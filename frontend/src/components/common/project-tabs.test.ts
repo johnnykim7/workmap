@@ -1,6 +1,6 @@
 // CR-019 — [+] 탭 추가 로직 + 템플릿 탭 프리셋 정합 단위 테스트 (DOM 무의존, node 환경).
 import { describe, expect, it } from 'vitest';
-import { nextActiveTabs, removeTab, moveTab } from './project-tabs-util';
+import { nextActiveTabs, removeTab, moveTab, reorderTabs } from './project-tabs-util';
 import { PROJECT_TAB_PRESET, PROJECT_TEMPLATES, PROJECT_TAB_LABEL } from '@/types/domain';
 
 // route-paths 실존 8탭(정본).
@@ -63,6 +63,30 @@ describe('moveTab — 탭 이동 (CR-020)', () => {
   });
   it('이동_summary는_이동대상아님', () => {
     expect(moveTab(['summary', 'board'], 'summary', 1)).toEqual(['summary', 'board']);
+  });
+});
+
+describe('reorderTabs — 드래그&드롭 재정렬 (CR-020)', () => {
+  it('재정렬_뒤로이동', () => {
+    expect(reorderTabs(['summary', 'board', 'list', 'reports'], 'board', 'reports'))
+      .toEqual(['summary', 'list', 'reports', 'board']);
+  });
+  it('재정렬_앞으로이동', () => {
+    expect(reorderTabs(['summary', 'board', 'list', 'reports'], 'reports', 'board'))
+      .toEqual(['summary', 'reports', 'board', 'list']);
+  });
+  it('재정렬_summary는_드래그불가', () => {
+    expect(reorderTabs(['summary', 'board'], 'summary', 'board'))
+      .toEqual(['summary', 'board']);
+  });
+  it('재정렬_summary앞으로는_못놓음', () => {
+    // board를 summary 위치로 → summary가 맨 앞 깨지면 원복
+    expect(reorderTabs(['summary', 'board', 'list'], 'board', 'summary'))
+      .toEqual(['summary', 'board', 'list']);
+  });
+  it('재정렬_같은위치_변화없음', () => {
+    expect(reorderTabs(['summary', 'board'], 'board', 'board'))
+      .toEqual(['summary', 'board']);
   });
 });
 

@@ -34,3 +34,19 @@ export function moveTab(base: string[], tab: string, dir: -1 | 1): string[] {
   [copy[i], copy[j]] = [copy[j], copy[i]];
   return copy;
 }
+
+// 드래그&드롭 재정렬(CR-020) — active(끌린 탭)를 over(놓인 탭) 위치로 이동.
+// summary는 항상 맨 앞 고정: summary를 끌거나 summary 앞으로 놓는 결과는 무시.
+export function reorderTabs(base: string[], activeCode: string, overCode: string): string[] {
+  const arr = base.filter((t) => ALL_TABS.includes(t as never));
+  if (activeCode === 'summary' || activeCode === overCode) return arr;
+  const from = arr.indexOf(activeCode);
+  const to = arr.indexOf(overCode);
+  if (from < 0 || to < 0) return arr;
+  const copy = [...arr];
+  copy.splice(from, 1);
+  copy.splice(to, 0, activeCode);
+  // summary가 맨 앞이 아니게 되면(=summary 앞으로 끌어옴) 원복.
+  if (copy[0] !== 'summary' && arr[0] === 'summary') return arr;
+  return copy;
+}

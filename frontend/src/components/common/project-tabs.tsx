@@ -1,21 +1,44 @@
 // 프로젝트 본문 상단 가로 탭 (Jira식, T3-3 §9.1, CR-019/020).
-// 각 탭 = 라벨(폴백 적용) + 호버 시 … 메뉴(기본값/이름바꾸기/좌우이동/제거).
-// 가로탭 옆 [+]로 안 켜진 탭 추가. 라벨은 GET /projects/{id}/tabs(상수 의존 제거).
-// ds-ui DropdownMenu/Dialog — 네이티브 위젯 금지.
+// 각 탭 = 아이콘 + 라벨(폴백) + 호버 … 메뉴(기본값/이름바꾸기/좌우이동/제거) + 드래그 재정렬.
+// 라벨은 GET /projects/{id}/tabs(상수 의존 제거). 드래그/이동/제거는 activeTabs PATCH(BE 무변경).
+// ds-ui DropdownMenu/Dialog + dnd-kit(백로그와 동일) — 네이티브 위젯 금지.
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  DndContext, PointerSensor, useSensor, useSensors, closestCenter, type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, horizontalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator,
   Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Input,
 } from '@therecommerce/ds-ui';
-import { Plus, MoreHorizontal } from 'lucide-react';
+import {
+  Plus, MoreHorizontal,
+  LayoutDashboard, List, Columns3, ListTodo, GanttChartSquare, Calendar, CheckCircle2, BarChart3,
+  type LucideIcon,
+} from 'lucide-react';
 import { ROUTES, type ProjectTab } from '@/lib/route-paths';
 import { PROJECT_TAB_LABEL } from '@/types/domain';
 import {
   useUpdateProject, useProjectTabs, useRenameTab, useResetTabLabel,
 } from '@/features/projects/hooks';
-import { ALL_TABS, nextActiveTabs, removeTab, moveTab } from './project-tabs-util';
+import { ALL_TABS, nextActiveTabs, removeTab, moveTab, reorderTabs } from './project-tabs-util';
+
+// 탭 코드 → 아이콘(코드가 안정적 키라 FE 매핑으로 충분 — BE는 tab_def.icon에 코드 보관).
+const TAB_ICON: Record<string, LucideIcon> = {
+  summary: LayoutDashboard,
+  list: List,
+  board: Columns3,
+  backlog: ListTodo,
+  timeline: GanttChartSquare,
+  calendar: Calendar,
+  approvals: CheckCircle2,
+  reports: BarChart3,
+};
 
 interface Props {
   projectKey: string;
@@ -31,10 +54,10 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
   const renameMut = useRenameTab();
   const resetMut = useResetTabLabel();
   const { data: tabData } = useProjectTabs(projectId);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const current = tabs.find((t) => pathname.endsWith(`/${t}`)) ?? tabs[0];
 
-  // 라벨/기본탭/커스텀 여부 — GET /tabs 우선, 없으면 상수 폴백.
   const labelOf = (code: string) =>
     tabData?.tabs.find((t) => t.code === code)?.label ?? PROJECT_TAB_LABEL[code] ?? code;
   const isDefault = (code: string) =>
@@ -42,11 +65,11 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
   const isCustom = (code: string) =>
     tabData?.tabs.find((t) => t.code === code)?.isCustom ?? false;
 
-  // 이름 바꾸기 다이얼로그 상태
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState('');
 
   const base = activeTabs?.length ? activeTabs : tabs;
+  const canEdit = projectId != null;
 
   const patchTabs = (nextTabs: string[], goto?: string) => {
     if (projectId == null) return;
@@ -57,11 +80,8 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
   };
 
   const addTab = (tab: ProjectTab) => patchTabs(nextActiveTabs(base, tab), tab);
-  const doRemove = (code: string) => {
-    const next = removeTab(base, code);
-    // 현재 보던 탭을 지웠으면 요약으로.
-    patchTabs(next, code === current ? 'summary' : undefined);
-  };
+  const doRemove = (code: string) =>
+    patchTabs(removeTab(base, code), code === current ? 'summary' : undefined);
   const doMove = (code: string, dir: -1 | 1) => patchTabs(moveTab(base, code, dir));
   const setDefault = (code: string) => {
     if (projectId == null) return;
@@ -76,70 +96,40 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
       { onSuccess: () => setRenaming(null) });
   };
 
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const next = reorderTabs(base, String(active.id), String(over.id));
+    if (next.join() !== base.filter((t) => ALL_TABS.includes(t as never)).join()) patchTabs(next);
+  };
+
   const addable = ALL_TABS.filter((t) => !new Set(tabs).has(t));
-  const canEdit = projectId != null;
 
   return (
     <div className="mb-4 flex items-center gap-0.5 border-b border-border">
-      {tabs.map((t) => {
-        const active = t === current;
-        const isSummary = t === 'summary';
-        const canMoveLeft = base.indexOf(t) > 1; // summary(0) 다음 자리까진 못 감
-        const canMoveRight = base.indexOf(t) < base.length - 1;
-        return (
-          <div
-            key={t}
-            className={`group relative flex items-center gap-1 px-3 py-2 text-sm cursor-pointer border-b-2 ${
-              active ? 'border-primary text-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <span onClick={() => navigate(ROUTES.project(projectKey, t as ProjectTab))}>
-              {labelOf(t)}
-              {isDefault(t) && <span className="ml-1 text-xs text-muted-foreground">★</span>}
-            </span>
-            {canEdit && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="invisible group-hover:visible rounded p-0.5 hover:bg-muted"
-                    aria-label={`${labelOf(t)} 탭 메뉴`}
-                  >
-                    <MoreHorizontal className="size-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem disabled={isSummary || isDefault(t)} onClick={() => setDefault(t)}>
-                    기본값으로 설정
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => openRename(t)}>
-                    이름 바꾸기
-                  </DropdownMenuItem>
-                  {isCustom(t) && (
-                    <DropdownMenuItem onClick={() => resetMut.mutate({ id: projectId!, code: t })}>
-                      이름 되돌리기
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled={isSummary || !canMoveLeft} onClick={() => doMove(t, -1)}>
-                    탭을 왼쪽으로 이동
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled={isSummary || !canMoveRight} onClick={() => doMove(t, 1)}>
-                    탭을 오른쪽으로 이동
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={isSummary}
-                    className="text-destructive"
-                    onClick={() => doRemove(t)}
-                  >
-                    제거
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        );
-      })}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={tabs} strategy={horizontalListSortingStrategy}>
+          {tabs.map((t) => (
+            <TabItem
+              key={t}
+              code={t}
+              label={labelOf(t)}
+              active={t === current}
+              isDefault={isDefault(t)}
+              isCustom={isCustom(t)}
+              canEdit={canEdit}
+              canMoveLeft={base.indexOf(t) > 1}
+              canMoveRight={base.indexOf(t) < base.length - 1}
+              onClick={() => navigate(ROUTES.project(projectKey, t as ProjectTab))}
+              onSetDefault={() => setDefault(t)}
+              onRename={() => openRename(t)}
+              onReset={() => resetMut.mutate({ id: projectId!, code: t })}
+              onMove={(dir) => doMove(t, dir)}
+              onRemove={() => doRemove(t)}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
 
       {canEdit && addable.length > 0 && (
         <DropdownMenu>
@@ -151,16 +141,18 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuLabel>탭 추가</DropdownMenuLabel>
-            {addable.map((t) => (
-              <DropdownMenuItem key={t} onClick={() => addTab(t)}>
-                {labelOf(t)}
-              </DropdownMenuItem>
-            ))}
+            {addable.map((t) => {
+              const Icon = TAB_ICON[t];
+              return (
+                <DropdownMenuItem key={t} onClick={() => addTab(t)}>
+                  {Icon && <Icon className="size-4" />} {labelOf(t)}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
 
-      {/* 이름 바꾸기 다이얼로그 */}
       <Dialog open={renaming != null} onOpenChange={(o) => { if (!o) setRenaming(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -182,6 +174,95 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+interface TabItemProps {
+  code: string;
+  label: string;
+  active: boolean;
+  isDefault: boolean;
+  isCustom: boolean;
+  canEdit: boolean;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  onClick: () => void;
+  onSetDefault: () => void;
+  onRename: () => void;
+  onReset: () => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}
+
+function TabItem(p: TabItemProps) {
+  const isSummary = p.code === 'summary';
+  const Icon = TAB_ICON[p.code];
+  // summary는 드래그 비활성(맨 앞 고정).
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: p.code,
+    disabled: isSummary,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative flex items-center gap-1 px-3 py-2 text-sm border-b-2 ${
+        p.active
+          ? 'border-primary text-foreground font-medium'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {/* 라벨/아이콘 영역 = 클릭 이동 + (summary 외) 드래그 핸들 */}
+      <span
+        className={`flex items-center gap-1.5 ${isSummary ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
+        onClick={p.onClick}
+        {...(isSummary ? {} : attributes)}
+        {...(isSummary ? {} : listeners)}
+      >
+        {Icon && <Icon className="size-4 shrink-0" />}
+        {p.label}
+        {p.isDefault && <span className="ml-0.5 text-xs text-muted-foreground">★</span>}
+      </span>
+
+      {p.canEdit && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="invisible group-hover:visible rounded p-0.5 hover:bg-muted"
+              aria-label={`${p.label} 탭 메뉴`}
+            >
+              <MoreHorizontal className="size-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem disabled={isSummary || p.isDefault} onClick={p.onSetDefault}>
+              기본값으로 설정
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={p.onRename}>이름 바꾸기</DropdownMenuItem>
+            {p.isCustom && (
+              <DropdownMenuItem onClick={p.onReset}>이름 되돌리기</DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={isSummary || !p.canMoveLeft} onClick={() => p.onMove(-1)}>
+              탭을 왼쪽으로 이동
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isSummary || !p.canMoveRight} onClick={() => p.onMove(1)}>
+              탭을 오른쪽으로 이동
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={isSummary} className="text-destructive" onClick={p.onRemove}>
+              제거
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
