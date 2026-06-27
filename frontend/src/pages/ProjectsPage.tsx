@@ -1,58 +1,38 @@
-// 프로젝트 목록 (/projects) — 워크스페이스·유형·상태 필터 + 카드 그리드 + 생성 마법사. Sprint 2.
+// 프로젝트 목록 (/projects) — 유형·상태 필터 + 카드 그리드 + 생성 마법사.
+// 워크스페이스 선택/생성/수정은 좌상단 스위처 + 선택 화면으로 일원화(CR-018) — 이 화면엔 WS UI 없음.
+// 목록은 선택된 WS로 스코프(BIZ-112) — 화면에서 WS를 바꾸지 않고 스위처로 전환한다.
 import { useMemo, useState } from 'react';
-import { FolderKanban, Plus, SearchX, Building2, Pencil } from 'lucide-react';
+import { FolderKanban, Plus, SearchX } from 'lucide-react';
 import { Button } from '@therecommerce/ds-ui';
 import { PageHead } from '@/components/common/page-head';
 import { EmptyState } from '@/components/common/empty-state';
 import { ProjectCardGridSkeleton } from '@/components/common/skeletons';
-import {
-  useProjects,
-} from '@/features/projects/hooks';
-import {
-  useWorkspaces, useCreateWorkspace, useUpdateWorkspace,
-} from '@/features/workspaces/hooks';
-import { WorkspaceDialog } from '@/features/workspaces/components/WorkspaceDialog';
+import { useProjects } from '@/features/projects/hooks';
 import { ProjectFilterBar } from '@/features/projects/components/ProjectFilterBar';
 import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { ProjectCreateWizard } from '@/features/projects/components/ProjectCreateWizard';
 import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
 import type { ProjectFilter } from '@/features/projects/api';
-import type { Workspace } from '@/types/domain';
-import type { WorkspaceRequest } from '@/features/workspaces/api';
 
 export function ProjectsPage() {
-  // 기본 필터 = 선택된 WS(CR-018) — 진입 시 그 WS 프로젝트만(BIZ-112). BE도 멤버십으로 강제.
+  // 선택된 WS로 스코프(CR-018, BIZ-112) — 스위처가 정한 WS의 프로젝트만. BE도 멤버십으로 강제.
   const currentWorkspaceId = useWorkspaceStore((s) => s.currentWorkspaceId);
-  const [filter, setFilter] = useState<ProjectFilter>(
-    currentWorkspaceId ? { workspaceId: currentWorkspaceId } : {},
-  );
+  const [filter, setFilter] = useState<ProjectFilter>({});
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wsDialogOpen, setWsDialogOpen] = useState(false);
-  const [editingWs, setEditingWs] = useState<Workspace | null>(null);
   const role = useAuthStore((s) => s.user?.role);
   const canCreate = role === 'OWNER' || role === 'ADMIN' || role === 'MANAGER';
-  const canManageWs = role === 'OWNER' || role === 'ADMIN'; // 워크스페이스 생성/수정은 Admin/Owner(POL-004)
 
-  const { data: projects, isPending } = useProjects(filter);
-  const { data: workspaces = [] } = useWorkspaces();
-  const createWs = useCreateWorkspace();
-  const updateWs = useUpdateWorkspace();
-
-  const selectedWs = workspaces.find((w) => w.id === filter.workspaceId) ?? null;
-
-  const openCreateWs = () => { setEditingWs(null); setWsDialogOpen(true); };
-  const openEditWs = (ws: Workspace) => { setEditingWs(ws); setWsDialogOpen(true); };
-  const submitWs = (body: WorkspaceRequest) => {
-    const onDone = { onSuccess: () => setWsDialogOpen(false) };
-    if (editingWs) updateWs.mutate({ id: editingWs.id, body }, onDone);
-    else createWs.mutate(body, onDone);
-  };
+  // WS는 항상 현재 선택 WS로 강제(화면 필터로 안 바꿈). 유형/상태/검색만 사용자가 조정.
+  const scopedFilter: ProjectFilter = currentWorkspaceId
+    ? { ...filter, workspaceId: currentWorkspaceId }
+    : filter;
+  const { data: projects, isPending } = useProjects(scopedFilter);
 
   const patch = (p: Partial<ProjectFilter>) => setFilter((f) => ({ ...f, ...p }));
 
   const hasActiveFilter = useMemo(
-    () => Boolean(filter.keyword || filter.workspaceId || filter.templateId || filter.status),
+    () => Boolean(filter.keyword || filter.templateId || filter.status),
     [filter],
   );
 
@@ -60,31 +40,15 @@ export function ProjectsPage() {
     <>
       <PageHead
         title="프로젝트"
-        desc="워크스페이스·유형·상태로 필터"
+        desc="유형·상태로 필터"
         actions={
-          <div className="flex items-center gap-2">
-            {canManageWs && (
-              <Button variant="secondary" size="sm" onClick={openCreateWs}>
-                <Building2 className="size-4" /> 워크스페이스 만들기
-              </Button>
-            )}
-            <Button variant="primary" size="sm" onClick={() => setWizardOpen(true)} disabled={!canCreate}>
-              <Plus className="size-4" /> 프로젝트 만들기
-            </Button>
-          </div>
+          <Button variant="primary" size="sm" onClick={() => setWizardOpen(true)} disabled={!canCreate}>
+            <Plus className="size-4" /> 프로젝트 만들기
+          </Button>
         }
       />
 
-      <ProjectFilterBar filter={filter} workspaces={workspaces} onChange={patch} />
-
-      {canManageWs && selectedWs && (
-        <div className="mb-4 -mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <span>워크스페이스: <span className="font-medium text-foreground">{selectedWs.name}</span></span>
-          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEditWs(selectedWs)}>
-            <Pencil className="size-3.5" /> 수정
-          </Button>
-        </div>
-      )}
+      <ProjectFilterBar filter={filter} onChange={patch} />
 
       {isPending ? (
         <ProjectCardGridSkeleton />
@@ -119,14 +83,6 @@ export function ProjectsPage() {
       )}
 
       <ProjectCreateWizard open={wizardOpen} onOpenChange={setWizardOpen} />
-
-      <WorkspaceDialog
-        open={wsDialogOpen}
-        onOpenChange={setWsDialogOpen}
-        busy={createWs.isPending || updateWs.isPending}
-        editing={editingWs}
-        onSubmit={submitWs}
-      />
     </>
   );
 }

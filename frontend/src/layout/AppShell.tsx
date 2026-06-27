@@ -27,6 +27,7 @@ import {
   ChevronsUpDown,
   Check,
   Users,
+  LayoutGrid,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useUiStore } from '@/store/ui-store';
@@ -76,13 +77,15 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
             {ws.id === currentId && <Check className="size-4 text-primary" />}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        {/* WS를 만들고·고르고·수정하는 레이어로 진입(만들기는 거기 있음, CR-018) */}
+        <DropdownMenuItem onSelect={() => navigate(ROUTES.selectWorkspace)}>
+          <LayoutGrid className="size-4" /> 워크스페이스 전체 보기
+        </DropdownMenuItem>
         {canManage && currentId && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>
-              <Users className="size-4" /> 멤버 관리
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>
+            <Users className="size-4" /> 멤버 관리
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

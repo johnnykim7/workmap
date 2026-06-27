@@ -1,5 +1,6 @@
-// 프로젝트 필터 바 (T3-3 §프로젝트 목록 — 워크스페이스·유형·상태 + 검색).
-// BE 필터는 workspaceId/status/templateId. 유형은 templateId로 매핑. keyword는 클라 필터.
+// 프로젝트 필터 바 (T3-3 §프로젝트 목록 — 유형·상태 + 검색).
+// 워크스페이스는 좌상단 스위처로 일원화(CR-018) — 여기엔 WS 필터 없음.
+// BE 필터는 status/templateId. 유형은 templateId로 매핑. keyword는 클라 필터.
 import type React from 'react';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -7,7 +8,7 @@ import {
 } from '@therecommerce/ds-ui';
 import {
   PROJECT_STATUS_LABEL, PROJECT_TEMPLATES,
-  type ProjectStatus, type Workspace,
+  type ProjectStatus,
 } from '@/types/domain';
 import type { ProjectFilter } from '../api';
 
@@ -15,11 +16,10 @@ const ALL = 'ALL'; // Radix Select는 빈 문자열 value 불가 → 전체 선�
 
 interface Props {
   filter: ProjectFilter;
-  workspaces: Workspace[];
   onChange: (patch: Partial<ProjectFilter>) => void;
 }
 
-export function ProjectFilterBar({ filter, workspaces, onChange }: Props) {
+export function ProjectFilterBar({ filter, onChange }: Props) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
       <SearchInput
@@ -28,19 +28,6 @@ export function ProjectFilterBar({ filter, workspaces, onChange }: Props) {
         value={filter.keyword ?? ''}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
       />
-
-      <Select
-        value={filter.workspaceId ? String(filter.workspaceId) : ALL}
-        onValueChange={(v) => onChange({ workspaceId: v === ALL ? undefined : Number(v) })}
-      >
-        <SelectTrigger className="w-44"><SelectValue placeholder="워크스페이스" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>전체 워크스페이스</SelectItem>
-          {workspaces.map((w) => (
-            <SelectItem key={w.id} value={String(w.id)}>{w.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       <Select
         value={filter.templateId ? String(filter.templateId) : ALL}
