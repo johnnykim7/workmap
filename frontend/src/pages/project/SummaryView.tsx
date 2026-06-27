@@ -1,9 +1,13 @@
 // 프로젝트 요약 탭 — 개요/진행률/지연/막힘 + 멤버 패널(T3-3 §프로젝트 요약). Sprint 2.
 // 라우트는 :key, BE는 numeric id 요구 → useProjectByKey로 해소 후 id로 summary/members 호출.
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Skeleton } from '@therecommerce/ds-ui';
+import { Button, Skeleton } from '@therecommerce/ds-ui';
+import { Settings } from 'lucide-react';
 import { useProjectByKey, useProjectSummary } from '@/features/projects/hooks';
+import { ProjectSettingsDialog } from '@/features/projects/components/ProjectSettingsDialog';
 import { MembersPanel } from '@/features/members/components/MembersPanel';
+import { useAuthStore } from '@/store/auth-store';
 
 function Metric({ label, value, tone }: { label: string; value: number | string; tone?: 'amber' | 'red' }) {
   const color = tone === 'amber' ? 'text-amber-600' : tone === 'red' ? 'text-red-600' : 'text-foreground';
@@ -19,9 +23,20 @@ export function SummaryView() {
   const { key = '' } = useParams();
   const { data: project } = useProjectByKey(key);
   const { data: s, isPending } = useProjectSummary(project?.id);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const role = useAuthStore((st) => st.user?.role);
+  const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MANAGER';
 
   return (
     <div className="flex flex-col gap-5">
+      {canManage && project && (
+        <div className="flex items-center justify-end">
+          <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+            <Settings className="size-4" /> 설정
+          </Button>
+        </div>
+      )}
+
       {isPending || !s ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
@@ -47,6 +62,14 @@ export function SummaryView() {
       )}
 
       <MembersPanel projectId={project?.id} />
+
+      {canManage && (
+        <ProjectSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          project={project ?? null}
+        />
+      )}
     </div>
   );
 }

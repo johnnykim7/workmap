@@ -126,6 +126,7 @@ export interface User {
 export interface Workspace {
   id: number;
   name: string;
+  description?: string; // BE Response 포함(WMP-WS-001 생성/수정에서 편집)
 }
 
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'DONE' | 'ARCHIVED';
@@ -137,6 +138,10 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
 };
 
 export type Visibility = 'PUBLIC' | 'PRIVATE';
+export const VISIBILITY_LABEL: Record<Visibility, string> = {
+  PUBLIC: '공개',
+  PRIVATE: '비공개',
+};
 
 // BE ProjectDtos.Response 그대로 (T3-2 §D). 유형은 templateId로 표현(BIZ-107, enum 아님).
 // progress/itemCount/지연·막힘 등 표시용 집계는 BE 미제공 → /summary 또는 work_item(Sprint3)에서.

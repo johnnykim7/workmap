@@ -3,8 +3,22 @@
 // BE에 by-key 단건 엔드포인트가 없어 GET /work-items?keyword={key}로 정확 매칭 해소한다.
 import { api, type PageResponse } from '@/lib/api-client';
 import type {
-  WorkItemResponse, Comment, LinkView, LinkType, Activity, Approval, ApprovalDecision, Priority,
+  WorkItemResponse, Comment, LinkView, LinkType, Activity, Approval, ApprovalDecision,
+  Priority, IssueType,
 } from '@/types/domain';
+
+// POST /work-items 업무 생성(WMP-WI-001, §9.4 "만들기는 가볍게").
+// BE CreateRequest 필수: projectId·issueType·title. status_id 입력은 무시(시작 상태 고정, WI-3).
+export interface CreateWorkItemRequest {
+  projectId: number;
+  issueType: IssueType;
+  title: string;
+  description?: string;
+  priority?: Priority;
+  assigneeId?: number | null;
+  epicId?: number | null;
+  labels?: string[];
+}
 
 // PATCH /work-items/{id} 부분수정(WMP-WI). 보낸 필드만 갱신.
 export interface UpdateWorkItemRequest {
@@ -77,6 +91,9 @@ export interface DecisionRequest {
 }
 
 export const workItemApi = {
+  // 업무 생성(WMP-WI-001) — POST /work-items. key는 BE에서 자동 발급.
+  create: (body: CreateWorkItemRequest) => api.post<WorkItemResponse>('/work-items', body),
+
   // key→id 해소: keyword 검색은 title/key ILIKE 부분일치 → 정확 key 매칭만 골라낸다.
   resolveByKey: (key: string) =>
     api.get<PageResponse<WorkItemResponse>>(`/work-items?keyword=${encodeURIComponent(key)}&size=50`),

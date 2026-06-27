@@ -2,9 +2,11 @@
 // BE는 by-key 엔드포인트가 없어, 라우트의 :key는 목록에서 매칭해 numeric id로 해소한다.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@therecommerce/ds-ui';
-import { projectApi, type CreateProjectRequest, type ProjectFilter } from './api';
+import {
+  projectApi, type CreateProjectRequest, type ProjectFilter, type UpdateProjectRequest,
+} from './api';
 import { ApiError } from '@/lib/api-client';
-import type { Project } from '@/types/domain';
+import type { Project, Visibility } from '@/types/domain';
 
 // 클라이언트 측 keyword 필터(BE 미지원). 이름·키 부분일치.
 function applyKeyword(list: Project[], keyword?: string): Project[] {
@@ -50,5 +52,59 @@ export function useCreateProject() {
     onError: (err) => {
       toast.error(err instanceof ApiError ? err.message : '프로젝트 생성에 실패했습니다.');
     },
+  });
+}
+
+// 수정/보관/가시성 공통 — 모든 'projects' 쿼리(목록·by-key)와 해당 요약 무효화.
+function useInvalidateProjects() {
+  const qc = useQueryClient();
+  return (id?: number) => {
+    qc.invalidateQueries({ queryKey: ['projects'] });
+    if (id) qc.invalidateQueries({ queryKey: ['project', id] });
+  };
+}
+
+/** 프로젝트 수정(WMP-WS-004) — 이름·기간·설명·탭 조합. Manager 이상. */
+export function useUpdateProject() {
+  const invalidate = useInvalidateProjects();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: UpdateProjectRequest }) =>
+      projectApi.update(id, body),
+    onSuccess: (project) => {
+      invalidate(project.id);
+      toast.success(`프로젝트 "${project.name}"가 수정되었습니다.`);
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '프로젝트 수정에 실패했습니다.'),
+  });
+}
+
+/** 프로젝트 보관(WMP-WS-004) — 소프트 보관(FSM 가드 경유). Manager 이상. */
+export function useArchiveProject() {
+  const invalidate = useInvalidateProjects();
+  return useMutation({
+    mutationFn: (id: number) => projectApi.archive(id),
+    onSuccess: (project) => {
+      invalidate(project.id);
+      toast.success(`프로젝트 "${project.name}"를 보관했습니다.`);
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '프로젝트 보관에 실패했습니다.'),
+  });
+}
+
+/** 프로젝트 가시성 변경(WMP-WS-006) — PUBLIC/PRIVATE. Manager 이상. */
+export function useChangeProjectVisibility() {
+  const invalidate = useInvalidateProjects();
+  return useMutation({
+    mutationFn: ({ id, visibility }: { id: number; visibility: Visibility }) =>
+      projectApi.changeVisibility(id, visibility),
+    onSuccess: (project) => {
+      invalidate(project.id);
+      toast.success(
+        project.visibility === 'PRIVATE'
+          ? '비공개로 변경했습니다.'
+          : '공개로 변경했습니다.',
+      );
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '가시성 변경에 실패했습니다.'),
   });
 }

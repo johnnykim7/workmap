@@ -5,7 +5,7 @@ import { toast } from '@therecommerce/ds-ui';
 import {
   workItemApi, type UpdateWorkItemRequest, type CreateSubtaskRequest,
   type CreateCommentRequest, type CreateLinkRequest, type DecisionRequest,
-  type CreateAttachmentRequest, type ConvertRequest,
+  type CreateAttachmentRequest, type ConvertRequest, type CreateWorkItemRequest,
 } from './api';
 import { ApiError } from '@/lib/api-client';
 import type { WorkItemResponse } from '@/types/domain';
@@ -15,6 +15,26 @@ export const wiByKeyKey = (key?: string) => ['work-item-by-key', key] as const;
 
 function errMsg(e: unknown, fallback: string) {
   return e instanceof ApiError ? e.message : fallback;
+}
+
+/**
+ * 업무 생성(WMP-WI-001, §9.4). 성공 시 목록류 캐시 무효화 + 생성 토스트.
+ * 연속 생성/상세 이동 분기는 호출부(모달)에서 onSuccess로 처리.
+ */
+export function useCreateWorkItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateWorkItemRequest) => workItemApi.create(body),
+    onSuccess: (created) => {
+      // 백로그·보드·통합목록·검색 등 work_item 목록 캐시 광역 무효화.
+      qc.invalidateQueries({ queryKey: ['work-items'] });
+      qc.invalidateQueries({ queryKey: ['backlog'] });
+      qc.invalidateQueries({ queryKey: ['board'] });
+      qc.invalidateQueries({ queryKey: ['search'] });
+      toast.success(`업무 "${created.key}"가 생성되었습니다.`);
+    },
+    onError: (e) => toast.error(errMsg(e, '업무 생성에 실패했습니다.')),
+  });
 }
 
 // keyword 검색 결과(부분일치 다건)에서 정확 key 1건만 골라낸다. 대소문자 무관 비교.
