@@ -128,6 +128,7 @@ export function DetailSidePanel({ item, sprints }: Props) {
             {/* 시작일 / 기한 */}
             <Row label="시작일">
               <DatePicker
+                className="w-full"
                 placeholder="시작일"
                 value={fromIso(item.startDate)}
                 onChange={(d) => update.mutate({ startDate: toIso(d) || null })}
@@ -135,6 +136,7 @@ export function DetailSidePanel({ item, sprints }: Props) {
             </Row>
             <Row label="기한">
               <DatePicker
+                className="w-full"
                 placeholder="기한"
                 value={fromIso(item.dueDate)}
                 onChange={(d) => update.mutate({ dueDate: toIso(d) || null })}

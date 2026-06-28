@@ -145,7 +145,7 @@ function AddVerificationDialog({ item, open, onOpenChange }: {
                 control={control}
                 name="verifiedDate"
                 render={({ field }) => (
-                  <DatePicker value={fromIso(field.value)} onChange={(d) => field.onChange(toIso(d))} placeholder="검증일" />
+                  <DatePicker className="w-full" value={fromIso(field.value)} onChange={(d) => field.onChange(toIso(d))} placeholder="검증일" />
                 )}
               />
             </Field>

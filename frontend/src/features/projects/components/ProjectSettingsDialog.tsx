@@ -127,6 +127,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
                   name="startDate"
                   render={({ field }) => (
                     <DatePicker
+                      className="w-full"
                       placeholder="시작일 선택"
                       value={fromIso(field.value)}
                       onChange={(d) => field.onChange(toIso(d))}
@@ -140,6 +141,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
                   name="endDate"
                   render={({ field }) => (
                     <DatePicker
+                      className="w-full"
                       placeholder="종료일 선택"
                       value={fromIso(field.value)}
                       onChange={(d) => field.onChange(toIso(d))}
