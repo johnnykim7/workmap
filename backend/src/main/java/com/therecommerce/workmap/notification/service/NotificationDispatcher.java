@@ -8,6 +8,7 @@ import com.therecommerce.workmap.notification.mapper.NotificationPreferenceMappe
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -57,11 +58,19 @@ public class NotificationDispatcher {
         boolean push = pref != null && pref.isPush();
 
         // 3) 외부 fan-out — ON인 채널만(best-effort, Gateway가 실패 격리)
-        if (email) {
-            gateway.sendEmail(recipientId, type, variables);
-        }
-        if (push) {
-            gateway.sendPush(recipientId, type, variables);
+        if (email || push) {
+            // 인앱 메시지·업무ID를 외부 템플릿 변수로도 전달({{message}}/{{workItemId}}).
+            Map<String, String> vars = new HashMap<>(variables == null ? Map.of() : variables);
+            vars.putIfAbsent("message", message == null ? "" : message);
+            if (workItemId != null) {
+                vars.putIfAbsent("workItemId", String.valueOf(workItemId));
+            }
+            if (email) {
+                gateway.sendEmail(recipientId, type, vars);
+            }
+            if (push) {
+                gateway.sendPush(recipientId, type, vars);
+            }
         }
     }
 }
