@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.notification.mapper.NotificationPreferenceMapper">
+
+    <resultMap id="prefMap" type="com.therecommerce.workmap.notification.domain.NotificationPreference">
+        <id     property="id"        column="id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="type"      column="type"/>
+        <result property="inApp"     column="in_app"/>
+        <result property="email"     column="email"/>
+        <result property="push"      column="push"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByUser" resultMap="prefMap">
+        SELECT id, user_id, type, in_app, email, push, updated_at
+        FROM notification_preferences
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByUserAndType" resultMap="prefMap">
+        SELECT id, user_id, type, in_app, email, push, updated_at
+        FROM notification_preferences
+        WHERE user_id = #{userId} AND type = #{type}
+    </select>
+
+    <!-- 종류별 upsert. UNIQUE(user_id, type) 충돌 시 채널값·updated_at 갱신. -->
+    <insert id="upsert" parameterType="com.therecommerce.workmap.notification.domain.NotificationPreference">
+        INSERT INTO notification_preferences (user_id, type, in_app, email, push)
+        VALUES (#{userId}, #{type}, #{inApp}, #{email}, #{push})
+        ON CONFLICT (user_id, type) DO UPDATE
+        SET in_app = EXCLUDED.in_app,
+            email  = EXCLUDED.email,
+            push   = EXCLUDED.push,
+            updated_at = now()
+    </insert>
+
+</mapper>

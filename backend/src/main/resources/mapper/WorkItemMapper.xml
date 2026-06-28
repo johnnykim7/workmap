@@ -292,4 +292,15 @@
         ORDER BY assignee_id, completed_at
     </select>
 
+    <!-- 마감 알림 스케줄러(WMP-NOTI-005): 미완료·담당자有·마감 임박/초과 후보. -->
+    <select id="findDueForNotification" resultMap="workItemMap">
+        SELECT * FROM work_items
+        WHERE deleted_at IS NULL
+          AND due_date IS NOT NULL
+          AND assignee_id IS NOT NULL
+          AND common_status &lt;&gt; 'DONE'
+          AND due_date &lt;= (CURRENT_DATE + (#{maxDaysAhead} || ' days')::interval)
+        ORDER BY due_date
+    </select>
+
 </mapper>

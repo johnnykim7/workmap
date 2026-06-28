@@ -1,19 +1,30 @@
 // 받은함 알림 행(§받은함) — 유형 아이콘 + 메시지 + 시각 + 읽음 처리.
 // 클릭 → 연결된 업무 상세(workItemId→key 해소 후 이동). 안읽음은 좌측 점·진한 톤으로 신호.
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Ban, AtSign, Bell, Check } from 'lucide-react';
+import {
+  UserPlus, Ban, AtSign, Bell, Check,
+  MessageSquare, ArrowRightLeft, CalendarClock, CalendarX, Flag, CheckCircle2,
+} from 'lucide-react';
 import { Button } from '@therecommerce/ds-ui';
 import { fmtDateTime } from '@/lib/date';
 import { ROUTES } from '@/lib/route-paths';
 import { workItemApi } from '@/features/workitem/api';
 import type { NotificationItem } from '../api';
 
-// 유형별 아이콘·색(신호용 최소). 미지정 유형은 일반 종.
+// 유형별 아이콘·색(신호용 최소). 미지정 유형은 일반 종. (CR-028 신규 종류 추가)
 function typeMeta(type: string) {
   switch (type) {
     case 'ASSIGNED': return { icon: UserPlus, color: 'text-blue-500', label: '배정' };
     case 'BLOCKED': return { icon: Ban, color: 'text-red-500', label: '막힘' };
     case 'MENTIONED': return { icon: AtSign, color: 'text-violet-500', label: '멘션' };
+    case 'COMMENTED': return { icon: MessageSquare, color: 'text-muted-foreground', label: '댓글' };
+    case 'STATUS_CHANGED': return { icon: ArrowRightLeft, color: 'text-muted-foreground', label: '상태변경' };
+    case 'DUE_APPROACHING': return { icon: CalendarClock, color: 'text-amber-500', label: '마감임박' };
+    case 'OVERDUE': return { icon: CalendarX, color: 'text-red-500', label: '마감초과' };
+    case 'SPRINT_STARTED':
+    case 'SPRINT_COMPLETED': return { icon: Flag, color: 'text-muted-foreground', label: '스프린트' };
+    case 'APPROVAL_REQUESTED':
+    case 'APPROVAL_DECIDED': return { icon: CheckCircle2, color: 'text-muted-foreground', label: '승인' };
     default: return { icon: Bell, color: 'text-muted-foreground', label: '알림' };
   }
 }

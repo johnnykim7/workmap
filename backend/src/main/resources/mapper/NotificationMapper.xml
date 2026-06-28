@@ -57,4 +57,15 @@
         WHERE recipient_id = #{recipientId} AND is_read = false
     </select>
 
+    <!-- 스케줄러 중복 방지(WMP-NOTI-005): 오늘 같은 수신자·업무·타입 알림 존재 여부 -->
+    <select id="existsTodayByType" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM notifications
+            WHERE recipient_id = #{recipientId}
+              AND work_item_id = #{workItemId}
+              AND type = #{type}
+              AND created_at >= date_trunc('day', now())
+        )
+    </select>
+
 </mapper>

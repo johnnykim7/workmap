@@ -31,7 +31,8 @@ public class CommentService {
     @Transactional
     public SubResourceDtos.CommentResponse create(Long workItemId,
                                                   SubResourceDtos.CreateCommentRequest req, Long actorId) {
-        if (workItemMapper.findById(workItemId) == null) {
+        var workItem = workItemMapper.findById(workItemId);
+        if (workItem == null) {
             throw new BusinessException(WmpErrorCode.WORK_ITEM_NOT_FOUND);
         }
         List<Long> mentions = req.mentionedUserIds() == null ? List.of() : req.mentionedUserIds();
@@ -43,10 +44,14 @@ public class CommentService {
                 .build();
         commentMapper.insert(comment);
 
+        OffsetDateTime now = OffsetDateTime.now(clock);
         if (!mentions.isEmpty()) {
-            OffsetDateTime now = OffsetDateTime.now(clock);
             events.publishEvent(new WorkItemEvents.WorkItemMentioned(
                     workItemId, comment.getId(), actorId, mentions, now));   // CMT-2
+        } else {
+            // 멘션 없는 일반 댓글 → 담당자 알림(CR-028, WMP-NOTI-002). 멘션 댓글은 멘션 알림이 우선(중복 금지).
+            events.publishEvent(new WorkItemEvents.WorkItemCommented(
+                    workItemId, comment.getId(), actorId, workItem.getAssigneeId(), now));
         }
         return SubResourceDtos.CommentResponse.from(comment);
     }

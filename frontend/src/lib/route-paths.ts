@@ -18,6 +18,7 @@ export const ROUTES = {
   inviteAccept: '/invite/accept',
   passwordForgot: '/password/forgot',
   accountPassword: '/account/password',
+  accountNotifications: '/account/notifications', // CR-028 — 알림 수신 설정
   selectWorkspace: '/select-workspace',
   home: '/',
   inbox: '/inbox',

@@ -1,8 +1,10 @@
 // 받은함 (/inbox) — 내게 온 알림·멘션·배정 통합(§받은함, WMP-NOTI-001). Sprint5.
 // 데이터=실 BE GET /inbox(목록+안읽음 배지), 읽음=PATCH /notifications/{id}/read. 행 클릭→업무 상세.
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Skeleton } from '@therecommerce/ds-ui';
-import { Inbox, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Inbox, AlertTriangle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ROUTES } from '@/lib/route-paths';
 import { PageHead } from '@/components/badges';
 import { EmptyState } from '@/components/common/empty-state';
 import { useInbox, useMarkRead, type InboxFilter } from '@/features/inbox/hooks';
@@ -15,6 +17,7 @@ const TABS: { key: InboxFilter; label: string }[] = [
 ];
 
 export function InboxPage() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<InboxFilter>('all');
   const [page, setPage] = useState(0);
 
@@ -36,11 +39,21 @@ export function InboxPage() {
         title="받은함"
         desc="내게 온 알림·멘션·배정"
         actions={
-          unread > 0 ? (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              안 읽음 {unread}
-            </span>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {unread > 0 && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                안 읽음 {unread}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(ROUTES.accountNotifications)}
+            >
+              <Settings className="size-4" />
+              알림 설정
+            </Button>
+          </div>
         }
       />
 

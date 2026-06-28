@@ -28,4 +28,12 @@ public interface NotificationMapper {
 
     /** 안 읽은 알림 개수(받은함 배지). */
     long countUnread(@Param("recipientId") Long recipientId);
+
+    /**
+     * 스케줄러 중복 방지(WMP-NOTI-005, CR-028). 같은 수신자·업무·타입의 알림이 오늘(서버 날짜) 이미 있는지.
+     * 마감임박/초과 알림을 하루 1회만 발행하기 위함.
+     */
+    boolean existsTodayByType(@Param("recipientId") Long recipientId,
+                              @Param("workItemId") Long workItemId,
+                              @Param("type") String type);
 }

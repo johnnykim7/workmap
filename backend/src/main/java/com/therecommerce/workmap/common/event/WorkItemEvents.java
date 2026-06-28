@@ -67,6 +67,15 @@ public final class WorkItemEvents {
             OffsetDateTime mentionedAt
     ) {}
 
+    /** WMP-WI-009 (CR-028) — 멘션 없는 일반 댓글. 담당자에게 알림. 멱등 키=commentId. */
+    public record WorkItemCommented(
+            Long workItemId,
+            Long commentId,
+            Long authorId,
+            Long assigneeId,
+            OffsetDateTime commentedAt
+    ) {}
+
     /** WMP-WI-016 — 측정 현재값 변경. 멱등 키=workItemId+updatedAt. */
     public record MeasureUpdated(
             Long workItemId,

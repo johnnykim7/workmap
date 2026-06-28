@@ -2,8 +2,19 @@
 // /inbox = 목록(PageResponse) + 안읽음 배지(unreadCount) 통합(CR-011). 읽음은 /notifications/{id}/read.
 import { api, type PageResponse } from '@/lib/api-client';
 
-// BE Notification.type 발행값(NotificationEventListener): 배정·막힘·멘션.
-export type NotificationType = 'ASSIGNED' | 'BLOCKED' | 'MENTIONED';
+// BE Notification.type 발행값(NotificationEventListener, CR-028 확장 11종).
+export type NotificationType =
+  | 'ASSIGNED'
+  | 'MENTIONED'
+  | 'BLOCKED'
+  | 'DUE_APPROACHING'
+  | 'OVERDUE'
+  | 'COMMENTED'
+  | 'STATUS_CHANGED'
+  | 'SPRINT_STARTED'
+  | 'SPRINT_COMPLETED'
+  | 'APPROVAL_REQUESTED'
+  | 'APPROVAL_DECIDED';
 
 // BE NotificationDtos.Response.
 export interface NotificationItem {

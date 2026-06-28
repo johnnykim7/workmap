@@ -92,6 +92,8 @@ class WorkItemControllerTest {
     @MockBean com.therecommerce.workmap.chat.mapper.ChatMentionMapper chatMentionMapper;
     @MockBean com.therecommerce.workmap.invitation.mapper.InvitationMapper invitationMapper;  // CR-027
     @MockBean com.therecommerce.workmap.invitation.mapper.EmailOtpMapper emailOtpMapper;  // CR-027
+    @MockBean com.therecommerce.workmap.notification.mapper.NotificationPreferenceMapper notificationPreferenceMapper;  // CR-028
+    @MockBean com.therecommerce.workmap.notification.mapper.FcmTokenMapper fcmTokenMapper;  // CR-028
 
     private WorkItemDtos.Response sample() {
         return new WorkItemDtos.Response(

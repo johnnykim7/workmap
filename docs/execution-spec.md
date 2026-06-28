@@ -140,7 +140,10 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
   1. **V10 마이그레이션** — `notification_preferences`·`fcm_tokens`(T3-1). UNIQUE 제약. 시드 불요. (V9는 CR-027 invitations·email_otp 점유 — 작업트리 확인됨. 구현 착수 시 미적용 마이그레이션 최대 번호 재확인 후 부여.)
   2. **NotificationType enum 확장** — 기존(ASSIGNED/MENTIONED/OVERDUE/BLOCKED/DUE_APPROACHING)에 COMMENTED/STATUS_CHANGED/SPRINT_STARTED/SPRINT_COMPLETED/APPROVAL_REQUESTED/APPROVAL_DECIDED 추가. (notifications.type=VARCHAR라 DB 무변경.)
   3. **`NotificationDispatcher`(신규)** — 단일 진입점. `create(recipientId, type, workItemId, message)` → ① `notifications` insert(인앱 원장, 항상) ② `notification_preferences` 조회(없으면 기본값) ③ email/push ON인 채널만 `NotificationGatewayClient` 호출. 기존 `NotificationEventListener`가 `NotificationService.create` 직접 호출하던 것을 Dispatcher 경유로 전환.
-  4. **`NotificationGatewayClient`(신규, `integration` 패키지)** — bp-notification `POST /messages/email`·`/push`·`/fcm/token` 호출(`X-API-Key`). `@Async` + try/catch best-effort(외부 장애가 인앱 기록/트랜잭션 막지 않음, 실패 로깅). RestClient/WebClient. **CR-027 `NotificationClient`와 동일 솔루션·apiKey — 통합 또는 공통 베이스 권장**(둘 다 bp-notification 클라이언트).
+  4. **외부 클라이언트 = CR-027 `NotificationClient` 공유·확장**(신규 생성 금지). ⚠️ **실측(2026-06-29): CR-027 진행 중 작업트리에 이미 존재** — `invitation/service/NotificationClient.java`(`sendEmail()` only, `POST /messages/email`, `X-API-Key`) + `invitation/config/NotificationProperties.java`(baseUrl·apiKey·enabled). CR-028은 여기에 **`sendPush()`(`POST /messages/push`)·`registerFcmToken()`(`POST /fcm/token`)·`deleteFcmToken()`을 추가**하고 공용 위치(`integration/` 또는 `notification/`)로 이전. `@Async`+try/catch best-effort. **이 단계는 CR-027 커밋 이후에 착수**(미커밋 같은 파일 충돌 회피 — 아래 구현 순서 참조).
+  - **구현 순서(CR-027 동시 진행 대응)**: CR-028을 두 갈래로 분할한다.
+    - **(A) 지금 착수 — CR-027과 파일 무충돌**: NotificationType enum 확장 / NotificationDispatcher(외부 fan-out 지점은 인터페이스 주입, 미배선 시 no-op) / 신규 리스너 / 마감 스케줄러 / V10 테이블·매퍼 / 수신설정·FCM 컨트롤러 / FE 알림설정 화면 / 에러코드 7839~7841.
+    - **(B) CR-027 커밋 후 착수 — 공유 자원**: `NotificationClient`에 push/fcm 메서드 추가 + 공용 이전 / `NotificationProperties` 재사용 / `application.yml`에 `workmap.notification.*` 블록(CR-027이 안 깔았으면 CR-028이 추가). Dispatcher의 no-op 외부 fan-out 자리에 클라이언트 주입.
   5. **신규 리스너/발행** — 기존 `NotificationEventListener`에 onCommented(WorkItemCommented)·onStatusChanged·onSprintStarted/Completed·onApprovalRequested/Decided 추가. `CommentService`에 멘션 없는 댓글이면 `WorkItemCommented` 발행(멘션이면 기존 Mentioned만 — 중복 금지). 본인이 단 댓글·본인 상태변경은 발행 스킵.
   6. **마감 스케줄러(WMP-NOTI-005)** — `@Scheduled` cron(매일 오전, CR-012 `@EnableScheduling` 재사용). 미완료 work_item due_date 스캔 → 임박(≤ `notify.due-soon-days`)/초과(< today) → WorkItemDueApproaching/Overdue 발행. **중복 방지**: 같은 work_item·type·날짜 1회(notifications 당일 동일 type 존재 체크 또는 별도 dedup).
   7. **컨트롤러** — `NotificationPreferenceController`(`GET`·`PUT /notification-preferences`, 본인만), `FcmTokenController`(`POST`·`DELETE /fcm/token`, 본인만). 신규 매퍼(NotificationPreferenceMapper·FcmTokenMapper)는 기존 `@WebMvcTest`(User/Project/WorkItem ControllerTest)에 `@MockBean` 동반 등록(CR-009 함정).
@@ -152,7 +155,8 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **테스트(T3-5 보강)**: Dispatcher(설정 없으면 기본값·인앱 항상·email OFF면 외부 호출 안 함·ON이면 호출), 신규 리스너 발행 여부+페이로드(본인 액션 스킵 검증), 스케줄러(임박/초과 판정·완료 제외·당일 중복 방지·담당자 없음 스킵), preferences upsert(부분 갱신·본인만), GatewayClient는 Mock(발송 실패가 인앱 기록 안 막음).
 - **핵심 함정**: ① bp-notification 솔루션 중복 등록 금지(CR-027과 공유). ② 외부 발송 best-effort — `@Async`+try/catch, 실패가 트랜잭션/인앱 막으면 안 됨. ③ 본인 액션 자기 알림 방지(자기 댓글/자기 상태변경/자기 배정). ④ 스케줄러 당일 중복 발행 방지. ⑤ in_app=false여도 받은함 원장 기록은 유지(표시만 제어). ⑥ 신규 매퍼 `@WebMvcTest` `@MockBean` 누락 시 컨텍스트 로딩 실패(CR-009). ⑦ V9는 CR-027(invitations·email_otp) 점유 — CR-028은 V10.
 - **에러코드 WMP-7839~** (7829~7838 CR-027 예약, 다음 빈 번호):
-  - WMP-7839 NOTIFICATION_NOT_FOUND(404, 본인 아닌 알림 read 시) / WMP-7840 NOTIFICATION_PREFERENCE_INVALID_TYPE(400, 미지원 type) / WMP-7841 FCM_TOKEN_REQUIRED(400)
+  - WMP-7839 NOTIFICATION_PREFERENCE_INVALID_TYPE(400, 미지원 type) / WMP-7840 FCM_TOKEN_REQUIRED(400)
+  - ⚠️ **실측 정정(2026-06-29)**: NOTIFICATION_NOT_FOUND·NOTIFICATION_FORBIDDEN은 **기존 7760·7761로 이미 존재**(NotificationService 사용 중) — 신규 채번하지 않고 재사용. 따라서 CR-028 신규는 위 2종(7839·7840)만.
   - (외부 발송 실패는 에러코드 아님 — best-effort 로깅. 수신 설정 조회/갱신 권한 위반은 기존 인증가드.)
 
 ---

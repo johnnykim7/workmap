@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.notification.mapper.FcmTokenMapper">
+
+    <resultMap id="fcmMap" type="com.therecommerce.workmap.notification.domain.FcmToken">
+        <id     property="id"         column="id"/>
+        <result property="userId"     column="user_id"/>
+        <result property="fcmToken"   column="fcm_token"/>
+        <result property="deviceInfo" column="device_info"/>
+        <result property="createdAt"  column="created_at"/>
+    </resultMap>
+
+    <select id="findByUser" resultMap="fcmMap">
+        SELECT id, user_id, fcm_token, device_info, created_at
+        FROM fcm_tokens
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 재로그인 시 같은 토큰 중복 등록 방지(UNIQUE user_id+fcm_token). -->
+    <insert id="insertIgnore" parameterType="com.therecommerce.workmap.notification.domain.FcmToken">
+        INSERT INTO fcm_tokens (user_id, fcm_token, device_info)
+        VALUES (#{userId}, #{fcmToken}, #{deviceInfo})
+        ON CONFLICT (user_id, fcm_token) DO NOTHING
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM fcm_tokens
+        WHERE user_id = #{userId} AND fcm_token = #{fcmToken}
+    </delete>
+
+</mapper>

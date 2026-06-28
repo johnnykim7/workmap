@@ -7,6 +7,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { InviteAcceptPage } from '@/pages/InviteAcceptPage';
 import { PasswordForgotPage } from '@/pages/PasswordForgotPage';
 import { AccountPasswordPage } from '@/pages/AccountPasswordPage';
+import { AccountNotificationsPage } from '@/pages/AccountNotificationsPage';
 import { SelectWorkspacePage } from '@/pages/SelectWorkspacePage';
 import { WorkspaceMembersPage } from '@/pages/WorkspaceMembersPage';
 import { HomePage } from '@/pages/HomePage';
@@ -59,6 +60,8 @@ const router = createBrowserRouter([
           { path: 'workspaces/:wsId/members', element: <WorkspaceMembersPage /> },
           // CR-027 — 로그인 상태 비밀번호 변경(2차 인증)
           { path: 'account/password', element: <AccountPasswordPage /> },
+          // CR-028 — 알림 수신 설정(종류 × 채널)
+          { path: 'account/notifications', element: <AccountNotificationsPage /> },
 
           // ── 프로젝트 본문 탭 (Jira식) ──
           {

@@ -40,4 +40,10 @@
         SELECT role FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}
     </select>
 
+    <!-- 역할 기반 승인 알림(CR-028): 해당 역할 멤버 userId 목록. -->
+    <select id="findUserIdsByProjectAndRole" resultType="java.lang.Long">
+        SELECT user_id FROM project_members
+        WHERE project_id = #{projectId} AND role = #{role}
+    </select>
+
 </mapper>

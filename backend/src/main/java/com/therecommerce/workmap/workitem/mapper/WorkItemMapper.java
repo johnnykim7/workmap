@@ -92,4 +92,11 @@ public interface WorkItemMapper {
     List<WorkItem> findCompletedBetween(@Param("projectId") Long projectId,
                                         @Param("from") OffsetDateTime from,
                                         @Param("to") OffsetDateTime to);
+
+    /**
+     * 마감 알림 스케줄러(WMP-NOTI-005, CR-028). due_date가 있고 담당자가 있으며 미완료(common_status ≠ DONE)인
+     * 항목 중, 마감이 오늘+maxDaysAhead 이내(임박 후보)이거나 이미 지난(초과 후보) 것. 소프트삭제 제외.
+     * 임박/초과 구분은 서비스에서 daysLeft = due_date - today로 판단한다.
+     */
+    List<WorkItem> findDueForNotification(@Param("maxDaysAhead") int maxDaysAhead);
 }
