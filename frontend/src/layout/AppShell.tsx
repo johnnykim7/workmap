@@ -31,12 +31,15 @@ import {
   Users,
   LayoutGrid,
   KeyRound,
+  Bell,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useUiStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
 import { useLogout } from '@/features/auth/hooks';
+import { useNewNotificationToast } from '@/features/inbox/hooks';
+import { NotificationBell } from '@/features/inbox/components/NotificationBell';
 import { useWorkspaces } from '@/features/workspaces/hooks';
 import { useProjects, useProjectByKey } from '@/features/projects/hooks';
 import { useChannels } from '@/features/chat/hooks';
@@ -142,6 +145,9 @@ function HeaderActions() {
   const logout = useLogout();
   const navigate = useNavigate();
 
+  // 새 알림 도착 시 토스트(전역 1회 마운트 — 헤더에만 둬 중복 방지).
+  useNewNotificationToast();
+
   return (
     <div className="flex w-full items-center justify-between gap-3">
       <HeaderTitle />
@@ -150,6 +156,7 @@ function HeaderActions() {
         <Button variant="primary" size="sm" onClick={openCreate}>
           <Plus className="size-4" /> 만들기
         </Button>
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring" aria-label="계정 메뉴">
@@ -164,6 +171,9 @@ function HeaderActions() {
               <div className="text-xs font-normal text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => navigate(ROUTES.accountNotifications)}>
+              <Bell className="size-4" /> 알림 설정
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate(ROUTES.accountPassword)}>
               <KeyRound className="size-4" /> 비밀번호 변경
             </DropdownMenuItem>

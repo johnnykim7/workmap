@@ -42,6 +42,8 @@ export const inboxApi = {
   // 받은함(목록 + 배지). isRead 미지정=전체.
   inbox: (isRead?: boolean, page = 0, size = 20) =>
     api.get<InboxResponse>(`/inbox?${qs(isRead, page, size)}`),
+  // 안 읽음 개수만(헤더 벨 배지 폴링용 — 가벼움).
+  unreadCount: () => api.get<number>('/notifications/unread-count'),
   // 알림 읽음 처리(WMP-NOTI-001).
   markRead: (id: number) => api.patch<void>(`/notifications/${id}/read`),
 };
