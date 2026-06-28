@@ -42,15 +42,34 @@
 | POST | /auth/login | 로그인 (JWT 발급) | | P1 | WMP-AUTH-001 |
 | POST | /auth/logout | 로그아웃 (토큰 무효화) | 🔒 | P1 | WMP-AUTH-002 |
 | GET | /auth/me | 내 정보(프로필·역할) 조회 | 🔒 | P1 | WMP-AUTH-003 |
+| POST | /auth/invitations/accept | 초대 수락(이메일+인증번호+새 비밀번호 → user 생성·로그인) | | P1 | WMP-AUTH-006 |
+| POST | /auth/password/forgot | 분실 재설정 1단계 — 인증번호 발송(계정 열거 방지: 항상 성공 응답) | | P1 | WMP-AUTH-007 |
+| POST | /auth/password/reset | 분실 재설정 2단계 — 이메일+인증번호+새 비밀번호 검증·변경 | | P1 | WMP-AUTH-007 |
+| POST | /auth/password/change/request-otp | 변경 1단계 — 본인 이메일로 인증번호 발송 | 🔒 | P1 | WMP-AUTH-008 |
+| POST | /auth/password/change | 변경 2단계 — 현재 비밀번호+인증번호+새 비밀번호(2차 인증) | 🔒 | P1 | WMP-AUTH-008 |
+
+> **인증번호 공통 규칙(POL-013)**: 6자리, 만료 10분, 시도 5회, 재발송 쿨다운 60초. 발송은 bp-notification(WMP-AUTH-009) — 인증번호 평문은 응답·로그에 비노출.
+> **요청/응답 요약**:
+> - `accept` req: `{ email, code, password }` → res: `{ accessToken, refreshToken, user }`(가입 즉시 로그인) 또는 `{}`(로그인 분리 시).
+> - `forgot` req: `{ email }` → res: `{}`(200, 존재 여부 불문 동일).
+> - `reset` req: `{ email, code, password }` → res: `{}`.
+> - `change/request-otp` req: `{}`(인증 컨텍스트의 이메일 사용) → res: `{}`.
+> - `change` req: `{ currentPassword, code, newPassword }` → res: `{}`. 현재 PW 불일치=401(INVALID_CREDENTIALS), 새 PW=현재 PW 동일 시 400.
 
 ## B. 사용자 (Users)
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | GET | /users | 사용자 목록(검색·페이징) | 🔒 | P1 | WMP-AUTH-005 |
-| POST | /users | 사용자 생성/초대(역할·부서 지정) | 🔒 Admin | P1 | WMP-AUTH-004 |
+| POST | /users | 사용자 직접 생성(이름·역할·부서·비밀번호 — 시드/마이그레이션용, Admin) | 🔒 Admin | P2 | WMP-AUTH-005 |
+| POST | /invitations | 사용자 초대(이메일·이름·역할·부서 → invitations 생성 + 인증번호 발송) | 🔒 Admin | P1 | WMP-AUTH-004 |
+| GET | /invitations | 초대 목록(상태 필터: PENDING/ACCEPTED/EXPIRED) | 🔒 Admin | P2 | WMP-AUTH-004 |
+| POST | /invitations/{id}/resend | 초대 인증번호 재발송(쿨다운 적용) | 🔒 Admin | P2 | WMP-AUTH-004 |
+| DELETE | /invitations/{id} | 초대 취소(REVOKED) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | PATCH | /users/{id} | 사용자 수정(역할·부서) | 🔒 Admin | P1 | WMP-AUTH-005 |
 | PATCH | /users/{id}/deactivate | 비활성화(소프트 삭제) | 🔒 Admin | P1 | WMP-AUTH-005 |
+
+> **CR-027 변경**: 기존 `POST /users`의 "초대" 역할은 `POST /invitations`로 분리. `POST /users`는 비밀번호를 직접 지정하는 직접 생성(시드/관리 목적)으로 남기되 권장 가입 경로는 초대다. invitations는 user를 즉시 만들지 않고 수락 시점에 생성한다.
 
 ## C. 워크스페이스 (Workspaces)
 

@@ -108,6 +108,29 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **테스트(T3-5 보강)**: WS 비멤버 격리(목록 0건/403), wsId 위조 방어, 2단 가시성(WS멤버∩PRIVATE), 백필 정합.
 - **핵심 함정**: ① 백필 누락 시 기존 운영 사용자 전원 튕김(배포 전 필수). ② 가드를 클라 wsId만 믿으면 격리 무력화 — 반드시 서버 멤버십 교집합. ③ 회사홈 전사집계도 멤버 WS 범위(전 WS 무차별 금지, BIZ-112).
 
+### CR-027 — 이메일 초대 가입 + 비밀번호 재설정/변경 (인증번호 OTP, 횡단)
+> 가입 경로를 "관리자 직접 비밀번호 지정"에서 "이메일 인증번호 초대"로 전환하고, 비밀번호 분실재설정·로그인상태 변경을 추가한다. T1(WMP-AUTH-004/006/007/008/009·POL-012/013·UserInvited/UserJoined/PasswordChanged)→T3(T3-1 invitations·email_otp / T3-2 §A·§B / T3-3 신규 3화면) 캐스케이드 완료본 기준. **users 스키마 무변경.**
+- **사전 작업 (bp-notification 연동, 1회성)**:
+  1. bp-notification 관리자 API로 WorkMap을 솔루션 등록 — `POST http://59.8.160.12:8185/api/v1/admin/solutions`(Basic Auth) body `{solutionCode:"WMP", solutionName:"WorkMap", allowedServices:"EMAIL", ...}` → 응답의 **apiKey 1회 확보**(재조회 불가).
+  2. 인증번호 이메일 템플릿 3종 등록 — `POST /api/v1/admin/templates`(messageType=EMAIL): `WMP_INVITE_OTP`(초대), `WMP_RESET_OTP`(분실), `WMP_CHANGE_OTP`(변경). content/contentHtml에 `{{code}}`·`{{expiresMin}}`·`{{name}}` 변수. 발송 시 WorkMap이 templateCode+variables로 호출.
+  3. WorkMap 설정 주입 — `workmap.notification.base-url=http://59.8.160.12:8185`, `workmap.notification.api-key=${WMP_NOTI_API_KEY}`(운영 docker env), `workmap.auth.otp.*`(만료10분/시도5/쿨다운60s).
+- **BE (대규모)**:
+  1. **V9 마이그레이션** — `invitations`·`email_otp` 테이블(T3-1). invitations 부분 유니크(PENDING email). 시드 불요.
+  2. **신규 모듈 `auth` 확장 + `invitation` 모듈** — 도메인(Invitation·EmailOtp)/Mapper/Service. `OtpService`(발급·해시저장·검증·시도카운트·쿨다운·소비), `InvitationService`(초대 생성→OTP 발급→발송, 수락→OTP 검증→UserService.create 위임→ACCEPTED), `PasswordService`(forgot/reset/change). 비밀번호 인코딩은 기존 `UserService`/`PasswordEncoder` 재사용.
+  3. **`NotificationClient`** — bp-notification `POST /messages/email` 호출(`X-API-Key`). best-effort(발송 실패가 OTP 발급 트랜잭션 롤백 금지, 실패 로깅). RestClient/WebClient.
+  4. **컨트롤러** — `AuthController`에 accept/forgot/reset/change/change-request-otp 5종(공개 경로는 SecurityWhitelist에 추가: `/api/v1/auth/invitations/accept`·`/auth/password/forgot`·`/auth/password/reset`). `InvitationController`(`/api/v1/invitations` Admin 가드).
+  5. **에러코드 WMP-7829~** (아래 §에러코드). 신규 매퍼는 기존 `@WebMvcTest`(User/Project/WorkItem ControllerTest)에 `@MockBean` 동반 등록(CR-009 함정).
+- **FE (중규모)**:
+  1. 공개 라우트 신규 — `/invite/accept`·`/password/forgot`(RequireAuth 밖). `/account/password`(RequireAuth 안). `features/auth/` api·hooks 확장(accept/forgot/reset/change).
+  2. 화면 3종(T3-3): 초대 수락 카드, 비밀번호 찾기 단계형, 비밀번호 변경(헤더 계정 메뉴 진입). 모두 ds-ui only(네이티브 alert/select/input date 금지), primary 저장 버튼, 인라인 에러=공통 Alert, 인증번호 재발송 쿨다운 표시.
+  3. 로그인 화면에 "비밀번호를 잊으셨나요?" 링크. 관리자 사용자 화면의 "사용자 생성"을 "초대"로 — `POST /invitations` 연결, 초대 목록/재발송/취소.
+- **테스트(T3-5 보강)**: OTP 발급·검증(만료/시도5초과/소비후 재사용 거부/쿨다운), 초대 수락→user 생성·중복 PENDING 거부, forgot 계정열거 방지(미존재도 200·발송無), change 현재PW 불일치 거부·동일PW 거부. NotificationClient는 Mock.
+- **핵심 함정**: ① 공개 경로 SecurityWhitelist 누락 시 accept/forgot 403(CR-007 v1 prefix 규칙). ② 인증번호 평문을 응답/로그에 노출 금지(해시 저장). ③ bp-notification apiKey는 1회 응답이라 분실 시 재발급 — 운영 env에 보관. ④ 발송 실패가 OTP 트랜잭션 막으면 사용자 가입 불가 — best-effort. ⑤ users.password_hash 불변식 — 초대 단계 user 미생성, 수락 시점 생성.
+- **에러코드 WMP-7829~** (7820~7828 채팅 점유, 다음 빈 번호):
+  - WMP-7829 INVITATION_NOT_FOUND(404) / WMP-7830 INVITATION_ALREADY_ACCEPTED(409) / WMP-7831 INVITATION_EXPIRED(410) / WMP-7832 INVITATION_PENDING_DUPLICATED(409, 이미 PENDING 초대 존재)
+  - WMP-7833 OTP_NOT_FOUND(404) / WMP-7834 OTP_EXPIRED(410) / WMP-7835 OTP_MISMATCH(400) / WMP-7836 OTP_ATTEMPTS_EXCEEDED(429) / WMP-7837 OTP_RESEND_COOLDOWN(429)
+  - WMP-7838 PASSWORD_SAME_AS_CURRENT(400). (현재PW 불일치=기존 WMP-7742 INVALID_CREDENTIALS, 이메일 중복=기존 WMP-7741 재사용)
+
 ---
 
 ## 5-A. Sprint 완료 게이트
