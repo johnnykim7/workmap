@@ -70,6 +70,7 @@ export function AccountNotificationsPage() {
       <div className="mb-1 text-lg font-semibold">알림 설정</div>
       <p className="mb-4 text-sm text-muted-foreground">
         알림 종류별로 받을 채널을 선택합니다. 인앱은 받은함 표시 여부이며, 받은함 기록 자체는 항상 보관됩니다.
+        푸시(브라우저 알림)는 준비 중입니다.
       </p>
 
       <Table>
@@ -78,7 +79,10 @@ export function AccountNotificationsPage() {
             <TableHead>알림 종류</TableHead>
             <TableHead className="w-20 text-center">인앱</TableHead>
             <TableHead className="w-20 text-center">이메일</TableHead>
-            <TableHead className="w-20 text-center">푸시</TableHead>
+            <TableHead className="w-24 text-center">
+              푸시
+              <span className="block text-[10px] font-normal text-muted-foreground">준비 중</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -100,10 +104,8 @@ export function AccountNotificationsPage() {
                   />
                 </TableCell>
                 <TableCell className="text-center">
-                  <Switch
-                    checked={d.push}
-                    onCheckedChange={(v) => toggle(row.type, 'push', v)}
-                  />
+                  {/* 웹푸시(Firebase/SW)는 후속 — 현재 비활성. BE 푸시 발송 경로는 준비됨. */}
+                  <Switch checked={d.push} disabled aria-label="푸시(준비 중)" />
                 </TableCell>
               </TableRow>
             );
