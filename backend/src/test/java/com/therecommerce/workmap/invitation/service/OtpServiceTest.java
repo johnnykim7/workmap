@@ -30,6 +30,7 @@ class OtpServiceTest {
 
     @Mock EmailOtpMapper otpMapper;
     @Mock NotificationClient notificationClient;
+    @Mock OtpAttemptRecorder attemptRecorder;
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     AuthOtpProperties props;
     OtpService otpService;
@@ -37,7 +38,7 @@ class OtpServiceTest {
     @BeforeEach
     void setUp() {
         props = new AuthOtpProperties(); // 만료10/시도5/쿨다운60/초대72h 기본
-        otpService = new OtpService(otpMapper, passwordEncoder, notificationClient, props);
+        otpService = new OtpService(otpMapper, passwordEncoder, notificationClient, attemptRecorder, props);
     }
 
     @Test
@@ -116,7 +117,7 @@ class OtpServiceTest {
         assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "123456"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_ATTEMPTS_EXCEEDED);
-        verify(otpMapper).markConsumed(5L); // 폐기
+        verify(attemptRecorder).consume(5L); // 폐기(독립 트랜잭션)
     }
 
     @Test
@@ -130,7 +131,23 @@ class OtpServiceTest {
         assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "999999"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_MISMATCH);
-        verify(otpMapper).incrementAttempt(5L);
-        verify(otpMapper, never()).markConsumed(5L); // 아직 한도 미도달
+        verify(attemptRecorder).increment(5L);    // 독립 트랜잭션으로 시도횟수 커밋
+        verify(attemptRecorder, never()).consume(5L); // 아직 한도 미도달
+    }
+
+    @Test
+    @DisplayName("OTP-8: 불일치 후 한도도달_즉시폐기(다음 시도 차단)")
+    void 불일치_한도도달_폐기() {
+        // attemptCount=4, 한 번 더 틀리면 5 도달 → 즉시 폐기
+        EmailOtp otp = EmailOtp.builder()
+                .id(5L).codeHash(passwordEncoder.encode("123456"))
+                .attemptCount(4).expiresAt(OffsetDateTime.now().plusMinutes(5)).build();
+        when(otpMapper.findLatestActive("a@b.com", "INVITE")).thenReturn(otp);
+
+        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "999999"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_MISMATCH);
+        verify(attemptRecorder).increment(5L);
+        verify(attemptRecorder).consume(5L); // 한도 도달 → 폐기
     }
 }

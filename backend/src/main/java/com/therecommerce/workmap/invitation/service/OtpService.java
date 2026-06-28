@@ -29,6 +29,7 @@ public class OtpService {
     private final EmailOtpMapper otpMapper;
     private final PasswordEncoder passwordEncoder;
     private final NotificationClient notificationClient;
+    private final OtpAttemptRecorder attemptRecorder;
     private final AuthOtpProperties props;
     private final SecureRandom random = new SecureRandom();
 
@@ -76,18 +77,20 @@ public class OtpService {
             throw new BusinessException(WmpErrorCode.OTP_EXPIRED);
         }
         if (otp.getAttemptCount() >= props.getMaxAttempts()) {
-            otpMapper.markConsumed(otp.getId()); // 폐기(재발급 필요)
+            attemptRecorder.consume(otp.getId()); // 폐기(재발급 필요) — 메인 롤백과 무관하게 커밋
             throw new BusinessException(WmpErrorCode.OTP_ATTEMPTS_EXCEEDED);
         }
         if (!passwordEncoder.matches(code, otp.getCodeHash())) {
-            otpMapper.incrementAttempt(otp.getId());
+            // 실패 카운팅은 REQUIRES_NEW로 독립 커밋 — 아래 예외가 메인 트랜잭션을 롤백시켜도
+            // 시도횟수 증가가 취소되지 않게(brute-force 방지, POL-013).
+            attemptRecorder.increment(otp.getId());
             // 증가 후 한도 도달이면 즉시 폐기(다음 시도 자체 차단)
             if (otp.getAttemptCount() + 1 >= props.getMaxAttempts()) {
-                otpMapper.markConsumed(otp.getId());
+                attemptRecorder.consume(otp.getId());
             }
             throw new BusinessException(WmpErrorCode.OTP_MISMATCH);
         }
-        otpMapper.markConsumed(otp.getId());
+        otpMapper.markConsumed(otp.getId()); // 성공 경로 — 메인 트랜잭션에서 커밋(롤백 없음)
     }
 
     private void enforceResendCooldown(String email, OtpPurpose purpose) {
