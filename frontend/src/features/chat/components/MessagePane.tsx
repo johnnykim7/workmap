@@ -11,7 +11,7 @@ import {
   Skeleton,
   cn,
 } from '@therecommerce/ds-ui';
-import { Hash, Lock, MoreHorizontal, Users, Pin, Bell, Trash2 } from 'lucide-react';
+import { Hash, Lock, MoreHorizontal, Users, Pin, Bell, Trash2, Plus } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import type { ChatChannel, ChatMessage } from '../types';
@@ -31,7 +31,11 @@ interface Props {
   channel: ChatChannel | null;
   workspaceId: number | null;
   currentUserId?: number;
+  /** WS에 채널이 하나라도 있는지 — 빈 상태 문구 분기. */
+  hasChannels: boolean;
+  loadingChannels: boolean;
   onOpenThread: (m: ChatMessage) => void;
+  onCreateChannel: () => void;
   onChannelDeleted: () => void;
 }
 
@@ -39,7 +43,10 @@ export function MessagePane({
   channel,
   workspaceId,
   currentUserId,
+  hasChannels,
+  loadingChannels,
   onOpenThread,
+  onCreateChannel,
   onChannelDeleted,
 }: Props) {
   const channelId = channel?.id ?? null;
@@ -80,8 +87,19 @@ export function MessagePane({
       <div className="flex flex-1 items-center justify-center">
         <EmptyState
           icon={<Hash className="size-8" />}
-          title="채널을 선택하세요"
-          description="좌측에서 채널을 선택하거나 새 채널을 만드세요."
+          title={hasChannels ? '채널을 선택하세요' : '채널이 없습니다'}
+          description={
+            hasChannels
+              ? '왼쪽 메뉴의 "메시지"에서 채널을 선택하세요.'
+              : '첫 채널을 만들어 대화를 시작하세요.'
+          }
+          action={
+            !loadingChannels && (
+              <Button variant="primary" onClick={onCreateChannel} disabled={workspaceId == null}>
+                <Plus className="size-4" /> 채널 만들기
+              </Button>
+            )
+          }
         />
       </div>
     );
@@ -107,6 +125,10 @@ export function MessagePane({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onSelect={onCreateChannel}>
+              <Plus className="size-4" /> 새 채널
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setMembersOpen(true)}>
               <Users className="size-4" /> 멤버
             </DropdownMenuItem>

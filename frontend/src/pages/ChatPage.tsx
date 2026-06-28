@@ -1,4 +1,5 @@
-// 커뮤니케이션(채팅) 페이지 — Slack 유사 3패널(채널/메시지/스레드).
+// 커뮤니케이션(채팅) 페이지 — 채널은 전역 LNB '메시지' 메뉴 children으로 나열되고,
+// 이 페이지는 메시지 + 스레드 2패널을 그린다(채널 사이드바 제거, CR-026).
 // 채널은 현재 선택된 워크스페이스(WS) 단위로 격리(useWorkspaceStore).
 // 선택 채널은 URL(/chat/:channelId)에 반영 — 새로고침/공유 시 유지.
 import { useEffect, useMemo, useState } from 'react';
@@ -7,10 +8,10 @@ import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
 import { ROUTES } from '@/lib/route-paths';
 import { useChannels } from '@/features/chat/hooks';
-import { ChannelSidebar } from '@/features/chat/components/ChannelSidebar';
 import { MessagePane } from '@/features/chat/components/MessagePane';
 import { ThreadPane } from '@/features/chat/components/ThreadPane';
 import { ResizeDivider } from '@/features/chat/components/ResizeDivider';
+import { CreateChannelDialog } from '@/features/chat/components/CreateChannelDialog';
 import type { ChatMessage } from '@/features/chat/types';
 
 // 스레드 패널 너비(px) — 좌측 경계 드래그로 조절, 새로고침 유지(localStorage).
@@ -41,6 +42,7 @@ export function ChatPage() {
 
   const [threadParent, setThreadParent] = useState<ChatMessage | null>(null);
   const [threadWidth, setThreadWidth] = useState(loadThreadWidth);
+  const [createOpen, setCreateOpen] = useState(false);
 
   // 스레드 너비 변경을 localStorage에 저장(새로고침 유지).
   useEffect(() => {
@@ -68,21 +70,16 @@ export function ChatPage() {
   }, [workspaceId, selectedId, isPending, channels, selectedChannel, navigate]);
 
   return (
-    // AppShell의 p-5 패딩을 상쇄해 풀-블리드 3패널 — 채팅은 화면을 꽉 채운다.
+    // AppShell의 p-5 패딩을 상쇄해 풀-블리드 2패널 — 채팅은 화면을 꽉 채운다.
     <div className="-m-5 flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      <ChannelSidebar
-        workspaceId={workspaceId}
-        channels={channels}
-        loading={isPending}
-        selectedId={selectedId}
-        onSelect={(id) => navigate(ROUTES.chatChannel(id))}
-      />
-
       <MessagePane
         channel={selectedChannel}
         workspaceId={workspaceId}
         currentUserId={currentUserId}
+        hasChannels={channels.length > 0}
+        loadingChannels={isPending}
         onOpenThread={setThreadParent}
+        onCreateChannel={() => setCreateOpen(true)}
         onChannelDeleted={() => navigate(ROUTES.chat, { replace: true })}
       />
 
@@ -107,6 +104,13 @@ export function ChatPage() {
           />
         </>
       )}
+
+      <CreateChannelDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        workspaceId={workspaceId}
+        onCreated={(id) => navigate(ROUTES.chatChannel(id))}
+      />
     </div>
   );
 }

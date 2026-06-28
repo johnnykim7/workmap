@@ -38,13 +38,13 @@ import { useWorkspaceStore } from '@/store/workspace-store';
 import { useLogout } from '@/features/auth/hooks';
 import { useWorkspaces } from '@/features/workspaces/hooks';
 import { useProjects, useProjectByKey } from '@/features/projects/hooks';
+import { useChannels } from '@/features/chat/hooks';
 import { CreateModal } from '@/components/common/create-modal';
 
-// 글로벌 LNB 고정 메뉴 (§9.1). 프로젝트 목록은 선택 WS 기준 children으로 동적 주입.
+// 글로벌 LNB 고정 메뉴 (§9.1). 프로젝트·메시지(채널)는 선택 WS 기준 children으로 동적 주입.
 const FIXED_MENU = [
   { path: ROUTES.home, label: '회사 홈', icon: <Map className="size-4" /> },
   { path: ROUTES.inbox, label: '받은함', icon: <Inbox className="size-4" /> },
-  { path: ROUTES.chat, label: '메시지', icon: <MessageSquare className="size-4" /> },
   { path: ROUTES.search, label: '검색', icon: <Search className="size-4" /> },
 ];
 
@@ -193,13 +193,28 @@ export function AppShell() {
     currentWorkspaceId ? { workspaceId: currentWorkspaceId } : {},
   );
 
+  // 선택 WS의 채팅 채널 — '메시지' 메뉴의 children으로 나열(프로젝트와 동일 패턴).
+  // 안 읽음 수는 ds-ui AdminShell children badge로 표시.
+  const { data: channels = [] } = useChannels(currentWorkspaceId);
+
   const menuItems = useMemo(() => {
     const projectChildren = projects.map((p) => ({
       path: ROUTES.project(p.key),
       label: p.name,
     }));
+    const channelChildren = channels.map((c) => ({
+      path: ROUTES.chatChannel(c.id),
+      label: c.displayName,
+      badge: c.unreadCount > 0 ? (c.unreadCount > 99 ? '99+' : c.unreadCount) : undefined,
+    }));
     return [
       ...FIXED_MENU,
+      {
+        path: ROUTES.chat,
+        label: '메시지',
+        icon: <MessageSquare className="size-4" />,
+        children: channelChildren,
+      },
       {
         path: ROUTES.projects,
         label: '프로젝트',
@@ -208,7 +223,7 @@ export function AppShell() {
       },
       { path: ROUTES.admin.measureUnits, label: '설정', icon: <Settings className="size-4" /> },
     ];
-  }, [projects]);
+  }, [projects, channels]);
 
   // WS 미선택이면 선택 화면으로(WMP-WS-008).
   if (!wsLoading && !currentWorkspaceId) {
