@@ -3,8 +3,9 @@
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@therecommerce/ds-ui';
 import { CalendarRange } from 'lucide-react';
+import { useMemo } from 'react';
 import { useProjectByKey } from '@/features/projects/hooks';
-import { useTimeline } from '@/features/view/hooks';
+import { useTimeline, useProjectEpics } from '@/features/view/hooks';
 import { TimelineChart } from '@/features/view/components/TimelineChart';
 import { EmptyState } from '@/components/common/empty-state';
 
@@ -12,6 +13,12 @@ export function TimelineView() {
   const { key = '' } = useParams();
   const { data: project } = useProjectByKey(key);
   const { data, isPending } = useTimeline(project?.id);
+  // 에픽 그룹/필터 라벨용 id→title 맵(CR-023). 에픽 조회 실패해도 차트는 "에픽 #id" 폴백.
+  const { data: epics } = useProjectEpics(project?.id);
+  const epicNames = useMemo(
+    () => new Map((epics ?? []).map((e) => [e.id, e.title] as const)),
+    [epics],
+  );
 
   if (isPending || !data) {
     return (
@@ -36,5 +43,5 @@ export function TimelineView() {
     );
   }
 
-  return <TimelineChart items={data.items} />;
+  return <TimelineChart items={data.items} epicNames={epicNames} />;
 }
