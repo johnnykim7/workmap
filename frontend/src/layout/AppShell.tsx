@@ -199,7 +199,7 @@ export function AppShell() {
   );
 
   // 선택 WS의 채팅 채널 — '메시지' 메뉴의 children으로 나열(프로젝트와 동일 패턴).
-  // 안 읽음 수는 ds-ui AdminShell children badge로 표시.
+  // 안 읽음 수는 label 끝에 텍스트로 표시(ds-ui AdminShell children은 path/label만 받음 — CSS 부작용 방지).
   const { data: channels = [] } = useChannels(currentWorkspaceId);
 
   const menuItems = useMemo(() => {
@@ -207,11 +207,13 @@ export function AppShell() {
       path: ROUTES.project(p.key),
       label: p.name,
     }));
-    const channelChildren = channels.map((c) => ({
-      path: ROUTES.chatChannel(c.id),
-      label: c.displayName,
-      badge: c.unreadCount > 0 ? (c.unreadCount > 99 ? '99+' : c.unreadCount) : undefined,
-    }));
+    const channelChildren = channels.map((c) => {
+      const unread = c.unreadCount > 0 ? `  (${c.unreadCount > 99 ? '99+' : c.unreadCount})` : '';
+      return {
+        path: ROUTES.chatChannel(c.id),
+        label: `${c.displayName}${unread}`,
+      };
+    });
     return [
       ...FIXED_MENU,
       {
