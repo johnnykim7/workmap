@@ -11,7 +11,7 @@ import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
 } from '@/features/agile/hooks';
-import { useProjectItems, useCreateWorkItem } from '@/features/workitem/hooks';
+import { useProjectItems, useCreateWorkItem, useChangeEpic } from '@/features/workitem/hooks';
 import { filterByEpic } from '@/features/agile/epic-filter';
 import { SprintSection } from '@/features/agile/components/SprintSection';
 import { SprintHeader } from '@/features/agile/components/SprintHeader';
@@ -50,6 +50,12 @@ export function BacklogView() {
   const startSprint = useStartSprint(projectId ?? 0);
   const completeSprint = useCompleteSprint(projectId ?? 0);
   const createItem = useCreateWorkItem();
+  const changeEpic = useChangeEpic(projectId);
+
+  // 행에서 직접 Epic 연결 변경(§6.1) — 후보 목록 + 핸들러. 칩 클릭→드롭다운.
+  const epicOptions = useMemo(() => epics.map((e) => ({ id: e.id, title: e.title })), [epics]);
+  const onChangeEpic = (workItemId: number, epicId: number | null) =>
+    changeEpic.mutate({ workItemId, epicId });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -138,6 +144,8 @@ export function BacklogView() {
                 collapsed={collapsed[sid]}
                 assigneeName={assigneeName}
                 epicName={epicName}
+                epicOptions={epicOptions}
+                onChangeEpic={onChangeEpic}
                 onItemClick={(id) => openItem(section.items, id)}
                 onInlineCreate={inlineCreate(section.sprint!.id)}
                 inlineBusy={createItem.isPending}
@@ -162,6 +170,8 @@ export function BacklogView() {
             section={withFilter(backlog.backlog)}
             assigneeName={assigneeName}
             epicName={epicName}
+            epicOptions={epicOptions}
+            onChangeEpic={onChangeEpic}
             onItemClick={(id) => openItem(backlog.backlog.items, id)}
             onInlineCreate={inlineCreate(null)}
             inlineBusy={createItem.isPending}

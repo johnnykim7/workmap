@@ -459,11 +459,12 @@
   - **Epic 소속 칩**: 각 항목 행에 "어느 Epic 소속인지" 칩 한 컬럼(EpicChip, Epic 색=violet). Epic 자신엔 미표시.
   - **Epic 필터**: 백로그 상단 드롭다운으로 특정 Epic 소속만 좁혀 보기(큰 묶음 단위 조망 — 사용자 수요 "Epic으로 묶어 보기").
   - **인라인 생성**: 각 구역 하단 `+ 만들기` → 모달 없이 제목 입력→Enter. 스프린트 구역이면 그 sprintId, Epic 필터 활성 시 그 epicId로 프리필. 연속 생성.
+  - **Epic 연결 2경로(Jira 동일)**: ① **업무 상세 사이드 패널 "상위 항목" 드롭다운**(DetailSidePanel) — Epic 후보(프로젝트 EPIC 목록)에서 골라 `PATCH /work-items/{id}` epicId. Epic·Sub-task엔 미노출. ② **백로그 행 Epic 칩 클릭→드롭다운**(BacklogRow) — 칩(또는 "Epic 지정")이 ds-ui Select 트리거가 되어 그 자리서 Epic 변경. 구 ConvertDialog의 "숫자 id 직접 입력"(실사용 불가)을 대체.
 - **변경 내용**:
-  - **T3-3**: §6.1 백로그 "Epic 펼침 트리" → "평면 + 소속 칩 + 필터(원전·Jira 근거 명기)". 페이지 목록·컴포넌트 매핑·placeholder 표기 동반 정정.
-  - **FE 구현**: ① `EpicChip`(badges.tsx) ② `BacklogRow` epicName prop+칩 ③ `InlineCreateRow`(신규) ④ `SprintSection` epicName·onInlineCreate prop ⑤ `BacklogView` Epic 맵·필터 드롭다운·인라인 생성 핸들러 ⑥ `epic-filter.ts`(순수 함수) ⑦ `CreateWorkItemRequest`에 sprintId 추가(BE CreateRequest는 이미 지원, FE 타입만 누락이었음).
-- **BE 무변경**: `POST /work-items`(CreateRequest.sprintId·epicId 이미 존재)·`GET /work-items?projectId=`(Epic 목록) 재사용. 신규 엔드포인트·테이블·에러코드 없음. work_item 단일 테이블·epicId 느슨연결(BIZ-014) 무변경.
-- **테스트**: epic-filter.test.ts 4/4 PASS(node 환경). tsc -b + vite build(3406 modules) 통과.
+  - **T3-3**: §6.1 백로그 "Epic 펼침 트리" → "평면 + 소속 칩 + 필터(원전·Jira 근거 명기)". §9.3 상세 사이드 패널에 "상위 항목(Epic 연결)" 추가. 페이지 목록·컴포넌트 매핑·placeholder 표기 동반 정정.
+  - **FE 구현**: ① `EpicChip`(badges.tsx) ② `BacklogRow` epicName 칩 + epicOptions/onChangeEpic(칩 클릭 드롭다운) ③ `InlineCreateRow`(신규) ④ `SprintSection` epicName·epicOptions·onChangeEpic·onInlineCreate prop ⑤ `BacklogView` Epic 맵·필터·인라인 생성·Epic 변경 핸들러 ⑥ `epic-filter.ts`(순수 함수) ⑦ `DetailSidePanel` "상위 항목" Epic Select ⑧ `useChangeEpic` 훅(projectId 단위) ⑨ `CreateWorkItemRequest`에 sprintId 추가(BE CreateRequest는 이미 지원, FE 타입만 누락이었음).
+- **BE 무변경**: `POST /work-items`(CreateRequest.sprintId·epicId 이미 존재)·`PATCH /work-items/{id}`(UpdateRequest.epicId 이미 존재)·`GET /work-items?projectId=`(Epic 목록) 재사용. 신규 엔드포인트·테이블·에러코드 없음. work_item 단일 테이블·epicId 느슨연결(BIZ-014) 무변경.
+- **테스트**: epic-filter.test.ts 4/4 PASS(node 환경, agile 합계 9/9). tsc -b + vite build 통과.
 - **영향 설계서**: T3-3(1종).
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, "지라 방식대로"·백로그 화면까지만) | **적용 버전**: v2.1
 - **변경 일자**: 2026-06-28

@@ -86,6 +86,26 @@ export function useUpdateWorkItem(id: number, key?: string) {
   });
 }
 
+/**
+ * 백로그/목록에서 항목의 Epic 연결 변경(§6.1, CR-022) — id를 인자로 받아 리스트에서 호출.
+ * useUpdateWorkItem은 id 고정이라 다건 리스트에 부적합 → projectId 단위 mutation.
+ * 성공 시 backlog·projectItems(=Epic 칩/필터 소스)·목록 캐시 무효화.
+ */
+export function useChangeEpic(projectId?: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workItemId, epicId }: { workItemId: number; epicId: number | null }) =>
+      workItemApi.update(workItemId, { epicId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['backlog', projectId] });
+      qc.invalidateQueries({ queryKey: wiSubtasksKey(projectId) }); // useProjectItems = Epic 칩/필터 소스
+      qc.invalidateQueries({ queryKey: ['work-items'] });
+      toast.success('Epic 연결을 변경했습니다.');
+    },
+    onError: (e) => toast.error(errMsg(e, 'Epic 연결 변경에 실패했습니다.')),
+  });
+}
+
 export function useChangeStatus(id: number, key?: string) {
   const invalidate = useInvalidateDetail(id, key);
   return useMutation({

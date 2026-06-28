@@ -6,11 +6,13 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   DatePicker, Input, Avatar, AvatarFallback,
 } from '@therecommerce/ds-ui';
+import { useMemo } from 'react';
 import { fromIso, toIso, fmtDate } from '@/lib/date';
 import { PRIORITY_LABEL, type WorkItemResponse, type Priority, type Sprint } from '@/types/domain';
 import { useMembers } from '@/features/members/hooks';
 import {
   useChangeAssignee, useUpdateWorkItem, useUpdateMeasure, useChangeSprint, useMeasureUnits,
+  useProjectItems,
 } from '../hooks';
 import { MeasureBar } from './MeasureBar';
 
@@ -21,16 +23,26 @@ interface Props {
 
 const UNASSIGNED = '__none__';
 const NO_SPRINT = '__backlog__';
+const NO_EPIC = '__no_epic__';
 
 export function DetailSidePanel({ item, sprints }: Props) {
   const { data: members = [] } = useMembers(item.projectId);
   const { data: units = [] } = useMeasureUnits();
+  const { data: projectItems = [] } = useProjectItems(item.projectId);
   const changeAssignee = useChangeAssignee(item.id, item.key);
   const update = useUpdateWorkItem(item.id, item.key);
   const updateMeasure = useUpdateMeasure(item.id, item.key);
   const changeSprint = useChangeSprint(item.id, item.key);
 
   const unit = units.find((u) => u.id === item.measureUnitId);
+
+  // 상위 Epic 연결 후보(§9.3, Jira "상위 항목") — 프로젝트의 EPIC 항목. Epic 자신은 제외.
+  // Epic·Sub-task에는 노출하지 않는다(Epic은 최상위, Sub-task는 parentId 계층 별도).
+  const epics = useMemo(
+    () => projectItems.filter((w) => w.issueType === 'EPIC' && w.id !== item.id),
+    [projectItems, item.id],
+  );
+  const showEpicRow = item.issueType !== 'EPIC' && item.issueType !== 'SUBTASK';
 
   return (
     <aside className="w-full shrink-0 lg:w-80">
@@ -100,6 +112,24 @@ export function DetailSidePanel({ item, sprints }: Props) {
                 onCommit={(labels) => update.mutate({ labels })}
               />
             </Row>
+
+            {/* 상위 항목(Epic 연결) — §9.3, Jira "상위 항목". epicId 즉시 PATCH. */}
+            {showEpicRow && (
+              <Row label="상위 항목">
+                <Select
+                  value={item.epicId != null ? String(item.epicId) : NO_EPIC}
+                  onValueChange={(v) => update.mutate({ epicId: v === NO_EPIC ? null : Number(v) })}
+                >
+                  <SelectTrigger className="h-8"><SelectValue placeholder="없음" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_EPIC}>없음</SelectItem>
+                    {epics.map((e) => (
+                      <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Row>
+            )}
 
             {/* Sprint */}
             <Row label="Sprint">

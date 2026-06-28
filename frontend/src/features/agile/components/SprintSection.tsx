@@ -16,13 +16,17 @@ interface Props {
   header?: React.ReactNode;
   // Epic 소속 칩(§6.1) — epicId → Epic 이름 해소. 없으면 칩 미표시.
   epicName?: (epicId?: number | null) => string | undefined;
+  // 행에서 Epic 변경(§6.1) — 후보 + 핸들러. 있으면 칩이 드롭다운이 된다.
+  epicOptions?: { id: number; title: string }[];
+  onChangeEpic?: (workItemId: number, epicId: number | null) => void;
   // 인라인 생성(§6.1) — 이 구역에 항목 추가. busy면 입력 잠금. 미지정 시 + 만들기 행 숨김.
   onInlineCreate?: (title: string) => void;
   inlineBusy?: boolean;
 }
 
 export function SprintSection({
-  section, collapsed, assigneeName, onItemClick, emptyHint, header, epicName, onInlineCreate, inlineBusy,
+  section, collapsed, assigneeName, onItemClick, emptyHint, header, epicName,
+  epicOptions, onChangeEpic, onInlineCreate, inlineBusy,
 }: Props) {
   // 드롭 id: 스프린트면 sp-{id}, 백로그면 sp-backlog. data.sprintId=null이면 백로그로 이동.
   const dropId = section.sprint ? `sp-${section.sprint.id}` : 'sp-backlog';
@@ -50,8 +54,14 @@ export function SprintSection({
                 item={item}
                 assigneeName={assigneeName(item.assigneeId)}
                 onClick={onItemClick ? () => onItemClick(item.id) : undefined}
-                // Epic 자신에는 소속 칩을 달지 않는다(자기 자신 표시 방지).
+                // Epic 자신에는 소속 칩/연결 드롭다운을 달지 않는다(자기 자신 표시 방지).
                 epicName={item.issueType === 'EPIC' ? undefined : epicName?.(item.epicId)}
+                epicOptions={item.issueType === 'EPIC' ? undefined : epicOptions}
+                onChangeEpic={
+                  item.issueType === 'EPIC' || !onChangeEpic
+                    ? undefined
+                    : (epicId) => onChangeEpic(item.id, epicId)
+                }
               />
             ))
           )}
