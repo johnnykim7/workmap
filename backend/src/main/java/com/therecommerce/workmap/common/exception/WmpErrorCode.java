@@ -112,7 +112,24 @@ public enum WmpErrorCode implements ErrorCode {
     CHAT_REPLY_NOT_FOUND("WMP-7825", "답글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_REPLY_FORBIDDEN("WMP-7826", "본인 답글만 수정/삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
     CHAT_CONTENT_REQUIRED("WMP-7827", "메시지 내용은 필수입니다.", HttpStatus.BAD_REQUEST),
-    CHAT_CHANNEL_NAME_REQUIRED("WMP-7828", "채널 이름은 필수입니다.", HttpStatus.BAD_REQUEST);
+    CHAT_CHANNEL_NAME_REQUIRED("WMP-7828", "채널 이름은 필수입니다.", HttpStatus.BAD_REQUEST),
+
+    // 초대/인증번호/비밀번호 (7829번대, CR-027 — 이메일 초대 가입 + OTP)
+    INVITATION_NOT_FOUND("WMP-7829", "초대를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    INVITATION_ALREADY_ACCEPTED("WMP-7830", "이미 수락된 초대입니다.", HttpStatus.CONFLICT),
+    INVITATION_EXPIRED("WMP-7831", "초대가 만료되었습니다.", HttpStatus.GONE),
+    INVITATION_PENDING_DUPLICATED("WMP-7832", "이미 발송된 초대가 있습니다.", HttpStatus.CONFLICT),
+    OTP_NOT_FOUND("WMP-7833", "인증번호를 찾을 수 없습니다. 다시 요청하세요.", HttpStatus.NOT_FOUND),
+    OTP_EXPIRED("WMP-7834", "인증번호가 만료되었습니다. 다시 요청하세요.", HttpStatus.GONE),
+    OTP_MISMATCH("WMP-7835", "인증번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    OTP_ATTEMPTS_EXCEEDED("WMP-7836", "인증번호 시도 횟수를 초과했습니다. 다시 요청하세요.", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_RESEND_COOLDOWN("WMP-7837", "잠시 후 다시 인증번호를 요청하세요.", HttpStatus.TOO_MANY_REQUESTS),
+    PASSWORD_SAME_AS_CURRENT("WMP-7838", "현재 비밀번호와 다른 비밀번호를 입력하세요.", HttpStatus.BAD_REQUEST),
+
+    // 알림 수신 설정/FCM (7839번대, CR-028 — 각종 알림 확장)
+    // NOTIFICATION_NOT_FOUND(7760)·NOTIFICATION_FORBIDDEN(7761)은 기존 재사용.
+    NOTIFICATION_PREFERENCE_INVALID_TYPE("WMP-7839", "지원하지 않는 알림 종류입니다.", HttpStatus.BAD_REQUEST),
+    FCM_TOKEN_REQUIRED("WMP-7840", "FCM 토큰은 필수입니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

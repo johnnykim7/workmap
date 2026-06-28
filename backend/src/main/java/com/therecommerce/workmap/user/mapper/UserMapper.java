@@ -27,5 +27,8 @@ public interface UserMapper {
 
     void update(User user);
 
+    /** 비밀번호 해시 갱신 (CR-027 분실재설정·변경). */
+    void updatePassword(@Param("id") Long id, @Param("passwordHash") String passwordHash);
+
     void deactivate(@Param("id") Long id);
 }

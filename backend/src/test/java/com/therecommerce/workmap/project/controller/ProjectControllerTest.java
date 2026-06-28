@@ -83,6 +83,8 @@ class ProjectControllerTest {
     @MockBean com.therecommerce.workmap.chat.mapper.ChatBookmarkMapper chatBookmarkMapper;
     @MockBean com.therecommerce.workmap.chat.mapper.ChatNotificationSettingMapper chatNotificationSettingMapper;
     @MockBean com.therecommerce.workmap.chat.mapper.ChatMentionMapper chatMentionMapper;
+    @MockBean com.therecommerce.workmap.invitation.mapper.InvitationMapper invitationMapper;  // CR-027
+    @MockBean com.therecommerce.workmap.invitation.mapper.EmailOtpMapper emailOtpMapper;  // CR-027
 
     @Test
     @DisplayName("C-PRJ: POST /projects 201 + id + active_tabs 템플릿 복사")

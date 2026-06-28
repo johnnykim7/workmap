@@ -3,10 +3,12 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Link } from 'react-router-dom';
 import { Map } from 'lucide-react';
 import { Input, Button, Spinner } from '@therecommerce/ds-ui';
 import { Field } from '@/components/common/field';
 import { useLogin } from '@/features/auth/hooks';
+import { ROUTES } from '@/lib/route-paths';
 
 const schema = z.object({
   email: z.string().min(1, '이메일을 입력하세요').email('이메일 형식이 아닙니다'),
@@ -53,8 +55,15 @@ export function LoginPage() {
           </Button>
         </form>
 
-        {/* 가입 안내 — self-signup 부재(WMP-AUTH-004 관리자 초대 모델). #1 */}
+        {/* CR-027 — 비밀번호 분실 재설정(인증번호 OTP). */}
         <p className="mt-4 text-center text-xs text-muted-foreground">
+          <Link to={ROUTES.passwordForgot} className="text-primary hover:underline">
+            비밀번호를 잊으셨나요?
+          </Link>
+        </p>
+
+        {/* 가입 안내 — self-signup 부재(WMP-AUTH-004 관리자 초대 모델). #1 */}
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           계정이 없으신가요? 관리자에게 계정 생성을 요청하세요.
         </p>
 

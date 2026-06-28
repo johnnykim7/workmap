@@ -62,6 +62,10 @@
         WHERE id = #{id}
     </update>
 
+    <update id="updatePassword">
+        UPDATE users SET password_hash = #{passwordHash}, updated_at = now() WHERE id = #{id}
+    </update>
+
     <update id="deactivate">
         UPDATE users SET is_active = false, updated_at = now() WHERE id = #{id}
     </update>

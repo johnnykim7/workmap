@@ -14,6 +14,10 @@ export type ProjectTab =
 
 export const ROUTES = {
   login: '/login',
+  // CR-027 — 공개(초대 수락·비번 찾기) + 인증(비번 변경)
+  inviteAccept: '/invite/accept',
+  passwordForgot: '/password/forgot',
+  accountPassword: '/account/password',
   selectWorkspace: '/select-workspace',
   home: '/',
   inbox: '/inbox',

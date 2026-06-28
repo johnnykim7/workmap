@@ -30,6 +30,7 @@ import {
   Check,
   Users,
   LayoutGrid,
+  KeyRound,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useUiStore } from '@/store/ui-store';
@@ -139,6 +140,7 @@ function HeaderActions() {
   const openCreate = useUiStore((s) => s.openCreateModal);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+  const navigate = useNavigate();
 
   return (
     <div className="flex w-full items-center justify-between gap-3">
@@ -162,6 +164,9 @@ function HeaderActions() {
               <div className="text-xs font-normal text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => navigate(ROUTES.accountPassword)}>
+              <KeyRound className="size-4" /> 비밀번호 변경
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => logout.mutate()}>
               <LogOut className="size-4" /> 로그아웃
             </DropdownMenuItem>

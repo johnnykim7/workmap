@@ -4,6 +4,9 @@ import { ProjectLayout } from '@/layout/ProjectLayout';
 import { RequireAuth } from '@/components/common/require-auth';
 
 import { LoginPage } from '@/pages/LoginPage';
+import { InviteAcceptPage } from '@/pages/InviteAcceptPage';
+import { PasswordForgotPage } from '@/pages/PasswordForgotPage';
+import { AccountPasswordPage } from '@/pages/AccountPasswordPage';
 import { SelectWorkspacePage } from '@/pages/SelectWorkspacePage';
 import { WorkspaceMembersPage } from '@/pages/WorkspaceMembersPage';
 import { HomePage } from '@/pages/HomePage';
@@ -34,6 +37,9 @@ import { UsersPage } from '@/pages/admin/UsersPage';
 // v0.4 Jira 라우팅. 글로벌 LNB 1개 + /projects/:key/탭(가로 탭) + /work-items/:key.
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // CR-027 — 공개(로그인 못 하는 사용자가 사용): 초대 수락 · 비밀번호 찾기
+  { path: '/invite/accept', element: <InviteAcceptPage /> },
+  { path: '/password/forgot', element: <PasswordForgotPage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -51,6 +57,8 @@ const router = createBrowserRouter([
           { path: 'chat/:channelId', element: <ChatPage /> },
           { path: 'projects', element: <ProjectsPage /> },
           { path: 'workspaces/:wsId/members', element: <WorkspaceMembersPage /> },
+          // CR-027 — 로그인 상태 비밀번호 변경(2차 인증)
+          { path: 'account/password', element: <AccountPasswordPage /> },
 
           // ── 프로젝트 본문 탭 (Jira식) ──
           {

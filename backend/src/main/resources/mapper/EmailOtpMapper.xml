@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.invitation.mapper.EmailOtpMapper">
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.invitation.domain.EmailOtp"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO email_otp (email, purpose, code_hash, user_id, attempt_count, expires_at)
+        VALUES (#{email}, #{purpose}, #{codeHash}, #{userId}, #{attemptCount}, #{expiresAt})
+    </insert>
+
+    <select id="findLatestActive" resultType="com.therecommerce.workmap.invitation.domain.EmailOtp">
+        SELECT * FROM email_otp
+        WHERE email = #{email} AND purpose = #{purpose}
+          AND consumed_at IS NULL AND expires_at > now()
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="findLatestAny" resultType="com.therecommerce.workmap.invitation.domain.EmailOtp">
+        SELECT * FROM email_otp
+        WHERE email = #{email} AND purpose = #{purpose}
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <update id="incrementAttempt">
+        UPDATE email_otp SET attempt_count = attempt_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="markConsumed">
+        UPDATE email_otp SET consumed_at = now() WHERE id = #{id}
+    </update>
+
+    <update id="consumeAllActive">
+        UPDATE email_otp SET consumed_at = now()
+        WHERE email = #{email} AND purpose = #{purpose} AND consumed_at IS NULL
+    </update>
+
+</mapper>

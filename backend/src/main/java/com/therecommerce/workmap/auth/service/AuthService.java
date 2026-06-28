@@ -63,6 +63,15 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
+    /**
+     * 가입 직후 자동 로그인 등에 쓰는 토큰쌍 발급 (CR-027 초대 수락).
+     * 비밀번호 검증은 호출 측 책임 — 이미 본인확인이 끝난 user에 대해서만 호출한다.
+     */
+    public LoginResponse issueTokensFor(User user) {
+        TokenDto tokens = tokenProvider.generateTokenPair(toPrincipal(user));
+        return new LoginResponse(tokens.getAccessToken(), tokens.getRefreshToken(), UserResponse.from(user));
+    }
+
     private WmpUserPrincipal toPrincipal(User user) {
         WmpUserPrincipal principal = new WmpUserPrincipal();
         principal.setUserId(user.getId());
