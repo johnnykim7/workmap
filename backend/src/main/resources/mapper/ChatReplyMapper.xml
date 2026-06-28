@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.chat.mapper.ChatReplyMapper">
+
+    <resultMap id="replyMap" type="com.therecommerce.workmap.chat.domain.ChatReply">
+        <id     property="id"           column="id"/>
+        <result property="messageId"    column="message_id"/>
+        <result property="channelId"    column="channel_id"/>
+        <result property="workspaceId"  column="workspace_id"/>
+        <result property="authorId"     column="author_id"/>
+        <result property="contentHtml"  column="content_html"/>
+        <result property="editedAt"     column="edited_at"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.chat.domain.ChatReply"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO chat_replies
+            (message_id, channel_id, workspace_id, author_id, content_html)
+        VALUES
+            (#{messageId}, #{channelId}, #{workspaceId}, #{authorId}, #{contentHtml})
+    </insert>
+
+    <select id="findById" resultMap="replyMap">
+        SELECT id, message_id, channel_id, workspace_id, author_id,
+               content_html, edited_at, created_at
+        FROM chat_replies
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByMessage" resultType="map">
+        SELECT r.id, r.message_id, r.channel_id, r.author_id, r.content_html,
+               r.edited_at, r.created_at, u.name AS author_name
+        FROM chat_replies r
+        LEFT JOIN users u ON u.id = r.author_id
+        WHERE r.message_id = #{messageId}
+        ORDER BY r.created_at ASC, r.id ASC
+    </select>
+
+    <update id="updateContent">
+        UPDATE chat_replies
+        SET content_html = #{contentHtml}, edited_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM chat_replies WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByMessageId">
+        DELETE FROM chat_replies WHERE message_id = #{messageId}
+    </delete>
+
+</mapper>

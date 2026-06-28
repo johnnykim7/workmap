@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.chat.mapper.ChatReadCursorMapper">
+
+    <update id="upsert">
+        INSERT INTO chat_read_cursors (channel_id, user_id, last_read_message_id, last_read_at)
+        VALUES (#{channelId}, #{userId}, #{lastReadMessageId}, now())
+        ON CONFLICT (channel_id, user_id) DO UPDATE
+        SET last_read_message_id = EXCLUDED.last_read_message_id,
+            last_read_at         = now()
+    </update>
+
+</mapper>

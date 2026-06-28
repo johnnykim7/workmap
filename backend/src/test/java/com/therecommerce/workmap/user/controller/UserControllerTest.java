@@ -67,6 +67,17 @@ class UserControllerTest {
     @MockBean com.therecommerce.workmap.burndown.mapper.BurndownMapper burndownMapper;
     @MockBean com.therecommerce.workmap.ops.mapper.FieldVerificationMapper fieldVerificationMapper;
     @MockBean com.therecommerce.workmap.project.mapper.TabMapper tabMapper;  // CR-020
+    // 채팅 신규 매퍼(@MapperScan이 슬라이스에도 적용되므로 목으로 대체 — CR-025)
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatChannelMapper chatChannelMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatChannelMemberMapper chatChannelMemberMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatMessageMapper chatMessageMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatReplyMapper chatReplyMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatReactionMapper chatReactionMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatReadCursorMapper chatReadCursorMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatPinMapper chatPinMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatBookmarkMapper chatBookmarkMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatNotificationSettingMapper chatNotificationSettingMapper;
+    @MockBean com.therecommerce.workmap.chat.mapper.ChatMentionMapper chatMentionMapper;
 
     @Test
     @WithMockUser(roles = "ADMIN")

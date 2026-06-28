@@ -9,6 +9,7 @@ import { WorkspaceMembersPage } from '@/pages/WorkspaceMembersPage';
 import { HomePage } from '@/pages/HomePage';
 import { InboxPage } from '@/pages/InboxPage';
 import { SearchPage } from '@/pages/SearchPage';
+import { ChatPage } from '@/pages/ChatPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { WorkItemDetail } from '@/pages/WorkItemDetail';
 
@@ -46,6 +47,8 @@ const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: 'inbox', element: <InboxPage /> },
           { path: 'search', element: <SearchPage /> },
+          { path: 'chat', element: <ChatPage /> },
+          { path: 'chat/:channelId', element: <ChatPage /> },
           { path: 'projects', element: <ProjectsPage /> },
           { path: 'workspaces/:wsId/members', element: <WorkspaceMembersPage /> },
 

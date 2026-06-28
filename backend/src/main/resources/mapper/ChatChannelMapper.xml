@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.chat.mapper.ChatChannelMapper">
+
+    <resultMap id="channelMap" type="com.therecommerce.workmap.chat.domain.ChatChannel">
+        <id     property="id"            column="id"/>
+        <result property="workspaceId"   column="workspace_id"/>
+        <result property="name"          column="name"/>
+        <result property="displayName"   column="display_name"/>
+        <result property="description"   column="description"/>
+        <result property="isSystem"      column="is_system"/>
+        <result property="memberCount"   column="member_count"/>
+        <result property="lastMessageAt" column="last_message_at"/>
+        <result property="createdBy"     column="created_by"/>
+        <result property="createdAt"     column="created_at"/>
+        <result property="updatedAt"     column="updated_at"/>
+    </resultMap>
+
+    <sql id="cols">
+        id, workspace_id, name, display_name, description, is_system,
+        member_count, last_message_at, created_by, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.chat.domain.ChatChannel"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO chat_channels
+            (workspace_id, name, display_name, description, is_system, member_count, created_by)
+        VALUES
+            (#{workspaceId}, #{name}, #{displayName}, #{description},
+             #{isSystem}, #{memberCount}, #{createdBy})
+    </insert>
+
+    <select id="findById" resultMap="channelMap">
+        SELECT <include refid="cols"/> FROM chat_channels WHERE id = #{id}
+    </select>
+
+    <select id="findByWorkspace" resultMap="channelMap">
+        SELECT <include refid="cols"/>
+        FROM chat_channels
+        WHERE workspace_id = #{workspaceId}
+        ORDER BY is_system DESC, name ASC
+    </select>
+
+    <select id="findByWorkspaceAndName" resultMap="channelMap">
+        SELECT <include refid="cols"/>
+        FROM chat_channels
+        WHERE workspace_id = #{workspaceId} AND name = #{name}
+    </select>
+
+    <update id="updateInfo">
+        UPDATE chat_channels
+        SET display_name = #{displayName},
+            description  = #{description},
+            updated_at   = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="touchLastMessageAt">
+        UPDATE chat_channels
+        SET last_message_at = now(), updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateMemberCount">
+        UPDATE chat_channels
+        SET member_count = member_count + #{delta}, updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="setMemberCount">
+        UPDATE chat_channels
+        SET member_count = #{count}, updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM chat_channels WHERE id = #{id}
+    </delete>
+
+    <select id="countUnread" resultType="long">
+        SELECT count(*)
+        FROM chat_messages m
+        WHERE m.channel_id = #{channelId}
+          AND m.id > COALESCE(
+                (SELECT c.last_read_message_id
+                   FROM chat_read_cursors c
+                  WHERE c.channel_id = #{channelId} AND c.user_id = #{userId}),
+                0)
+    </select>
+
+</mapper>

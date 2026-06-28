@@ -526,6 +526,29 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, 3종 모두·소규모·CR 부여) | **적용 버전**: v2.1
 - **변경 일자**: 2026-06-28
 
+### CR-026 — 커뮤니케이션(채팅) 모듈 신규 — axopm comm 포팅(워크스페이스 단위 Slack형)
+
+- **변경 타입**: 신규 기능(대규모) | **영향도**: High(신규 도메인 `chat` 1종 — 테이블 11·엔드포인트 다수·FE 신규 화면/메뉴)
+- **상태**: 구현 완료(2026-06-29). BE 단위테스트 173/173 PASS·FE tsc+build(3479 modules) 통과. 운영 배포·화면 E2E 대기.
+- **배경**: 사용자가 "axopm의 커뮤니케이션 기능(Slack 유사)을 WorkMap에 포팅" 지시. axopm `opm-comm` 모듈(채널/메시지/스레드/리액션/멘션/첨부/읽음커서/북마크/핀/멤버/알림설정 + STOMP 타이핑) 실측 → **그대로 복붙 불가**: axopm은 JPA/Repository·UUID·MySQL인데 WorkMap은 MyBatis(JPA 금지)·BIGINT IDENTITY·PostgreSQL. "포팅"의 실체는 **MyBatis로 재구현 + WorkMap 기존 자산(Tiptap 에디터·FileStorage·인증·이벤트) 재활용**. 사용자 결정으로 설계 캐스케이드 생략(B: "있는 기능 포팅이라 코어부터 구현").
+- **핵심 설계 결정(사용자 합의)**:
+  - **범위 = 풀셋(타이핑 제외)**: 채널·메시지·스레드답글·리액션·멘션·첨부·읽음커서·북마크·핀·채널멤버·알림설정.
+  - **채널 스코프 = 워크스페이스 단위**(슬랙식, ws-ia-decision 정합). axopm의 `project_id`·`opm_*`(OPM 이벤트 연동) 컬럼 제외.
+  - **실시간 = 폴링**(타이핑을 빼면 STOMP 필수 기능 없음). 메시지/채널 TanStack Query `refetchInterval` 5초. STOMP 미도입(추후 CR 여지).
+  - **ID/타입 변환**: CHAR(36) UUID→BIGINT IDENTITY, LONGTEXT→TEXT, DATETIME(6)→TIMESTAMPTZ. 작성자명은 axopm처럼 비정규화 저장하지 않고 `users.name` LEFT JOIN(정규화).
+  - **본문 = Tiptap HTML**(CR-024 RichTextEditor 재사용). 메시지/답글 `content_html`.
+- **변경 내용**:
+  - **DB**: **V8__chat_module.sql** — `chat_channels/messages/replies/reactions/read_cursors/mentions/attachments/pins/bookmarks/notification_settings/channel_members` 11테이블(PG16, BIGINT PK, 스칼라 컬럼만 — JSONB 없음).
+  - **에러코드**: **WMP-7820~7828** 9종(CHAT_*) — 채널/메시지/답글 NOT_FOUND·FORBIDDEN·중복·시스템보호·내용필수.
+  - **BE**: 도메인 11 + 매퍼 10(인터페이스+XML) + DTO(ChatDtos record) + 서비스 6(채널/메시지/리액션/Enhanced + 헬퍼 2) + 컨트롤러 4(Channel/Message/Reaction/Enhanced). 응답 `ResponseDto`, 인증 `@AuthUserInfo("userId")`, workspaceId는 쿼리/바디 수령. unreadCount=읽음커서 기반.
+  - **FE**: `features/chat/`(api·hooks·types·components 8) + `ChatPage`(3패널: 채널 사이드바/메시지 패널/스레드 패널) + LNB '메시지' 메뉴 + `/chat`·`/chat/:channelId` 라우트. ds-ui만(네이티브 위젯 0).
+  - **테스트 보정(CR-009 함정 재현)**: 신규 chat 매퍼 10종을 Project/User/WorkItem `@WebMvcTest`에 `@MockBean` 추가(누락 시 `@MapperScan`이 슬라이스에 적용돼 SqlSessionFactory 없이 빈 생성→컨텍스트 로딩 실패).
+- **BE↔FE 계약 경로 16종 전수 일치 교차검증 완료.**
+- **미구현(후속)**: 멘션 @자동완성 UI(저장 배선만, 현재 빈 배열 전송)·멘션→알림 연동, 첨부 업로드 API 배선(테이블·도메인만, 에디터 인라인 이미지는 RichTextEditor로 동작), STOMP 실시간.
+- **영향 설계서**: 없음(B 결정으로 설계 캐스케이드 생략 — 사후 역생성 시 T3-1/T3-2/T3-3에 chat 추가 예정).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, B=설계 스킵·코어부터·워크스페이스 단위·타이핑 제외·폴링) | **적용 버전**: v2.2
+- **변경 일자**: 2026-06-29
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

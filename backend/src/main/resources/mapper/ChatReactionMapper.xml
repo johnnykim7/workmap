@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.chat.mapper.ChatReactionMapper">
+
+    <resultMap id="reactionMap" type="com.therecommerce.workmap.chat.domain.ChatReaction">
+        <id     property="id"        column="id"/>
+        <result property="messageId" column="message_id"/>
+        <result property="replyId"   column="reply_id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="emoji"     column="emoji"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.chat.domain.ChatReaction"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO chat_reactions (message_id, reply_id, user_id, emoji)
+        VALUES (#{messageId}, #{replyId}, #{userId}, #{emoji})
+    </insert>
+
+    <select id="findByMessageUserEmoji" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE message_id = #{messageId} AND reply_id IS NULL
+          AND user_id = #{userId} AND emoji = #{emoji}
+    </select>
+
+    <select id="findByReplyUserEmoji" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE reply_id = #{replyId} AND message_id IS NULL
+          AND user_id = #{userId} AND emoji = #{emoji}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM chat_reactions WHERE id = #{id}
+    </delete>
+
+    <select id="findByMessageId" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE message_id = #{messageId} AND reply_id IS NULL
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <select id="findByReplyId" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE reply_id = #{replyId}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <select id="findByMessageIds" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE reply_id IS NULL AND message_id IN
+        <foreach item="mid" collection="messageIds" open="(" separator="," close=")">
+            #{mid}
+        </foreach>
+        ORDER BY message_id ASC, created_at ASC, id ASC
+    </select>
+
+    <select id="findByReplyIds" resultMap="reactionMap">
+        SELECT id, message_id, reply_id, user_id, emoji, created_at
+        FROM chat_reactions
+        WHERE reply_id IN
+        <foreach item="rid" collection="replyIds" open="(" separator="," close=")">
+            #{rid}
+        </foreach>
+        ORDER BY reply_id ASC, created_at ASC, id ASC
+    </select>
+
+</mapper>

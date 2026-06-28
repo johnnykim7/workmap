@@ -19,6 +19,7 @@ import {
 import {
   Map,
   Inbox,
+  MessageSquare,
   Search,
   FolderKanban,
   Settings,
@@ -43,6 +44,7 @@ import { CreateModal } from '@/components/common/create-modal';
 const FIXED_MENU = [
   { path: ROUTES.home, label: '회사 홈', icon: <Map className="size-4" /> },
   { path: ROUTES.inbox, label: '받은함', icon: <Inbox className="size-4" /> },
+  { path: ROUTES.chat, label: '메시지', icon: <MessageSquare className="size-4" /> },
   { path: ROUTES.search, label: '검색', icon: <Search className="size-4" /> },
 ];
 
@@ -119,8 +121,10 @@ function HeaderTitle() {
       ? '회사 홈'
       : pathname.startsWith(ROUTES.inbox)
         ? '받은함'
-        : pathname.startsWith(ROUTES.search)
-          ? '검색'
+        : pathname.startsWith(ROUTES.chat)
+          ? '메시지'
+          : pathname.startsWith(ROUTES.search)
+            ? '검색'
           : pathname.startsWith(ROUTES.projects)
             ? '프로젝트'
             : pathname.startsWith('/admin')

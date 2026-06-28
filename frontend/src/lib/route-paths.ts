@@ -18,6 +18,8 @@ export const ROUTES = {
   home: '/',
   inbox: '/inbox',
   search: '/search',
+  chat: '/chat',
+  chatChannel: (channelId: number | string) => `/chat/${channelId}`,
   projects: '/projects',
 
   project: (key: string, tab: ProjectTab = 'summary') => `/projects/${key}/${tab}`,

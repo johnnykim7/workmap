@@ -101,7 +101,18 @@ public enum WmpErrorCode implements ErrorCode {
     FILE_TYPE_NOT_ALLOWED("WMP-7810", "허용되지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
     FILE_SIZE_EXCEEDED("WMP-7811", "허용 용량을 초과한 파일입니다.", HttpStatus.PAYLOAD_TOO_LARGE),
     FILE_STORAGE_FAILED("WMP-7812", "파일 저장에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    FILE_NOT_FOUND("WMP-7813", "요청한 파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+    FILE_NOT_FOUND("WMP-7813", "요청한 파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
+    // 커뮤니케이션/채팅 (7820번대, CR-025 — axopm comm 포팅)
+    CHAT_CHANNEL_NOT_FOUND("WMP-7820", "채널을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_CHANNEL_NAME_DUPLICATE("WMP-7821", "이미 사용 중인 채널 이름입니다.", HttpStatus.CONFLICT),
+    CHAT_CHANNEL_SYSTEM_PROTECTED("WMP-7822", "시스템 채널은 삭제할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    CHAT_MESSAGE_NOT_FOUND("WMP-7823", "메시지를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_MESSAGE_FORBIDDEN("WMP-7824", "본인 메시지만 수정/삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
+    CHAT_REPLY_NOT_FOUND("WMP-7825", "답글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_REPLY_FORBIDDEN("WMP-7826", "본인 답글만 수정/삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
+    CHAT_CONTENT_REQUIRED("WMP-7827", "메시지 내용은 필수입니다.", HttpStatus.BAD_REQUEST),
+    CHAT_CHANNEL_NAME_REQUIRED("WMP-7828", "채널 이름은 필수입니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

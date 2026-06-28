@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.chat.mapper.ChatNotificationSettingMapper">
+
+    <resultMap id="settingMap" type="com.therecommerce.workmap.chat.domain.ChatNotificationSetting">
+        <id     property="id"          column="id"/>
+        <result property="userId"      column="user_id"/>
+        <result property="channelId"   column="channel_id"/>
+        <result property="muteUntil"   column="mute_until"/>
+        <result property="notifyLevel" column="notify_level"/>
+        <result property="updatedAt"   column="updated_at"/>
+    </resultMap>
+
+    <select id="findByUserAndChannel" resultMap="settingMap">
+        SELECT id, user_id, channel_id, mute_until, notify_level, updated_at
+        FROM chat_notification_settings
+        WHERE user_id = #{userId} AND channel_id = #{channelId}
+    </select>
+
+    <update id="upsert">
+        INSERT INTO chat_notification_settings (user_id, channel_id, notify_level, mute_until, updated_at)
+        VALUES (#{userId}, #{channelId}, #{notifyLevel}, #{muteUntil}, now())
+        ON CONFLICT (user_id, channel_id) DO UPDATE
+        SET notify_level = EXCLUDED.notify_level,
+            mute_until   = EXCLUDED.mute_until,
+            updated_at   = now()
+    </update>
+
+</mapper>
