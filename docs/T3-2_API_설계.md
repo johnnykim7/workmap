@@ -136,6 +136,19 @@
 | POST | /work-items/{id}/attachments | 파일 첨부 | 🔒 | P1 | WMP-WI-012 |
 | GET | /work-items/{id}/activities | 활동/변경 이력 | 🔒 | P1 | WMP-WI-011 |
 
+### F3. 파일 업로드 (리치 에디터 인라인 이미지 — CR-024)
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| POST | /files/upload | 파일 업로드 → 저장 URL 반환(multipart/form-data) | 🔒 | P2 | WMP-WI-001 |
+| GET | /files/{storedName} | 업로드 파일 정적 서빙(이미지 렌더) | 🔒 | P2 | WMP-WI-001 |
+
+- **용도**: work_item `description` 등 Tiptap 리치 에디터의 **인라인 이미지**. 에디터에서 이미지 삽입/붙여넣기/드롭 시 본 API로 먼저 업로드하고, 반환 URL만 description HTML(`<img src="...">`)에 박는다. 이미지 바이너리는 description에 들어가지 않는다(본문=HTML 문자열, 이미지=URL 참조).
+- **work_item에 안 묶음**: 만들기 모달 시점엔 work_item ID가 없으므로 `/files/upload`는 독립 경로(특정 항목 하위 아님). 기존 `/work-items/{id}/attachments`(첨부 메타)와는 별개.
+- **저장**: 서버 **로컬 디스크**. 경로·최대크기는 `application.yml` 설정(`workmap.upload.dir` 기본 `/home/therecommerce/workmap/uploads/`, `workmap.upload.max-size` 등)으로 조정. 허용 타입 화이트리스트(image/png·jpeg·gif·webp). 저장 파일명은 충돌 방지 위해 UUID + 원본 확장자.
+- **응답**: `{ url, fileName, fileSize, contentType }`(axopm FileUploadResult 동형).
+- **에러코드**: WMP-7803~7805(파일 없음/타입 거부/크기 초과). 7700번대 규칙 준수.
+
 ## G. 애자일 실행 (Agile — Backlog/Sprint/Board)
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |

@@ -487,6 +487,26 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, 중규모·구간한정+줌) | **적용 버전**: v2.1
 - **변경 일자**: 2026-06-28
 
+### CR-024 — 업무 설명란 Tiptap 리치 에디터 + 로컬 파일 업로드 API
+
+- **변경 타입**: 신규 | **영향도**: Medium(단일 모듈 — work_item 설명 입력, BE 파일 업로드 1종 신규)
+- **상태**: 설계 캐스케이드(2026-06-28). 구현 대기(사용자 승인 후 착수).
+- **배경**: E2E_UX피드백 #17 "업무 만들기 설명란을 에디터로 하자". 직전 세션은 "에디터화는 과함, plain Textarea 유지"로 결론냈으나, 사용자 의도 재확인 결과 **에디터 도입이 목적**이었음. 실측으로 두 사실 확정 — ① 만들기 모달 설명과 상세 설명은 **같은 1필드(`description`)**, 입력 지점만 둘(모달=Textarea, 상세=TextBlock 둘 다 plain). ② T3-3 설계는 **이미 "리치 텍스트/리치 에디터(이미지 포함)"로 정의**돼 있었음(§9.3·§9.4·320줄 RichEditor) → 구현이 설계보다 낮게 내려간 상태였음. 즉 CR-024는 "설계대로 끌어올리는" 정합 + 파일 업로드(Phase 2로 미뤄둔 것)를 당겨 옴.
+- **핵심 설계 결정(사용자 합의)**:
+  - **에디터 = Tiptap**(조직 일관성 — axopm이 이미 Tiptap v3 IssueEditor 운영, react-quill은 axopm에서도 미사용). axopm IssueEditor 패턴 포팅, ds-ui(shadcn) Button/Popover 기반.
+  - **적용 = work_item `description` 1필드, 만들기 모달 + 상세 양쪽 동일 컴포넌트.** "만들기는 가볍게"는 필드 수를 줄인다는 뜻이지 설명 입력기를 낮추는 게 아님 → 설명은 만들 때부터 풀 에디터.
+  - **저장형식 = HTML 문자열.** `work_items.description` 컬럼 `text` **무변경**(HTML도 결국 텍스트). 표시 지점만 HTML 렌더 / 목록·검색·타임라인 미리보기는 태그 strip.
+  - **이미지 = 별도 파일, 에디터엔 URL(링크)만.** description엔 `<img src="URL">`만 박힘(바이너리 미저장). 사용자 직관대로 — axopm도 동일.
+  - **파일 저장 = 서버 로컬 디스크.** 경로 `application.yml` 설정값으로 조정(`workmap.upload.dir` 기본 `/home/therecommerce/workmap/uploads/`). S3 등은 추후 교체.
+- **변경 내용**:
+  - **T3-2**: F3 "파일 업로드(리치 에디터 인라인 이미지)" 섹션 신규 — `POST /files/upload`(multipart→URL)·`GET /files/{name}`(정적 서빙). 에러코드 WMP-7803~7805. work_item 비종속 독립 경로(만들기 시점 ID 부재).
+  - **T3-3**: §9.3·§9.4 설명란에 CR-024 정합 주석(Tiptap·HTML 저장·이미지 URL 삽입·모달=상세 동일 컴포넌트).
+  - **BE 구현(예정)**: `FileUploadController`·`FileStorageService`(로컬 디스크, UUID 파일명, 타입 화이트리스트) + `application.yml` `workmap.upload.*` + `spring.servlet.multipart.max-file-size` + WmpErrorCode 3종. `work_items.description` 스키마·기존 Attachment 메타 테이블 **무변경**.
+  - **FE 구현(예정)**: 공용 `RichTextEditor`(Tiptap, axopm IssueEditor 포팅, 이미지=업로드 API 호출) + 만들기 모달·DetailBody 설명란 교체 + 목록/검색 미리보기 HTML strip 유틸.
+- **영향 설계서**: T3-2·T3-3(2종).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, 로컬 디스크 저장·설정값 조정) | **적용 버전**: v2.1
+- **변경 일자**: 2026-06-28
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---
