@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { Button, Input, Popover, PopoverContent, PopoverTrigger, cn } from '@therecommerce/ds-ui';
 import { uploadFile } from '@/lib/upload';
+// 에디터 콘텐츠 스타일(.tiptap)은 main.css의 @layer components에 정의한다.
+// ⚠️ 여기서 별도 .css를 import하면 Tailwind v4 레이어 순서가 밀려 .hidden 등 유틸리티가
+//    미디어쿼리(md:block)를 이겨 ds-ui LNB가 숨는다(2차 사고). 반드시 @layer 경유.
 
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
@@ -82,7 +85,8 @@ export function RichTextEditor({
 
   // 읽기 전용: HTML 렌더만.
   if (!editable) {
-    return <div className={cn('prose prose-sm max-w-none', className)} dangerouslySetInnerHTML={{ __html: value || '' }} />;
+    // 읽기전용 렌더도 .tiptap 스코프 CSS를 그대로 재사용(prose 등 전역 클래스 미사용).
+    return <div className={cn('tiptap text-sm', className)} dangerouslySetInnerHTML={{ __html: value || '' }} />;
   }
 
   return (
@@ -109,26 +113,8 @@ export function RichTextEditor({
         <Divider />
         <ToolBtn onClick={() => fileInputRef.current?.click()} disabled={uploading} title={uploading ? '업로드 중…' : '이미지 삽입'}><ImageIcon className="h-4 w-4" /></ToolBtn>
       </div>
-      <EditorContent
-        editor={editor}
-        className={cn(
-          'min-h-[120px] px-3 py-2 text-sm',
-          '[&_.tiptap]:outline-none [&_.tiptap]:min-h-[100px]',
-          '[&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]',
-          '[&_.tiptap_p.is-editor-empty:first-child::before]:text-muted-foreground',
-          '[&_.tiptap_p.is-editor-empty:first-child::before]:float-left',
-          '[&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none',
-          '[&_.tiptap_h1]:text-lg [&_.tiptap_h1]:font-bold [&_.tiptap_h1]:mb-2 [&_.tiptap_h1]:mt-3',
-          '[&_.tiptap_h2]:text-base [&_.tiptap_h2]:font-semibold [&_.tiptap_h2]:mb-1.5 [&_.tiptap_h2]:mt-2',
-          '[&_.tiptap_p]:mb-1.5 [&_.tiptap_p]:leading-relaxed',
-          '[&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ul]:mb-1.5',
-          '[&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_ol]:mb-1.5',
-          '[&_.tiptap_a]:text-primary [&_.tiptap_a]:underline',
-          '[&_.tiptap_code]:bg-muted [&_.tiptap_code]:px-1 [&_.tiptap_code]:rounded [&_.tiptap_code]:text-xs [&_.tiptap_code]:font-mono',
-          '[&_.tiptap_blockquote]:border-l-4 [&_.tiptap_blockquote]:border-border [&_.tiptap_blockquote]:pl-3 [&_.tiptap_blockquote]:text-muted-foreground',
-          '[&_.tiptap_img]:rounded [&_.tiptap_img]:max-w-full [&_.tiptap_img]:my-2',
-        )}
-      />
+      {/* 콘텐츠 서식은 rich-text-editor.css의 .tiptap 스코프가 담당(인라인 임의셀렉터 금지). */}
+      <EditorContent editor={editor} className="min-h-[120px] px-3 py-2 text-sm" />
     </div>
   );
 }

@@ -7,6 +7,35 @@
 /* WorkMap 로컬 Tailwind (자체 composite용 유틸) */
 @import 'tailwindcss';
 
+/* 리치 에디터 콘텐츠 스타일(CR-024) — .tiptap 스코프.
+ * ⚠️ @layer components 안에 둔다. 별도 .css를 컴포넌트에서 import하면 Tailwind v4 레이어 순서가
+ *    밀려 .hidden 유틸리티가 미디어쿼리(md:block)를 이겨 ds-ui LNB가 숨는 사고가 난다.
+ *    @layer components는 항상 utilities보다 앞이라 LNB 규칙을 침범하지 않는다. */
+@layer components {
+  .tiptap { outline: none; min-height: 100px; }
+  .tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--muted-foreground);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  .tiptap h1 { font-size: 1.125rem; font-weight: 700; margin: 0.75rem 0 0.5rem; }
+  .tiptap h2 { font-size: 1rem; font-weight: 600; margin: 0.5rem 0 0.375rem; }
+  .tiptap p { margin-bottom: 0.375rem; line-height: 1.625; }
+  .tiptap ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.375rem; }
+  .tiptap ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.375rem; }
+  .tiptap a { color: var(--primary); text-decoration: underline; }
+  .tiptap code {
+    background: var(--muted); padding: 0 0.25rem; border-radius: 0.25rem;
+    font-size: 0.75rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .tiptap blockquote {
+    border-left: 4px solid var(--border); padding-left: 0.75rem; color: var(--muted-foreground);
+  }
+  .tiptap img { border-radius: 0.25rem; max-width: 100%; margin: 0.5rem 0; }
+}
+
 /* 공통상태 7색 토큰 (StatusBadge에서 사용) — ds-ui 기본값 위에 정의 */
 :root {
   --wm-status-not-started: #94a3b8; /* slate-400 */
@@ -20,4 +49,15 @@
 
 html, body, #root {
   height: 100%;
+}
+
+/* CR-024 사고 방지(LNB 보호) — Tailwind v4 유틸리티 정렬이 tiptap 추가로 흔들리면 .hidden이
+ * .md:block/.md:flex 뒤로 와서 이긴다 → ds-ui 사이드바 각 레이어(sidebar·gap·container)가
+ * `hidden md:block` 조합에서 숨겨져 LNB가 통째로 사라진다.
+ * 근본 해결: 데스크탑(≥768px)에서 .hidden+.md:block / .hidden+.md:flex 조합은 항상 보이게 고정.
+ * (main.css 최하단 = 최후 cascade + !important라 유틸리티 정렬과 무관하게 항상 적용.
+ *  .md:hidden 단독 의도 숨김은 건드리지 않음 — .hidden+.md:* 동시 보유 요소만 타겟.) */
+@media (min-width: 768px) {
+  .hidden.md\:block { display: block !important; }
+  .hidden.md\:flex { display: flex !important; }
 }
