@@ -50,47 +50,56 @@ export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions,
         {item.title}
       </button>
 
+      {/* 우측 메타 — 폭 고정 슬롯으로 정렬해 행마다 위치가 들쭉날쭉하지 않게(#23). */}
       {/* Epic 연결(§6.1) — 변경 가능하면 드롭다운, 아니면 칩만. Epic 자신엔 표시 안 함(상위 호출부 제어). */}
-      {onChangeEpic && epicOptions ? (
-        <Select
-          value={item.epicId != null ? String(item.epicId) : NO_EPIC}
-          onValueChange={(v) => onChangeEpic(v === NO_EPIC ? null : Number(v))}
-        >
-          <SelectTrigger
-            className="h-6 w-auto gap-1 border-none bg-transparent px-0 shadow-none focus:ring-0"
-            aria-label="Epic 연결 변경"
+      <div className="flex w-36 shrink-0 justify-start">
+        {onChangeEpic && epicOptions ? (
+          <Select
+            value={item.epicId != null ? String(item.epicId) : NO_EPIC}
+            onValueChange={(v) => onChangeEpic(v === NO_EPIC ? null : Number(v))}
           >
-            {epicName ? (
-              <EpicChip name={epicName} />
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted">
-                <Layers className="size-3" /> Epic 지정
-              </span>
-            )}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NO_EPIC}>없음</SelectItem>
-            {epicOptions.map((e) => (
-              <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        epicName && <EpicChip name={epicName} />
-      )}
+            <SelectTrigger
+              className="h-6 w-auto max-w-full flex-nowrap gap-1 whitespace-nowrap border-none bg-transparent px-0 shadow-none focus:ring-0 [&>svg]:shrink-0"
+              aria-label="Epic 연결 변경"
+            >
+              {/* ds-ui SelectTrigger base가 직계 span에 `line-clamp-1`(세로 box)을 강제해 아이콘/텍스트가
+                  세로로 쌓였다(#23). EpicChip(span 버전)·placeholder 모두 div로 감싸 그 영향을 피한다. */}
+              {epicName ? (
+                <div className="flex min-w-0 max-w-full items-center"><EpicChip name={epicName} /></div>
+              ) : (
+                <div className="flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted">
+                  <Layers className="size-3 shrink-0" /> Epic 지정
+                </div>
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_EPIC}>없음</SelectItem>
+              {epicOptions.map((e) => (
+                <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          epicName && <EpicChip name={epicName} />
+        )}
+      </div>
 
-      {item.dueDate && (
-        <span className={`inline-flex items-center gap-0.5 text-[11px] ${delayed ? 'font-medium text-red-600' : 'text-muted-foreground'}`}>
-          <CalendarClock className="size-3" />
-          {item.dueDate.slice(5).replace('-', '/')}
-        </span>
-      )}
-      {item.storyPoints != null && (
-        <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{item.storyPoints}</span>
-      )}
-      <PriorityBadge priority={item.priority} />
-      <StatusBadge status={item.commonStatus} />
-      <Avatar2 name={assigneeName} />
+      <div className="flex w-16 shrink-0 justify-start">
+        {item.dueDate && (
+          <span className={`inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] ${delayed ? 'font-medium text-red-600' : 'text-muted-foreground'}`}>
+            <CalendarClock className="size-3 shrink-0" />
+            {item.dueDate.slice(5).replace('-', '/')}
+          </span>
+        )}
+      </div>
+      <div className="flex w-7 shrink-0 justify-center">
+        {item.storyPoints != null && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{item.storyPoints}</span>
+        )}
+      </div>
+      <div className="flex w-6 shrink-0 justify-center"><PriorityBadge priority={item.priority} /></div>
+      <div className="flex w-20 shrink-0 justify-center"><StatusBadge status={item.commonStatus} /></div>
+      <div className="flex w-6 shrink-0 justify-center"><Avatar2 name={assigneeName} /></div>
     </div>
   );
 }

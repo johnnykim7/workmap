@@ -30,6 +30,7 @@ export function WorkItemTable({
   const someSelected = items.some((i) => selectedIds.has(i.id));
 
   return (
+    <div className="rounded-lg border border-border">
     <Table>
       <TableHeader>
         <TableRow>
@@ -54,7 +55,7 @@ export function WorkItemTable({
           <TableRow
             key={it.id}
             data-active={activeId === it.id || undefined}
-            className={`cursor-pointer ${activeId === it.id ? 'bg-muted/60' : ''}`}
+            className={`cursor-pointer border-b border-border ${activeId === it.id ? 'bg-muted/60' : ''}`}
             onClick={() => onRowClick(it)}
           >
             <TableCell onClick={(e) => e.stopPropagation()}>
@@ -80,6 +81,7 @@ export function WorkItemTable({
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 }
 

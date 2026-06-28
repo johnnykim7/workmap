@@ -36,8 +36,48 @@
   .tiptap img { border-radius: 0.25rem; max-width: 100%; margin: 0.5rem 0; }
 }
 
+/* 테두리 톤 통일(#2) — ds-ui Table의 TableRow/Header는 `border-b`만 쓰고 색을 지정 안 해
+ * currentColor(글자색=거의 검정)로 떨어진다. 또 Tailwind v4의 `border-b`는 border-style을
+ * `var(--tw-border-style)`에 의존하는데, ds-ui dist CSS(v4.2)와 앱 CSS(v4.3) 혼재로 이 변수가
+ * 일부 환경에서 비어 선이 아예 안 그려지는 화면이 생겼다(WorkItemTable 등 외곽 박스 없는 테이블).
+ * → 색(--border)+style(solid)을 함께 강제해 톤 통일 + 항상 보이게. */
+[data-slot="table-row"] {
+  border-bottom: 1px solid var(--border);
+}
+
+/* GNB 헤더 하단선·LNB(사이드바) 우측선 — AdminShell이 `border-b`/`border-r`을 색 지정 없이 써서
+ * (currentColor로 떨어져) 톤이 테이블·카드와 안 맞았다. --border 토큰으로 색 강제해 통일. */
+[data-slot="admin-shell-header"] {
+  border-color: var(--border);
+  border-bottom-style: solid;
+}
+[data-slot="sidebar"],
+[data-slot="sidebar-container"],
+[data-sidebar="sidebar"] {
+  border-color: var(--border);
+  border-style: solid;
+}
+
+/* divide-y 구분선(받은함·회사홈 미배정 등 목록) — Tailwind v4에서 `divide-border`는 색 토큰(--border)
+ * 기반이라 유틸이 생성되지 않고 divide-y는 border-color를 안 줘서 currentColor(글자색≈검정)로 진해졌다.
+ * ⚠️ 셀렉터를 Tailwind divide-y 원본과 동일한 `:not(:last-child)`로 맞춰야 한다. `~` 형제 결합자는
+ *    첫 항목(앞 형제 없음)을 제외해 "첫 줄만 검정으로 남는" 버그가 났었다(2026-06-28).
+ * → divide-y 자식 경계 색을 --border로 고정해 다른 라인과 같은 톤으로 통일. */
+.divide-y > :not(:last-child) {
+  border-color: var(--border);
+  border-bottom-style: solid;
+}
+
 /* 공통상태 7색 토큰 (StatusBadge에서 사용) — ds-ui 기본값 위에 정의 */
 :root {
+  /* 구조 라인 톤 통일+약간 진하게(#2).
+   * (1) ds-ui 기본 --border:oklch(94%)는 너무 연해 라인이 잘 안 보임 → 89%로 한 단계만 진하게.
+   * (2) LNB 우측·GNB 하단(AdminShell sidebar)은 --border가 아니라 별도 --sidebar-border(zinc-200)를
+   *     써서 톤이 달랐다 → --border와 동일하게 맞춰 테이블·카드·LNB·GNB 전 라인을 한 색으로 통일.
+   * (테이블 행은 위 [data-slot=table-row] 규칙이 이 --border를 쓰게 이미 고정함.) */
+  --border: oklch(89% .005 286.32);
+  --sidebar-border: var(--border);
+
   --wm-status-not-started: #94a3b8; /* slate-400 */
   --wm-status-in-progress: #3b82f6; /* blue-500 */
   --wm-status-in-review: #a855f7;   /* purple-500 */
