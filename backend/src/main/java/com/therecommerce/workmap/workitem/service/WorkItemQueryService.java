@@ -70,6 +70,7 @@ public class WorkItemQueryService {
                 .assigneeId(params.assigneeId())
                 .sprintId(params.sprintId())
                 .epicId(params.epicId())
+                .label(params.label())
                 .keyword(params.keyword())
                 .sortColumn(sortColumn)
                 .sortDirection(sortDirection)

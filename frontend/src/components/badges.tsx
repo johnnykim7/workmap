@@ -4,7 +4,7 @@ import {
   PRIORITY_LABEL, type WorkStatus, type IssueType, type Priority,
 } from '@/types/domain';
 import {
-  Square, CheckSquare, Bug, Bookmark, Layers, GitBranch,
+  Square, CheckSquare, Bug, Bookmark, Layers, GitBranch, FileText,
   ChevronsUp, ChevronUp, Equal, ChevronDown, ChevronsDown,
 } from 'lucide-react';
 
@@ -13,6 +13,7 @@ const TYPE_ICON: Record<IssueType, React.ReactNode> = {
   STORY: <Bookmark className="size-3" />,
   TASK: <CheckSquare className="size-3" />,
   BUG: <Bug className="size-3" />,
+  DOC: <FileText className="size-3" />,
   SUBTASK: <GitBranch className="size-3" />,
 };
 const TYPE_BG: Record<string, string> = {
@@ -20,6 +21,7 @@ const TYPE_BG: Record<string, string> = {
   green: 'bg-green-100 text-green-700',
   blue: 'bg-blue-100 text-blue-700',
   red: 'bg-red-100 text-red-700',
+  amber: 'bg-amber-100 text-amber-700',
   slate: 'bg-slate-100 text-slate-600',
 };
 

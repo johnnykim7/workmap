@@ -150,6 +150,7 @@ public final class WorkItemDtos {
             Long assigneeId,
             Long sprintId,
             Long epicId,
+            String label,
             String keyword,
             String sort,
             String direction

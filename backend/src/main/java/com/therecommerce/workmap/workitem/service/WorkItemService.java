@@ -273,6 +273,11 @@ public class WorkItemService {
             w.setCompletedAt(null);
         }
 
+        // 착수 자동(Jira식): IN_PROGRESS 최초 진입 시 start_date가 비어있으면 오늘로 자동 설정
+        if (CommonStatus.IN_PROGRESS.name().equals(to.getCommonStatus()) && w.getStartDate() == null) {
+            w.setStartDate(now.toLocalDate());
+        }
+
         w.setStatusId(to.getId());
         w.setCommonStatus(to.getCommonStatus());
         w.setStatusChangedAt(now);

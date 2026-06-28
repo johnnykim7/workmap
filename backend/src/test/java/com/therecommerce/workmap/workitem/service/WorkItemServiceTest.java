@@ -614,4 +614,72 @@ class WorkItemServiceTest {
 
         verify(workItemMapper).updateProgress(7L, 50);
     }
+
+    // ===================================================================
+    // FSM — 착수일 자동(IN_PROGRESS 최초 진입 시 start_date 자동, Jira식)
+    // ===================================================================
+
+    @Test
+    @DisplayName("FSM-13: IN_PROGRESS진입_startDate비어있으면_오늘로자동(Clock Mock)")
+    void 진행중전이_startDate자동() {
+        WorkItem w = item(1L, 100L, "TODO");   // start_date null
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        when(workflowMapper.findStatusById(100L)).thenReturn(status(100, "TODO", "TODO", true, false));
+        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
+        when(workflowMapper.transitionExists(10L, 100L, 102L)).thenReturn(true);
+
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
+
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+        verify(workItemMapper).updateStatus(c.capture());
+        assertThat(c.getValue().getStartDate()).isEqualTo(FIXED.toLocalDate());  // 2026-06-26
+    }
+
+    @Test
+    @DisplayName("FSM-14: IN_PROGRESS진입_startDate이미있으면_유지(덮어쓰지 않음)")
+    void 진행중전이_startDate유지() {
+        WorkItem w = item(1L, 100L, "TODO");
+        LocalDate already = LocalDate.of(2026, 6, 1);
+        w.setStartDate(already);
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        when(workflowMapper.findStatusById(100L)).thenReturn(status(100, "TODO", "TODO", true, false));
+        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
+        when(workflowMapper.transitionExists(10L, 100L, 102L)).thenReturn(true);
+
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
+
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+        verify(workItemMapper).updateStatus(c.capture());
+        assertThat(c.getValue().getStartDate()).isEqualTo(already);  // 유지
+    }
+
+    // ===================================================================
+    // HRC — DOC(문서) 유형 (depth 1, Sub-task 부모 불가)
+    // ===================================================================
+
+    @Test
+    @DisplayName("HRC-7: DOC유형_부모없이생성_성공(depth 1, 단독 유형)")
+    void 문서유형_생성_성공() {
+        when(projectMapper.findById(5L)).thenReturn(devProject());
+        when(workflowMapper.findStartStatus(10L)).thenReturn(status(100, "TODO", "TODO", true, false));
+        when(workItemMapper.nextSeq(5L)).thenReturn(1);
+        when(workItemMapper.findById(any())).thenReturn(item(1L, 100L, "TODO"));
+
+        service.create(createReq("DOC", null), 99L);
+
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+        verify(workItemMapper).insert(c.capture());
+        assertThat(c.getValue().getIssueType()).isEqualTo("DOC");
+    }
+
+    @Test
+    @DisplayName("HRC-8: DOC를Sub태스크부모로_거부(canBeSubtaskParent=false)")
+    void 문서를_서브태스크부모로_거부() {
+        when(projectMapper.findById(5L)).thenReturn(devProject());
+        WorkItem doc = WorkItem.builder().id(7L).issueType("DOC").build();
+        when(workItemMapper.findById(7L)).thenReturn(doc);
+        assertThatThrownBy(() -> service.create(createReq("SUBTASK", 7L), 99L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.HIERARCHY_VIOLATION);
+    }
 }

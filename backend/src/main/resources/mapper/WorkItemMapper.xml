@@ -124,6 +124,7 @@
             prev_status_id = #{prevStatusId},
             block_reason = #{blockReason},
             completed_at = #{completedAt},
+            start_date = #{startDate},
             status_changed_at = #{statusChangedAt},
             updated_at = now()
         WHERE id = #{id} AND deleted_at IS NULL
@@ -252,6 +253,10 @@
         <if test="c.assigneeId != null">AND assignee_id = #{c.assigneeId}</if>
         <if test="c.sprintId != null">AND sprint_id = #{c.sprintId}</if>
         <if test="c.epicId != null">AND epic_id = #{c.epicId}</if>
+        <!-- 라벨 필터: labels(JSONB 배열)에 해당 라벨이 포함되면 매칭(@> 포함 연산). -->
+        <if test="c.label != null and c.label != ''">
+            AND labels @> jsonb_build_array(#{c.label})
+        </if>
         <!-- 전체 텍스트 검색(§13.9): 제목·key·설명 + 댓글(content) EXISTS. -->
         <if test="c.keyword != null and c.keyword != ''">
             AND (

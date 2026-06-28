@@ -12,6 +12,7 @@ export interface SearchParams {
   commonStatus?: WorkStatus;
   priority?: Priority;
   assigneeId?: number;
+  label?: string; // 라벨 필터 — labels JSONB 배열 포함 매칭
   sort?: WorkItemSortKey;
   direction?: SortDirection;
   page?: number;
@@ -26,6 +27,7 @@ function toQuery(p: SearchParams): string {
   if (p.commonStatus) sp.set('commonStatus', p.commonStatus);
   if (p.priority) sp.set('priority', p.priority);
   if (p.assigneeId != null) sp.set('assigneeId', String(p.assigneeId));
+  if (p.label?.trim()) sp.set('label', p.label.trim());
   if (p.sort) sp.set('sort', p.sort);
   if (p.direction) sp.set('direction', p.direction);
   sp.set('page', String(p.page ?? 0));

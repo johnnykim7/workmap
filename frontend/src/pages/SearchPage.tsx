@@ -46,7 +46,7 @@ export function SearchPage() {
   const me = useAuthStore((s) => s.user);
 
   const [keyword, setKeyword] = useState('');
-  const [filter, setFilter] = useState<Pick<SearchParams, 'issueType' | 'commonStatus' | 'priority'>>({});
+  const [filter, setFilter] = useState<Pick<SearchParams, 'issueType' | 'commonStatus' | 'priority' | 'label'>>({});
   const [quick, setQuick] = useState<Set<Quick>>(new Set());
   const [page, setPage] = useState(0);
 
@@ -108,12 +108,13 @@ export function SearchPage() {
     issueType: filter.issueType,
     commonStatus: filter.commonStatus,
     priority: filter.priority,
+    label: filter.label,
     quick: [...quick],
   }), [keyword, filter, quick]);
 
   function applySavedFilter(s: SearchFilterState) {
     setKeyword(s.keyword ?? '');
-    setFilter({ issueType: s.issueType, commonStatus: s.commonStatus, priority: s.priority });
+    setFilter({ issueType: s.issueType, commonStatus: s.commonStatus, priority: s.priority, label: s.label });
     setQuick(new Set<QuickKey>(s.quick ?? []));
     setPage(0);
   }
@@ -163,6 +164,13 @@ export function SearchPage() {
             ))}
           </SelectContent>
         </Select>
+        <SearchInput
+          className="w-40"
+          placeholder="라벨"
+          value={filter.label ?? ''}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            patchFilter({ label: e.target.value || undefined })}
+        />
       </div>
 
       {/* 저장 필터 (WMP-VIEW-004) */}

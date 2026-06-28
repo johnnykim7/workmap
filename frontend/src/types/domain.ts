@@ -54,21 +54,23 @@ export const STATUS_CATEGORY: Record<WorkStatus, StatusCategory> = {
 };
 
 // ───────────────────────── 업무 유형 (IssueType / 계층) ─────────────────────────
-export type IssueType = 'EPIC' | 'STORY' | 'TASK' | 'BUG' | 'SUBTASK';
+export type IssueType = 'EPIC' | 'STORY' | 'TASK' | 'BUG' | 'DOC' | 'SUBTASK';
 
 export const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
   EPIC: 'Epic',
   STORY: 'Story',
   TASK: 'Task',
   BUG: 'Bug',
+  DOC: 'Doc',
   SUBTASK: 'Sub-task',
 };
 
-export const ISSUE_TYPE_COLOR: Record<IssueType, 'violet' | 'green' | 'blue' | 'red' | 'slate'> = {
+export const ISSUE_TYPE_COLOR: Record<IssueType, 'violet' | 'green' | 'blue' | 'red' | 'amber' | 'slate'> = {
   EPIC: 'violet',
   STORY: 'green',
   TASK: 'blue',
   BUG: 'red',
+  DOC: 'amber',
   SUBTASK: 'slate',
 };
 

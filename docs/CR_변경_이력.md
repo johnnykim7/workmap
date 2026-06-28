@@ -507,6 +507,25 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, 로컬 디스크 저장·설정값 조정) | **적용 버전**: v2.1
 - **변경 일자**: 2026-06-28
 
+### CR-025 — Jira 스크럼 정합 보정 3종(착수일 자동·라벨 필터·DOC 유형)
+
+- **변경 타입**: 설계보정 | **영향도**: Low(단일 모듈 — work_item, 신규 BE 0·시드 1)
+- **상태**: 구현 완료(2026-06-28). 단위테스트 PASS·FE 빌드 통과. 운영 배포 대기.
+- **배경**: 사용자가 Jira 스크럼 운영 블로그(velog @jinuku)를 첨부하며 "여기 설명대로 우리도 동작하는지 실측"을 요청. 블로그 동작 규칙 vs WorkMap 코드를 영역별로 실측한 결과 핵심 동작(계층·백로그·보드·스프린트 FSM·상태전이·포인트·번다운)은 구현돼 있었으나 **3종이 미달**로 확인 — ① IN_PROGRESS 진입 시 start_date 자동설정 없음(블로그 명시 동작) ② 라벨은 입력만 되고 필터 불가(SearchCriteria/SQL 미구현) ③ Doc(문서) 유형 부재(블로그 구조의 6번째 유형). 사용자가 이 3종 구현을 지시(소규모 판단). 플래닝 포커·Git 연동은 제품 범위 밖으로 제외 합의.
+- **핵심 설계 결정(실측 근거)**:
+  - **DOC는 IssueType enum 추가가 필수.** `parseIssueType("DOC")`(WorkItemService:467)이 enum 미존재 시 INVALID_REQUEST를 던져 DOC 생성 자체가 막힘 → 시드 SQL만으로 불충분. enum에 `DOC(1)` 추가.
+  - **DOC는 depth 1이되 Sub-task 부모 불가.** 블로그 구조(Story/Dev만 Subtask를 가짐)에 맞춰 `canBeSubtaskParent`에서 EPIC·DOC·SUBTASK 제외. EPIC/STORY/TASK/BUG/DOC/SUBTASK 6종 체계.
+  - **start_date는 "비어있을 때만" 오늘로 설정.** 이미 값이 있으면 덮어쓰지 않음. updateStatus 쿼리에 start_date가 없어 함께 보강(없으면 set해도 DB 미반영).
+  - **라벨 필터는 JSONB 포함 연산(`@>`).** labels가 JSONB 배열이라 `=` 대신 `labels @> jsonb_build_array(#{label})`.
+- **변경 내용**:
+  - **BE**: ① `WorkItemService.changeStatus`에 IN_PROGRESS 착수일 자동 + `WorkItemMapper.xml` updateStatus에 start_date 컬럼 추가 ② `WorkItemSearchCriteria`·`WorkItemDtos.SearchParams`·`WorkItemQueryService`에 `label` 추가 + Mapper searchWhere 라벨 필터(@>) ③ `IssueType` enum DOC 추가·canBeSubtaskParent 보정 + **V7__doc_issue_type.sql**(issue_type DOC 시드 + 시스템 템플릿 issue_type_codes에 DOC 편입).
+  - **FE**: `types/domain.ts`(IssueType·라벨·색에 DOC=amber) + `badges.tsx`(TYPE_ICON DOC=FileText·TYPE_BG amber) + `search/api.ts`(label 파라미터) + `SearchPage`(라벨 SearchInput 필터) + `filter-codec`(저장필터 label).
+- **BE 신규 0(엔드포인트·에러코드 무신규), 스키마 무변경(시드 V7 1개만), work_item 단일 테이블·description 무변경.**
+- **테스트**: WorkItemServiceTest 신규 4건(FSM-13/14 착수일 자동·유지, HRC-7/8 DOC 생성·부모불가) — `./gradlew test` BUILD SUCCESSFUL. FE tsc -b + vite build(3467 modules) 통과.
+- **영향 설계서**: 없음(설계 정합 보정 — 기존 계층/검색 명세 범위 내, DOC는 BIZ-107 "유형 추가는 마스터 행" 정책대로).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-28, 3종 모두·소규모·CR 부여) | **적용 버전**: v2.1
+- **변경 일자**: 2026-06-28
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

@@ -9,5 +9,6 @@ export interface SearchFilterState {
   issueType?: IssueType;
   commonStatus?: WorkStatus;
   priority?: Priority;
+  label?: string;
   quick?: QuickKey[];
 }
