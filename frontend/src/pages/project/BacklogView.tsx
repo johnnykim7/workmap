@@ -5,12 +5,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   DndContext, PointerSensor, useSensor, useSensors, closestCenter, type DragEndEvent,
 } from '@dnd-kit/core';
-import { Button } from '@therecommerce/ds-ui';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@therecommerce/ds-ui';
 import { Plus, ListTodo, AlertTriangle } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
 } from '@/features/agile/hooks';
+import { useProjectItems, useCreateWorkItem } from '@/features/workitem/hooks';
+import { filterByEpic } from '@/features/agile/epic-filter';
 import { SprintSection } from '@/features/agile/components/SprintSection';
 import { SprintHeader } from '@/features/agile/components/SprintHeader';
 import { CreateSprintDialog } from '@/features/agile/components/CreateSprintDialog';
@@ -19,7 +21,7 @@ import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BacklogSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
 import { ROUTES } from '@/lib/route-paths';
-import type { Sprint } from '@/types/domain';
+import { PROJECT_TEMPLATES, type Sprint, type IssueType } from '@/types/domain';
 
 export function BacklogView() {
   const { key = '' } = useParams();
@@ -30,21 +32,50 @@ export function BacklogView() {
   const { data: backlog, isPending, isError } = useBacklog(projectId);
   const assigneeName = useAssigneeName(projectId);
 
+  // Epic 소속 칩·필터용 — 프로젝트 항목 전체에서 EPIC만 추려 epicId→이름 맵 구성(신규 BE 없이 재사용).
+  const { data: projectItems = [] } = useProjectItems(projectId);
+  const epics = useMemo(() => projectItems.filter((w) => w.issueType === 'EPIC'), [projectItems]);
+  const epicNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    epics.forEach((e) => m.set(e.id, e.title));
+    return m;
+  }, [epics]);
+  const epicName = (id?: number | null) => (id != null ? epicNameById.get(id) : undefined);
+
+  // Epic 필터(§6.1) — 선택 시 해당 Epic 소속 항목만(Epic 자신은 항상 표시 유지). 'ALL'=전체.
+  const [epicFilter, setEpicFilter] = useState<string>('ALL');
+
   const changeSprint = useChangeItemSprint(projectId ?? 0);
   const createSprint = useCreateSprint(projectId ?? 0);
   const startSprint = useStartSprint(projectId ?? 0);
   const completeSprint = useCompleteSprint(projectId ?? 0);
+  const createItem = useCreateWorkItem();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Sprint | null>(null);
 
+  // 인라인 생성 기본 유형 — 템플릿 issueTypeCodes 중 STORY>TASK>첫 항목 순. EPIC/SUBTASK는 백로그 인라인 부적합.
+  const defaultIssueType = useMemo<IssueType>(() => {
+    const codes = (PROJECT_TEMPLATES.find((t) => t.id === project?.templateId)?.issueTypeCodes ?? []) as IssueType[];
+    return codes.find((c) => c === 'STORY') ?? codes.find((c) => c === 'TASK')
+      ?? codes.find((c) => c !== 'EPIC' && c !== 'SUBTASK') ?? 'TASK';
+  }, [project]);
+
   // 진행 중 스프린트 존재 → FUTURE 시작 버튼 비활성(앞 스프린트 먼저 완료)
   const hasActive = useMemo(
     () => backlog?.sprints.some((s) => s.sprint?.status === 'ACTIVE') ?? false,
     [backlog],
   );
+
+  // 구역 인라인 생성(§6.1) — 스프린트 구역이면 sprintId 프리필(BE CreateRequest 지원).
+  // Epic 필터가 걸려 있으면 그 Epic 소속으로 생성(Jira: 필터 컨텍스트 상속). projectId·기본유형·제목만(가볍게).
+  const inlineCreate = (sprintId: number | null) => (title: string) => {
+    if (!projectId) return;
+    const epicId = epicFilter !== 'ALL' ? Number(epicFilter) : null;
+    createItem.mutate({ projectId, issueType: defaultIssueType, title, sprintId, epicId });
+  };
 
   if (projectPending || (projectId && isPending)) return <BacklogSkeleton />;
 
@@ -70,9 +101,25 @@ export function BacklogView() {
 
   const toggle = (id: string) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
 
+  // Epic 필터를 적용한 구역(items만 교체). 다른 메타(itemCount 등)는 표시용이라 원본 유지.
+  const withFilter = <T extends { items: typeof projectItems }>(section: T): T =>
+    ({ ...section, items: filterByEpic(section.items, epicFilter) });
+
   return (
     <div>
-      <div className="mb-3 flex items-center justify-end">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {/* Epic 필터(§6.1) — 큰 묶음(Epic) 단위로 좁혀 보기. Epic이 없으면 숨김. */}
+        {epics.length > 0 ? (
+          <Select value={epicFilter} onValueChange={setEpicFilter}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Epic 필터" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">모든 Epic</SelectItem>
+              {epics.map((e) => (
+                <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : <span />}
         <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
           스프린트 만들기
@@ -87,10 +134,13 @@ export function BacklogView() {
             return (
               <SprintSection
                 key={sid}
-                section={section}
+                section={withFilter(section)}
                 collapsed={collapsed[sid]}
                 assigneeName={assigneeName}
+                epicName={epicName}
                 onItemClick={(id) => openItem(section.items, id)}
+                onInlineCreate={inlineCreate(section.sprint!.id)}
+                inlineBusy={createItem.isPending}
                 emptyHint="여기로 항목을 끌어와 스프린트에 담으세요"
                 header={
                   <SprintHeader
@@ -109,9 +159,12 @@ export function BacklogView() {
 
           {/* 백로그 구역 */}
           <SprintSection
-            section={backlog.backlog}
+            section={withFilter(backlog.backlog)}
             assigneeName={assigneeName}
+            epicName={epicName}
             onItemClick={(id) => openItem(backlog.backlog.items, id)}
+            onInlineCreate={inlineCreate(null)}
+            inlineBusy={createItem.isPending}
             emptyHint="미계획 항목이 없습니다"
             header={
               <div className="flex items-center gap-3 rounded-t-md bg-muted/60 px-3 py-2">

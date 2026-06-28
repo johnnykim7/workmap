@@ -3,16 +3,18 @@
 import { useDraggable } from '@dnd-kit/core';
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
-import { TypeBadge, PriorityBadge, StatusBadge, Avatar2 } from '@/components/badges';
+import { TypeBadge, PriorityBadge, StatusBadge, Avatar2, EpicChip } from '@/components/badges';
 import { GripVertical, CalendarClock } from 'lucide-react';
 
 interface Props {
   item: WorkItemResponse;
   assigneeName?: string;
   onClick?: () => void;
+  // Epic 소속 칩(§6.1) — 이 항목이 매달린 Epic 이름. Epic 자신/소속 없음이면 undefined.
+  epicName?: string;
 }
 
-export function BacklogRow({ item, assigneeName, onClick }: Props) {
+export function BacklogRow({ item, assigneeName, onClick, epicName }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `bl-${item.id}`,
     data: { workItemId: item.id, sprintId: item.sprintId ?? null },
@@ -41,6 +43,8 @@ export function BacklogRow({ item, assigneeName, onClick }: Props) {
       <button onClick={onClick} className="min-w-0 flex-1 truncate text-left text-sm text-foreground hover:underline">
         {item.title}
       </button>
+
+      {epicName && <EpicChip name={epicName} />}
 
       {item.dueDate && (
         <span className={`inline-flex items-center gap-0.5 text-[11px] ${delayed ? 'font-medium text-red-600' : 'text-muted-foreground'}`}>
