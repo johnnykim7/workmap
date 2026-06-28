@@ -252,11 +252,23 @@
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | GET | /notifications | 알림 목록(읽음/안읽음) | 🔒 | P1 | WMP-NOTI-001 |
+| GET | /notifications/unread-count | 안읽음 개수(배지) | 🔒 | P1 | WMP-NOTI-001 |
 | PATCH | /notifications/{id}/read | 알림 읽음 처리 | 🔒 | P1 | WMP-NOTI-001 |
 | GET | /inbox | 받은함(내게 온 것 통합 — 목록 + 안읽음 배지) | 🔒 | P1 | WMP-NOTI-001 |
+| GET | /notification-preferences | 내 알림 수신 설정 목록(종류×채널, 미설정은 기본값 머지) | 🔒 | P1 | WMP-NOTI-003 (CR-028) |
+| PUT | /notification-preferences | 수신 설정 일괄 upsert(종류별 in_app/email/push) | 🔒 | P1 | WMP-NOTI-003 (CR-028) |
+| POST | /fcm/token | 내 FCM 기기 토큰 등록(로그인 시) | 🔒 | P1 | WMP-NOTI-004 (CR-028) |
+| DELETE | /fcm/token | 내 FCM 기기 토큰 삭제(로그아웃 시) | 🔒 | P1 | WMP-NOTI-004 (CR-028) |
 
 > 알림 트리거 발행(WMP-NOTI-002)은 도메인 이벤트(ApplicationEvent) 기반 내부 처리 — 외부 엔드포인트 아님(T1-6 이벤트 계약).
-> **받은함(/inbox) 구현 메모(CR-011)**: 배정·멘션·마감·막힘은 이미 `notifications.type`(ASSIGNED/MENTIONED/OVERDUE/BLOCKED/DUE_APPROACHING)으로 **통합 수신**된다(T1-1 WMP-NOTI-001 "내게 온 것 통합"). 별도 소스(멘션/승인대기/배정)를 런타임 합산하는 별도 테이블이 아니라, `/notifications` 목록을 **받은함 응답(items + unreadCount 배지)**으로 한 번에 제공하는 별칭이다. 데이터 소스는 `NotificationService.list()`/`unreadCount()` 재사용(신규 매퍼 없음).
+> **받은함(/inbox) 구현 메모(CR-011)**: 배정·멘션·마감·막힘은 이미 `notifications.type`으로 **통합 수신**된다(T1-1 WMP-NOTI-001 "내게 온 것 통합"). 별도 소스를 런타임 합산하는 별도 테이블이 아니라, `/notifications` 목록을 **받은함 응답(items + unreadCount 배지)**으로 한 번에 제공하는 별칭이다. 데이터 소스는 `NotificationService.list()`/`unreadCount()` 재사용(신규 매퍼 없음).
+>
+> **수신 설정(CR-028) 요청/응답**:
+> - `GET /notification-preferences` → `{ items: [{ type, inApp, email, push }] }`. 서버가 전체 알림 종류 목록 × 기본값을 베이스로 깔고, 저장된 행을 머지해 반환(클라가 어떤 종류가 있는지 알 필요 없음).
+> - `PUT /notification-preferences` body `{ items: [{ type, inApp, email, push }] }` → 보낸 종류만 upsert(부분 갱신). 인증 사용자 본인 것만. in_app=false여도 받은함 원장 기록은 유지(표시/배지만 숨김).
+> - `POST /fcm/token` body `{ fcmToken, deviceInfo? }`(userId는 토큰에서) → 자체 `fcm_tokens` 저장 + bp-notification `POST /api/v1/fcm/token` 미러 위임(best-effort). `DELETE /fcm/token` body `{ fcmToken }`.
+>
+> **외부 전달(WMP-NOTI-004)**: 인앱 알림 생성 후 `NotificationDispatcher`가 수신자 설정을 보고 email/push가 ON인 종류만 bp-notification(`POST /api/v1/messages/email`·`/push`)으로 fan-out. `X-API-Key`(solutionCode `WMP`) + 종류별 템플릿코드(`WMP_NOTI_{TYPE}`) + variables(workItemKey/title/projectName/actorName/link). best-effort 비동기 — 발송 실패가 인앱 기록/트랜잭션을 막지 않음.
 
 ---
 

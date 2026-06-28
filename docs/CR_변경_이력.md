@@ -33,6 +33,7 @@
 | CR-025 | Jira 스크럼 정합 보정 3종(착수일 자동·라벨 필터·DOC 유형) | 설계보정 | Low | v2.1 |
 | CR-026 | 커뮤니케이션(채팅) 모듈 신규 — axopm comm 포팅(워크스페이스 단위 Slack형) | 신규 | High | v2.1 |
 | CR-027 | 이메일 초대 가입 + 비밀번호 재설정/변경(인증번호 OTP) + bp-notification 연동 | 신규 | High | v2.2 |
+| CR-028 | 각종 알림 확장 — 트리거 발행 구현(댓글·상태·마감·스프린트·승인) + 외부 채널(bp-notification 이메일/푸시) + 수신 설정 | 신규 | High | v2.2 |
 
 ---
 
@@ -570,13 +571,40 @@
   - **T1-1**: WMP-AUTH-004 "사용자 생성/초대"→"사용자 초대(이메일 인증번호)"로 재정의 + WMP-AUTH-006/007/008/009 신규.
   - **T1-4**: POL-012(비밀번호 정책)·POL-013(OTP 정책) 신규.
   - **T1-6**: UserInvited·UserJoined·PasswordChanged 이벤트 신규(인프로세스 활동/감사. 인증번호 발송 자체는 이벤트 아닌 동기 호출).
-  - **T3-1**: `invitations`·`email_otp` 테이블 신규(users 무변경, V9 예정).
+  - **T3-1**: `invitations`·`email_otp` 테이블 신규(users 무변경, **V9** — 구현 착수, `V9__invitations_email_otp.sql`).
   - **T3-2**: §A 인증에 accept/forgot/reset/change/change-request-otp 5종 + §B에 `/invitations` CRUD(생성·목록·재발송·취소). `POST /users`는 직접 생성(시드용)으로 유지.
   - **T3-3**: `/invite/accept`·`/password/forgot`(공개)·`/account/password`(인증) 3화면 신규 + 로그인 화면 forgot 링크.
   - **execution-spec**: §5 CR-027 횡단 가이드(bp-notification 사전등록 절차·BE/FE 작업·함정·에러코드 WMP-7829~7838).
 - **영향 설계서**: T1-1, T1-4, T1-6, T3-1, T3-2, T3-3, execution-spec, CLAUDE.md(에러코드/진행상태)
 - **에러코드**: WMP-7829~7838(INVITATION_* 4·OTP_* 5·PASSWORD_SAME_AS_CURRENT 1). 7820~7828은 채팅(CR-026) 점유. 현재PW불일치=기존 7742, 이메일중복=기존 7741 재사용.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 설계 캐스케이드 먼저·구현은 승인 후 / 초대=invitations만 / 인증수단=OTP 통일 / 변경=현재PW+OTP 2차) | **적용 버전**: v2.2
+- **변경 일자**: 2026-06-29
+
+### CR-028 — 각종 알림 확장: 트리거 발행 구현 + 외부 채널(bp-notification) + 수신 설정
+
+- **대상 기능 ID**: WMP-NOTI-001(구체화)/002(구체화)/003·004·005(신규) · WorkItemCommented(이벤트 신규)
+- **변경 타입**: 신규 기능(대규모) | **영향도**: High(알림 발행 경로 중앙화, 신규 테이블 2·외부 연동 1·FE 신규 화면 1·스케줄러 1)
+- **상태**: **설계 캐스케이드 완료(2026-06-29). 구현 미착수(사용자 승인 후 진행).**
+- **배경**: 기존 알림은 배정·멘션·막힘 3종 발행 + 인앱 받은함만 존재(실측). T1-6에 마감임박/초과·스프린트·승인 이벤트는 **계약만 선정의**돼 있고 발행 구현이 없었음. 사용자가 "각종 알림 기능"을 요청 → 선정의 이벤트의 발행 구현 + 외부 전달(이메일/푸시) + 사용자 수신 설정을 추가.
+- **핵심 설계 결정(사용자 합의 2026-06-29)**:
+  - **알림 종류 = 전체** — 배정·멘션·막힘(기존) + 댓글·상태변경·마감임박·마감초과·스프린트 시작/완료·승인 요청/처리(신규). T1-6 선정의 계약 기반.
+  - **인앱 받은함 = 원장(항상 기록)**, 외부 채널(이메일/푸시)은 사용자 설정에 따라 fan-out. 단일 진입점 `NotificationDispatcher`.
+  - **수신 설정 기본값 = 인앱 ON · 이메일 OFF · 푸시 OFF**(sparse 저장, 미설정은 기본값).
+  - **외부 채널 = bp-notification 자체 솔루션 활용**(사용자 결정) — Slack/Webhook 자체 구현 안 함. CR-027과 솔루션(`WMP`)·apiKey 공유.
+  - **CR-027과 별도 CR**(사용자 결정) — 공통 인프라(bp-notification 클라이언트)는 CR-028이 만들고 CR-027이 재사용. 인증/이메일(CR-027)과 업무 알림(CR-028) 분리.
+  - **마감 알림 = 스케줄러**(매일 오전 due_date 스캔), 같은 항목·타입·날짜 1회.
+- **변경 내용(설계)**:
+  - **T1-1**: WMP-NOTI-001/002 구체화 + WMP-NOTI-003(수신 설정)·004(외부 전달)·005(마감 스케줄러) 신규.
+  - **T1-4**: POL-009 구체화(2층 제어 — 전역 트리거 on/off + 사용자 종류×채널 설정).
+  - **T1-6**: WorkItemCommented 이벤트 신규. 외부 발행을 Phase 3+→CR-028 조기 도입으로 명기. NotificationDispatcher 단일 진입점.
+  - **T3-1**: `notification_preferences`·`fcm_tokens` 테이블 신규(notifications 무변경, type VARCHAR 확장만, **V10 예정** — V9는 CR-027 점유). NotificationType 11종.
+  - **T3-2**: §L에 `/notification-preferences`(GET/PUT)·`/fcm/token`(POST/DELETE) + `/notifications/unread-count` 보강.
+  - **T3-3**: `/account/notifications` 알림 수신 설정 매트릭스 화면 신규.
+  - **execution-spec**: §5 CR-028 횡단 가이드(bp-notification 템플릿 등록·Dispatcher·GatewayClient·스케줄러·함정·에러코드 WMP-7839~7841).
+- **영향 설계서**: T1-1, T1-4, T1-6, T3-1, T3-2, T3-3, execution-spec, CLAUDE.md(에러코드/진행상태)
+- **에러코드**: WMP-7839~7841(NOTIFICATION_NOT_FOUND·NOTIFICATION_PREFERENCE_INVALID_TYPE·FCM_TOKEN_REQUIRED). 7820~7828=채팅(CR-026), 7829~7838=CR-027 예약. 외부 발송 실패는 에러코드 아님(best-effort).
+- **마이그레이션 번호**: CR-027 구현이 **V9**(`V9__invitations_email_otp.sql`, 작업트리 확인)를 이미 점유. 따라서 CR-028은 **V10**(notification_preferences·fcm_tokens). 구현 착수 시 미적용 마이그레이션 최대 번호 재확인 후 부여.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 알림 종류 전체 / 인앱 ON·외부 OFF / bp-notification 활용 / CR-027과 별도 CR / 설계 먼저·구현은 승인 후) | **적용 버전**: v2.2
 - **변경 일자**: 2026-06-29
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->

@@ -115,7 +115,7 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
   2. 인증번호 이메일 템플릿 3종 등록 — `POST /api/v1/admin/templates`(messageType=EMAIL): `WMP_INVITE_OTP`(초대), `WMP_RESET_OTP`(분실), `WMP_CHANGE_OTP`(변경). content/contentHtml에 `{{code}}`·`{{expiresMin}}`·`{{name}}` 변수. 발송 시 WorkMap이 templateCode+variables로 호출.
   3. WorkMap 설정 주입 — `workmap.notification.base-url=http://59.8.160.12:8185`, `workmap.notification.api-key=${WMP_NOTI_API_KEY}`(운영 docker env), `workmap.auth.otp.*`(만료10분/시도5/쿨다운60s).
 - **BE (대규모)**:
-  1. **V9 마이그레이션** — `invitations`·`email_otp` 테이블(T3-1). invitations 부분 유니크(PENDING email). 시드 불요.
+  1. **V9 마이그레이션** — `invitations`·`email_otp` 테이블(T3-1). invitations 부분 유니크(PENDING email). 시드 불요. (CR-027 구현이 V9를 점유 — 작업트리에 `V9__invitations_email_otp.sql` 확인됨.)
   2. **신규 모듈 `auth` 확장 + `invitation` 모듈** — 도메인(Invitation·EmailOtp)/Mapper/Service. `OtpService`(발급·해시저장·검증·시도카운트·쿨다운·소비), `InvitationService`(초대 생성→OTP 발급→발송, 수락→OTP 검증→UserService.create 위임→ACCEPTED), `PasswordService`(forgot/reset/change). 비밀번호 인코딩은 기존 `UserService`/`PasswordEncoder` 재사용.
   3. **`NotificationClient`** — bp-notification `POST /messages/email` 호출(`X-API-Key`). best-effort(발송 실패가 OTP 발급 트랜잭션 롤백 금지, 실패 로깅). RestClient/WebClient.
   4. **컨트롤러** — `AuthController`에 accept/forgot/reset/change/change-request-otp 5종(공개 경로는 SecurityWhitelist에 추가: `/api/v1/auth/invitations/accept`·`/auth/password/forgot`·`/auth/password/reset`). `InvitationController`(`/api/v1/invitations` Admin 가드).
@@ -130,6 +130,30 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
   - WMP-7829 INVITATION_NOT_FOUND(404) / WMP-7830 INVITATION_ALREADY_ACCEPTED(409) / WMP-7831 INVITATION_EXPIRED(410) / WMP-7832 INVITATION_PENDING_DUPLICATED(409, 이미 PENDING 초대 존재)
   - WMP-7833 OTP_NOT_FOUND(404) / WMP-7834 OTP_EXPIRED(410) / WMP-7835 OTP_MISMATCH(400) / WMP-7836 OTP_ATTEMPTS_EXCEEDED(429) / WMP-7837 OTP_RESEND_COOLDOWN(429)
   - WMP-7838 PASSWORD_SAME_AS_CURRENT(400). (현재PW 불일치=기존 WMP-7742 INVALID_CREDENTIALS, 이메일 중복=기존 WMP-7741 재사용)
+
+### CR-028 — 각종 알림 확장: 트리거 발행 구현 + 외부 채널(bp-notification) + 수신 설정 (횡단)
+> 기존 알림(배정/멘션/막힘 3종·인앱 받은함)을 ① T1-6 선정의 이벤트의 **발행 구현**(댓글·상태변경·마감임박/초과·스프린트·승인) ② **외부 전달**(이메일/푸시, bp-notification) ③ **사용자 수신 설정**(종류×채널 on/off)으로 확장. T1(WMP-NOTI-001~005·POL-009 확장·WorkItemCommented)→T3(T3-1 notification_preferences·fcm_tokens / T3-2 §L / T3-3 `/account/notifications`) 캐스케이드 완료본 기준. **notifications 테이블 무변경(type는 VARCHAR(40) 그대로).**
+- **사전 작업 (bp-notification 연동)**:
+  - **CR-027과 솔루션 공유** — WorkMap 솔루션(solutionCode `WMP`)·apiKey·`workmap.notification.*` env가 CR-027에서 이미 등록됐으면 **재사용**. 미등록(CR-027 미구현)이면 CR-027 사전작업 1·3을 먼저 수행해 apiKey 확보(EMAIL + PUSH 서비스 허용). ⚠️ 솔루션 등록은 1회 — 중복 등록 금지.
+  - **알림 템플릿 등록** — `POST /api/v1/admin/templates`로 종류별 템플릿. EMAIL: `WMP_NOTI_ASSIGNED`/`_BLOCKED`/`_MENTIONED`/`_COMMENTED`/`_STATUS_CHANGED`/`_DUE_APPROACHING`/`_OVERDUE`/`_SPRINT_STARTED`/`_SPRINT_COMPLETED`/`_APPROVAL_REQUESTED`/`_APPROVAL_DECIDED`. PUSH: 동일 코드(messageType=PUSH). 변수 `{{title}}`·`{{projectName}}`·`{{actorName}}`·`{{link}}`. (운영 빈도 낮은 종류는 1차에 핵심 5종만 등록, 미등록 종류는 외부발송 스킵+인앱만 — 가이드대로 점진 등록 가능.)
+- **BE (대규모)**:
+  1. **V10 마이그레이션** — `notification_preferences`·`fcm_tokens`(T3-1). UNIQUE 제약. 시드 불요. (V9는 CR-027 invitations·email_otp 점유 — 작업트리 확인됨. 구현 착수 시 미적용 마이그레이션 최대 번호 재확인 후 부여.)
+  2. **NotificationType enum 확장** — 기존(ASSIGNED/MENTIONED/OVERDUE/BLOCKED/DUE_APPROACHING)에 COMMENTED/STATUS_CHANGED/SPRINT_STARTED/SPRINT_COMPLETED/APPROVAL_REQUESTED/APPROVAL_DECIDED 추가. (notifications.type=VARCHAR라 DB 무변경.)
+  3. **`NotificationDispatcher`(신규)** — 단일 진입점. `create(recipientId, type, workItemId, message)` → ① `notifications` insert(인앱 원장, 항상) ② `notification_preferences` 조회(없으면 기본값) ③ email/push ON인 채널만 `NotificationGatewayClient` 호출. 기존 `NotificationEventListener`가 `NotificationService.create` 직접 호출하던 것을 Dispatcher 경유로 전환.
+  4. **`NotificationGatewayClient`(신규, `integration` 패키지)** — bp-notification `POST /messages/email`·`/push`·`/fcm/token` 호출(`X-API-Key`). `@Async` + try/catch best-effort(외부 장애가 인앱 기록/트랜잭션 막지 않음, 실패 로깅). RestClient/WebClient. **CR-027 `NotificationClient`와 동일 솔루션·apiKey — 통합 또는 공통 베이스 권장**(둘 다 bp-notification 클라이언트).
+  5. **신규 리스너/발행** — 기존 `NotificationEventListener`에 onCommented(WorkItemCommented)·onStatusChanged·onSprintStarted/Completed·onApprovalRequested/Decided 추가. `CommentService`에 멘션 없는 댓글이면 `WorkItemCommented` 발행(멘션이면 기존 Mentioned만 — 중복 금지). 본인이 단 댓글·본인 상태변경은 발행 스킵.
+  6. **마감 스케줄러(WMP-NOTI-005)** — `@Scheduled` cron(매일 오전, CR-012 `@EnableScheduling` 재사용). 미완료 work_item due_date 스캔 → 임박(≤ `notify.due-soon-days`)/초과(< today) → WorkItemDueApproaching/Overdue 발행. **중복 방지**: 같은 work_item·type·날짜 1회(notifications 당일 동일 type 존재 체크 또는 별도 dedup).
+  7. **컨트롤러** — `NotificationPreferenceController`(`GET`·`PUT /notification-preferences`, 본인만), `FcmTokenController`(`POST`·`DELETE /fcm/token`, 본인만). 신규 매퍼(NotificationPreferenceMapper·FcmTokenMapper)는 기존 `@WebMvcTest`(User/Project/WorkItem ControllerTest)에 `@MockBean` 동반 등록(CR-009 함정).
+  8. **에러코드 WMP-7839~**(아래 §). 7829~7838은 CR-027 예약이라 침범 금지.
+- **FE (중규모)**:
+  1. `/account/notifications` 라우트 신규(RequireAuth 안) + `features/notification-pref/`(또는 inbox 확장) api·hooks. 매트릭스 화면(행=종류, 열=인앱/이메일/푸시 `Switch`).
+  2. 받은함 헤더에 [알림 설정] 진입. FCM 토큰 등록 — 로그인 성공 훅에서 브라우저 알림 권한 요청→토큰 `POST /fcm/token`, 로그아웃 훅에서 `DELETE`. (웹푸시 Service Worker·VAPID는 FE 인프라 — 1차엔 토큰 등록 배선만, 실제 SW 등록은 후속 가능. 미배선이면 푸시 열 비활성.)
+  3. ds-ui only(Switch/Table/Toast), 저장=primary, 인라인 알림=공통 Alert, 로딩=스켈레톤.
+- **테스트(T3-5 보강)**: Dispatcher(설정 없으면 기본값·인앱 항상·email OFF면 외부 호출 안 함·ON이면 호출), 신규 리스너 발행 여부+페이로드(본인 액션 스킵 검증), 스케줄러(임박/초과 판정·완료 제외·당일 중복 방지·담당자 없음 스킵), preferences upsert(부분 갱신·본인만), GatewayClient는 Mock(발송 실패가 인앱 기록 안 막음).
+- **핵심 함정**: ① bp-notification 솔루션 중복 등록 금지(CR-027과 공유). ② 외부 발송 best-effort — `@Async`+try/catch, 실패가 트랜잭션/인앱 막으면 안 됨. ③ 본인 액션 자기 알림 방지(자기 댓글/자기 상태변경/자기 배정). ④ 스케줄러 당일 중복 발행 방지. ⑤ in_app=false여도 받은함 원장 기록은 유지(표시만 제어). ⑥ 신규 매퍼 `@WebMvcTest` `@MockBean` 누락 시 컨텍스트 로딩 실패(CR-009). ⑦ V9는 CR-027(invitations·email_otp) 점유 — CR-028은 V10.
+- **에러코드 WMP-7839~** (7829~7838 CR-027 예약, 다음 빈 번호):
+  - WMP-7839 NOTIFICATION_NOT_FOUND(404, 본인 아닌 알림 read 시) / WMP-7840 NOTIFICATION_PREFERENCE_INVALID_TYPE(400, 미지원 type) / WMP-7841 FCM_TOKEN_REQUIRED(400)
+  - (외부 발송 실패는 에러코드 아님 — best-effort 로깅. 수신 설정 조회/갱신 권한 위반은 기존 인증가드.)
 
 ---
 
