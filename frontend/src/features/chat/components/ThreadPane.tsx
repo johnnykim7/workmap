@@ -15,14 +15,19 @@ interface Props {
   workspaceId: number | null;
   currentUserId?: number;
   onClose: () => void;
+  /** 패널 너비(px). 좌측 경계 드래그로 조절(ChatPage가 관리). */
+  width?: number;
 }
 
-export function ThreadPane({ channelId, parent, workspaceId, currentUserId, onClose }: Props) {
+export function ThreadPane({ channelId, parent, workspaceId, currentUserId, onClose, width }: Props) {
   const { data: replies = [], isPending } = useReplies(channelId, parent.id);
   const { send, edit, remove, toggleReaction } = useReplyMutations(channelId, parent.id);
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-border">
+    <aside
+      className="flex h-full shrink-0 flex-col border-l border-border"
+      style={{ width: width ?? 320 }}
+    >
       <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <span className="text-sm font-semibold text-foreground">스레드</span>
         <Button variant="ghost" size="icon" className="size-7" aria-label="스레드 닫기" onClick={onClose}>

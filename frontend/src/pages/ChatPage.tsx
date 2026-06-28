@@ -10,7 +10,20 @@ import { useChannels } from '@/features/chat/hooks';
 import { ChannelSidebar } from '@/features/chat/components/ChannelSidebar';
 import { MessagePane } from '@/features/chat/components/MessagePane';
 import { ThreadPane } from '@/features/chat/components/ThreadPane';
+import { ResizeDivider } from '@/features/chat/components/ResizeDivider';
 import type { ChatMessage } from '@/features/chat/types';
+
+// 스레드 패널 너비(px) — 좌측 경계 드래그로 조절, 새로고침 유지(localStorage).
+const THREAD_MIN = 280;
+const THREAD_MAX = 720;
+const THREAD_DEFAULT = 320;
+const THREAD_WIDTH_KEY = 'workmap-chat-thread-width';
+
+function loadThreadWidth(): number {
+  const raw = Number(localStorage.getItem(THREAD_WIDTH_KEY));
+  if (!raw || Number.isNaN(raw)) return THREAD_DEFAULT;
+  return Math.min(THREAD_MAX, Math.max(THREAD_MIN, raw));
+}
 
 export function ChatPage() {
   const navigate = useNavigate();
@@ -27,6 +40,12 @@ export function ChatPage() {
   );
 
   const [threadParent, setThreadParent] = useState<ChatMessage | null>(null);
+  const [threadWidth, setThreadWidth] = useState(loadThreadWidth);
+
+  // 스레드 너비 변경을 localStorage에 저장(새로고침 유지).
+  useEffect(() => {
+    localStorage.setItem(THREAD_WIDTH_KEY, String(threadWidth));
+  }, [threadWidth]);
 
   // 선택 채널이 없는데 채널이 있으면 첫 채널로 진입(편의).
   useEffect(() => {
@@ -68,13 +87,25 @@ export function ChatPage() {
       />
 
       {selectedChannel && threadParent && (
-        <ThreadPane
-          channelId={selectedChannel.id}
-          parent={threadParent}
-          workspaceId={workspaceId}
-          currentUserId={currentUserId}
-          onClose={() => setThreadParent(null)}
-        />
+        <>
+          {/* 좌측 경계 드래그 → 왼쪽으로 끌면 넓어지므로 width - delta */}
+          <ResizeDivider
+            aria-label="스레드 패널 크기 조절"
+            onDrag={(delta) =>
+              setThreadWidth((w) =>
+                Math.min(THREAD_MAX, Math.max(THREAD_MIN, w - delta)),
+              )
+            }
+          />
+          <ThreadPane
+            channelId={selectedChannel.id}
+            parent={threadParent}
+            workspaceId={workspaceId}
+            currentUserId={currentUserId}
+            width={threadWidth}
+            onClose={() => setThreadParent(null)}
+          />
+        </>
       )}
     </div>
   );
