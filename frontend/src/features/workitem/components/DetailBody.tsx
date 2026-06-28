@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { type WorkItemResponse, STATUS_CATEGORY } from '@/types/domain';
 import { useUpdateWorkItem, useProjectItems } from '../hooks';
 import { StatusBadge, TypeBadge } from '@/components/badges';
+import { RichTextEditor } from '@/components/common/rich-text-editor';
 
 interface Props {
   item: WorkItemResponse;
@@ -18,12 +19,14 @@ export function DetailBody({ item }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* 설명(공통) */}
+      {/* 설명(공통) — CR-024 리치 에디터(HTML 저장, 이미지=URL 삽입). blur commit. */}
       <Section title="설명">
-        <TextBlock
+        <RichTextEditor
           value={item.description ?? ''}
           placeholder="설명을 입력하세요."
-          onCommit={(v) => update.mutate({ description: v })}
+          onBlur={(html) => {
+            if (html !== (item.description ?? '')) update.mutate({ description: html });
+          }}
         />
       </Section>
 

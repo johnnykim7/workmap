@@ -141,13 +141,14 @@
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | POST | /files/upload | 파일 업로드 → 저장 URL 반환(multipart/form-data) | 🔒 | P2 | WMP-WI-001 |
-| GET | /files/{storedName} | 업로드 파일 정적 서빙(이미지 렌더) | 🔒 | P2 | WMP-WI-001 |
+| GET | /files/serve/{storedName} | 업로드 파일 정적 서빙(이미지 렌더) | 🌐 화이트리스트 | P2 | WMP-WI-001 |
 
 - **용도**: work_item `description` 등 Tiptap 리치 에디터의 **인라인 이미지**. 에디터에서 이미지 삽입/붙여넣기/드롭 시 본 API로 먼저 업로드하고, 반환 URL만 description HTML(`<img src="...">`)에 박는다. 이미지 바이너리는 description에 들어가지 않는다(본문=HTML 문자열, 이미지=URL 참조).
 - **work_item에 안 묶음**: 만들기 모달 시점엔 work_item ID가 없으므로 `/files/upload`는 독립 경로(특정 항목 하위 아님). 기존 `/work-items/{id}/attachments`(첨부 메타)와는 별개.
-- **저장**: 서버 **로컬 디스크**. 경로·최대크기는 `application.yml` 설정(`workmap.upload.dir` 기본 `/home/therecommerce/workmap/uploads/`, `workmap.upload.max-size` 등)으로 조정. 허용 타입 화이트리스트(image/png·jpeg·gif·webp). 저장 파일명은 충돌 방지 위해 UUID + 원본 확장자.
+- **서빙 경로 분리**: 정적 서빙은 `/files/serve/{name}`(업로드 `/files/upload`와 패턴이 안 겹침). `<img src>`는 인증 헤더가 없으므로 **서빙 경로만 화이트리스트 공개**, 업로드(POST)는 인증 유지(bp-common-lib 화이트리스트가 메서드 무관 매칭이라 경로로 분리).
+- **저장**: 서버 **로컬 디스크**. 경로·최대크기·허용타입은 `application.yml` 설정(`workmap.upload.dir` 기본 `/home/therecommerce/workmap/uploads`, `workmap.upload.allowed-content-types`, `workmap.upload.public-base` 기본 `/api/v1/files/serve`, `spring.servlet.multipart.max-file-size` 기본 10MB)으로 조정. 허용 타입 화이트리스트(image/png·jpeg·gif·webp). 저장 파일명은 충돌·traversal 방지 위해 UUID + 정규화된 확장자.
 - **응답**: `{ url, fileName, fileSize, contentType }`(axopm FileUploadResult 동형).
-- **에러코드**: WMP-7803~7805(파일 없음/타입 거부/크기 초과). 7700번대 규칙 준수.
+- **에러코드**: WMP-7809~7813(파일 없음/타입 거부/크기 초과/저장 실패/파일 없음). ⚠️ 설계 초안의 7803~7805는 워크스페이스(7803~7805)·탭(7806~7808)이 이미 점유 — 실측 후 7809부터로 정정. 7700번대 규칙 준수.
 
 ## G. 애자일 실행 (Agile — Backlog/Sprint/Board)
 

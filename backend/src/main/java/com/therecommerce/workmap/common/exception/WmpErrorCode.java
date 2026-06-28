@@ -94,7 +94,14 @@ public enum WmpErrorCode implements ErrorCode {
     // 탭 메뉴(Jira식) — 라벨/기본탭 (7806~, WMP-WS-004, CR-020)
     TAB_NOT_FOUND("WMP-7806", "알 수 없는 탭 코드입니다.", HttpStatus.NOT_FOUND),
     TAB_LABEL_INVALID("WMP-7807", "탭 이름은 1~60자여야 합니다.", HttpStatus.BAD_REQUEST),
-    TAB_SUMMARY_LOCKED("WMP-7808", "요약 탭은 제거·이동·기본해제할 수 없습니다.", HttpStatus.BAD_REQUEST);
+    TAB_SUMMARY_LOCKED("WMP-7808", "요약 탭은 제거·이동·기본해제할 수 없습니다.", HttpStatus.BAD_REQUEST),
+
+    // 파일 업로드 (7809번대, CR-024 — 리치 에디터 인라인 이미지)
+    FILE_EMPTY("WMP-7809", "업로드할 파일이 비어 있습니다.", HttpStatus.BAD_REQUEST),
+    FILE_TYPE_NOT_ALLOWED("WMP-7810", "허용되지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_EXCEEDED("WMP-7811", "허용 용량을 초과한 파일입니다.", HttpStatus.PAYLOAD_TOO_LARGE),
+    FILE_STORAGE_FAILED("WMP-7812", "파일 저장에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_NOT_FOUND("WMP-7813", "요청한 파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

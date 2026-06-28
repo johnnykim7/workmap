@@ -16,6 +16,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: ${WORKMAP_UPLOAD_MAX_SIZE:10MB}
+      max-request-size: ${WORKMAP_UPLOAD_MAX_SIZE:10MB}
 
 server:
   port: ${SERVER_PORT:8186}
@@ -50,6 +54,13 @@ workmap:
   # 장기 미변경(정체) 기준 일수(POL-003). 회사홈 지표/검토 정체 판정 기준. 기본 7.
   stale:
     threshold-days: ${WORKMAP_STALE_DAYS:7}
+  # 파일 업로드(CR-024 — 리치 에디터 인라인 이미지). 로컬 디스크 저장.
+  upload:
+    dir: ${WORKMAP_UPLOAD_DIR:/home/therecommerce/workmap/uploads}
+    # 공개 URL prefix. 정적 서빙 경로(GET /api/v1/files/serve/{name})·화이트리스트와 동일해야 함.
+    public-base: ${WORKMAP_UPLOAD_PUBLIC_BASE:/api/v1/files/serve}
+    # 허용 MIME 타입(쉼표 구분). 기본=이미지 4종.
+    allowed-content-types: ${WORKMAP_UPLOAD_ALLOWED_TYPES:image/png,image/jpeg,image/gif,image/webp}
 
 management:
   endpoints:

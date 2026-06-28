@@ -10,11 +10,12 @@ import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Button, Input, Textarea, Spinner, Checkbox, DatePicker,
+  Button, Input, Spinner, Checkbox, DatePicker,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
 import { Plus } from 'lucide-react';
 import { Field } from './field';
+import { RichTextEditor } from './rich-text-editor';
 import { useUiStore } from '@/store/ui-store';
 import { useProjects } from '@/features/projects/hooks';
 import { useMembers } from '@/features/members/hooks';
@@ -214,7 +215,17 @@ export function CreateModal() {
           </Field>
 
           <Field label="설명" error={errors.description?.message}>
-            <Textarea rows={3} placeholder="상세 설명(선택)" {...register('description')} />
+            <Controller
+              control={control}
+              name="description"
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="상세 설명(선택) — 서식·이미지 입력 가능"
+                />
+              )}
+            />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

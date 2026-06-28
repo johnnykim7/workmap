@@ -53,6 +53,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data;
 }
 
+// 멀티파트 업로드(CR-024). Content-Type을 직접 지정하지 않는다 — 브라우저가 boundary를 붙여야 함.
+async function upload<T>(path: string, formData: FormData): Promise<T> {
+  const token = useAuthStore.getState().accessToken;
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    body: formData,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  const body = (await res.json().catch(() => null)) as ResponseDto<T> | null;
+  if (!res.ok || !body || body.success === false) {
+    throw new ApiError(body?.error?.code ?? 'UNKNOWN', body?.error?.message ?? res.statusText, res.status);
+  }
+  return body.data;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
@@ -62,4 +77,5 @@ export const api = {
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  upload,
 };

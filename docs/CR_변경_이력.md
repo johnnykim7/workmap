@@ -499,7 +499,7 @@
   - **이미지 = 별도 파일, 에디터엔 URL(링크)만.** description엔 `<img src="URL">`만 박힘(바이너리 미저장). 사용자 직관대로 — axopm도 동일.
   - **파일 저장 = 서버 로컬 디스크.** 경로 `application.yml` 설정값으로 조정(`workmap.upload.dir` 기본 `/home/therecommerce/workmap/uploads/`). S3 등은 추후 교체.
 - **변경 내용**:
-  - **T3-2**: F3 "파일 업로드(리치 에디터 인라인 이미지)" 섹션 신규 — `POST /files/upload`(multipart→URL)·`GET /files/{name}`(정적 서빙). 에러코드 WMP-7803~7805. work_item 비종속 독립 경로(만들기 시점 ID 부재).
+  - **T3-2**: F3 "파일 업로드(리치 에디터 인라인 이미지)" 섹션 신규 — `POST /files/upload`(multipart→URL)·`GET /files/serve/{name}`(정적 서빙, 화이트리스트 공개). 에러코드 **WMP-7809~7813**(초안 7803~7805는 WS·탭이 점유 중이라 실측 후 정정). work_item 비종속 독립 경로(만들기 시점 ID 부재).
   - **T3-3**: §9.3·§9.4 설명란에 CR-024 정합 주석(Tiptap·HTML 저장·이미지 URL 삽입·모달=상세 동일 컴포넌트).
   - **BE 구현(예정)**: `FileUploadController`·`FileStorageService`(로컬 디스크, UUID 파일명, 타입 화이트리스트) + `application.yml` `workmap.upload.*` + `spring.servlet.multipart.max-file-size` + WmpErrorCode 3종. `work_items.description` 스키마·기존 Attachment 메타 테이블 **무변경**.
   - **FE 구현(예정)**: 공용 `RichTextEditor`(Tiptap, axopm IssueEditor 포팅, 이미지=업로드 API 호출) + 만들기 모달·DetailBody 설명란 교체 + 목록/검색 미리보기 HTML strip 유틸.
