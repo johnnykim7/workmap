@@ -199,9 +199,9 @@ public class ChatMessageService {
                 ChatRowUtil.asString(r.get("author_name")),
                 ChatRowUtil.asString(r.get("content_html")),
                 ChatRowUtil.asInt(r.get("reply_count")),
-                (OffsetDateTime) r.get("last_reply_at"),
-                (OffsetDateTime) r.get("edited_at"),
-                (OffsetDateTime) r.get("created_at"),
+                ChatRowUtil.asOffsetDateTime(r.get("last_reply_at")),
+                ChatRowUtil.asOffsetDateTime(r.get("edited_at")),
+                ChatRowUtil.asOffsetDateTime(r.get("created_at")),
                 reactions);
     }
 
@@ -220,8 +220,8 @@ public class ChatMessageService {
                 ChatRowUtil.asLong(r.get("author_id")),
                 ChatRowUtil.asString(r.get("author_name")),
                 ChatRowUtil.asString(r.get("content_html")),
-                (OffsetDateTime) r.get("edited_at"),
-                (OffsetDateTime) r.get("created_at"),
+                ChatRowUtil.asOffsetDateTime(r.get("edited_at")),
+                ChatRowUtil.asOffsetDateTime(r.get("created_at")),
                 reactions);
     }
 

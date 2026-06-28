@@ -143,6 +143,6 @@ public class ChatChannelService {
                 ChatRowUtil.asLong(row.get("user_id")),
                 (String) row.get("user_name"),
                 (String) row.get("role"),
-                (OffsetDateTime) row.get("joined_at"));
+                ChatRowUtil.asOffsetDateTime(row.get("joined_at")));
     }
 }
