@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Button, Input, Textarea, Spinner, Checkbox,
+  Button, Input, Textarea, Spinner, Checkbox, DatePicker,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
 import { Plus } from 'lucide-react';
@@ -25,6 +25,7 @@ import {
   type IssueType, type Priority,
 } from '@/types/domain';
 import { ROUTES } from '@/lib/route-paths';
+import { toIso, fromIso } from '@/lib/date';
 
 const NONE = '__none__'; // Radix Select 빈 값 불가 → 미선택 센티넬
 
@@ -37,6 +38,7 @@ const schema = z.object({
   assigneeId: z.string().optional(),
   epicId: z.string().optional(),
   labels: z.string().optional(), // 콤마 구분 입력 → 배열 변환
+  dueDate: z.string().optional(), // yyyy-MM-dd, 캘린더 빈칸 클릭 시 프리필(CR-021)
 });
 type FormValues = z.input<typeof schema>;
 
@@ -51,10 +53,12 @@ const EMPTY = {
   assigneeId: NONE,
   epicId: NONE,
   labels: '',
+  dueDate: '',
 } as const;
 
 export function CreateModal() {
   const open = useUiStore((s) => s.createModalOpen);
+  const prefill = useUiStore((s) => s.createModalPrefill);
   const close = useUiStore((s) => s.closeCreateModal);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -75,11 +79,17 @@ export function CreateModal() {
     });
 
   // 모달이 열리면 폼 초기화 + 프로젝트 컨텍스트가 있으면 그 프로젝트로 프리셋. 닫히면 비움.
+  // CR-021: 캘린더 빈칸 클릭 등으로 prefill(projectId·dueDate)이 오면 그 값을 우선 적용.
   useEffect(() => {
-    if (open) reset({ ...EMPTY, projectId: ctxProject?.id });
-    else reset({ ...EMPTY });
+    if (open) {
+      reset({
+        ...EMPTY,
+        projectId: prefill?.projectId ?? ctxProject?.id,
+        dueDate: prefill?.dueDate ?? '',
+      });
+    } else reset({ ...EMPTY });
     // ctxProject는 projects 로딩 후 채워지므로 id도 의존성에 포함.
-  }, [open, ctxProject?.id, reset]);
+  }, [open, ctxProject?.id, prefill?.projectId, prefill?.dueDate, reset]);
 
   const projectIdRaw = watch('projectId');
   const selectedProjectId = projectIdRaw ? Number(projectIdRaw) : undefined;
@@ -115,15 +125,17 @@ export function CreateModal() {
         assigneeId: v.assigneeId && v.assigneeId !== NONE ? Number(v.assigneeId) : null,
         epicId: v.epicId && v.epicId !== NONE ? Number(v.epicId) : null,
         labels: labels.length ? labels : undefined,
+        dueDate: v.dueDate || undefined,
       },
       {
         onSuccess: (created) => {
           if (keepOpen) {
-            // 연속 생성: 프로젝트·유형은 유지하고 요약/설명/라벨만 비움.
+            // 연속 생성: 프로젝트·유형·마감일(CR-021)은 유지하고 요약/설명/라벨만 비움.
             reset({
               ...EMPTY,
               projectId: created.projectId as unknown as undefined,
               issueType: created.issueType,
+              dueDate: v.dueDate || '',
             });
           } else {
             close();
@@ -269,10 +281,25 @@ export function CreateModal() {
               />
             </Field>
 
-            <Field label="라벨">
-              <Input placeholder="콤마로 구분(예: 긴급, 인프라)" {...register('labels')} />
+            <Field label="마감일">
+              <Controller
+                control={control}
+                name="dueDate"
+                render={({ field }) => (
+                  <DatePicker
+                    className="w-full"
+                    placeholder="마감일(선택)"
+                    value={fromIso(field.value)}
+                    onChange={(d) => field.onChange(toIso(d))}
+                  />
+                )}
+              />
             </Field>
           </div>
+
+          <Field label="라벨">
+            <Input placeholder="콤마로 구분(예: 긴급, 인프라)" {...register('labels')} />
+          </Field>
 
           <DialogFooter className="items-center justify-between sm:justify-between">
             <label className="flex items-center gap-2 text-sm text-muted-foreground">

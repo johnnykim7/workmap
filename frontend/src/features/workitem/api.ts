@@ -17,7 +17,9 @@ export interface CreateWorkItemRequest {
   priority?: Priority;
   assigneeId?: number | null;
   epicId?: number | null;
+  sprintId?: number | null; // 백로그 인라인 생성(§6.1): 스프린트 구역이면 그 스프린트로 바로 편입.
   labels?: string[];
+  dueDate?: string | null; // yyyy-MM-dd, 캘린더 빈칸 클릭 생성 시 마감일 프리필(CR-021). BE CreateRequest.dueDate 수용.
 }
 
 // PATCH /work-items/{id} 부분수정(WMP-WI). 보낸 필드만 갱신.

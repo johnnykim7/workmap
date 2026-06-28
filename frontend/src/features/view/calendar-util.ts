@@ -1,7 +1,7 @@
 // 캘린더 그리드 계산 — 순수 함수(단위테스트 대상).
 // 월(year, month)을 일요일 시작 주 단위 6×7(또는 가변) 그리드로 펼치고,
 // BE의 days(due_date별 묶음)를 날짜 칸에 매핑한다.
-import type { CalendarDay, TimelineItem } from './api';
+import type { CalendarDay, CalendarResponse, TimelineItem } from './api';
 
 export interface CalendarCell {
   date: string; // yyyy-MM-dd
@@ -63,3 +63,38 @@ export function shiftMonth(year: number, month: number, delta: number): { year: 
 }
 
 export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+/**
+ * 캘린더 칩 드래그 낙관적 갱신(CR-021) — itemId 항목을 toDate 칸으로 옮긴 새 응답을 반환(불변).
+ * 원래 날짜에서 제거 + 대상 날짜에 추가(dueDate도 갱신). 같은 날짜면 원본 그대로.
+ * 대상 날짜 묶음이 없으면 새로 만들고, 비게 된 날짜 묶음은 정리한다.
+ */
+export function moveCalendarItem(resp: CalendarResponse, itemId: number, toDate: string): CalendarResponse {
+  let moved: TimelineItem | undefined;
+  // 1) 모든 날짜에서 해당 항목 제거하며 꺼냄
+  const stripped = resp.days
+    .map((d) => {
+      const keep: TimelineItem[] = [];
+      for (const it of d.items) {
+        if (it.id === itemId) moved = it;
+        else keep.push(it);
+      }
+      return { date: d.date, items: keep };
+    })
+    .filter((d) => d.items.length > 0);
+
+  if (!moved) return resp; // 못 찾으면 무변경
+  const movedItem: TimelineItem = { ...moved, dueDate: toDate };
+
+  // 2) 대상 날짜 묶음에 추가(없으면 신설)
+  const idx = stripped.findIndex((d) => d.date === toDate);
+  let days: CalendarDay[];
+  if (idx >= 0) {
+    days = stripped.map((d, i) => (i === idx ? { date: d.date, items: [...d.items, movedItem] } : d));
+  } else {
+    days = [...stripped, { date: toDate, items: [movedItem] }];
+  }
+  // 날짜 오름차순 유지(BE 정렬과 동일)
+  days.sort((a, b) => a.date.localeCompare(b.date));
+  return { ...resp, days };
+}
