@@ -161,6 +161,30 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 
 ---
 
+### CR-029 — 모바일 앱(Capacitor 래핑): App Shell 구현 + 푸시/카메라/음성 설계 선기재 (FE 인프라)
+> 현재 React/Vite FE를 **Capacitor**로 래핑해 iOS/Android 네이티브 앱으로 제공한다. T1(WMP-APP-001~004) 캐스케이드 기준. **CR-029 범위 = WMP-APP-001(App Shell)만 구현**, 002~004(푸시/카메라/음성)는 설계 선기재·구현은 후속 CR. **BE 변경 0**(기존 API·FCM 엔드포인트 그대로 사용). 참고 구현: `dev-labs/bp-issues-front`(동일 조직 Capacitor 8 패턴 — `capacitor.config.ts`·`usePushNotifications` 훅 실측 참조).
+- **사전 확인(실측 완료 2026-06-29)**:
+  - BE `POST·DELETE /api/v1/fcm/token` **이미 존재**(CR-028, `notification/controller/FcmTokenController.java` 실측). 푸시 구현 시 BE 추가 0.
+  - FE `features/notification-pref/api.ts`에 `registerFcmToken`/`deleteFcmToken` **이미 존재(호출처 없음=미배선)**. Capacitor 푸시 도입 시 훅에서 호출만 연결.
+  - 빌드 산출물 `frontend/dist` = Capacitor `webDir` 그대로 사용 가능.
+- **FE — App Shell (중규모, CR-029 구현 범위)**:
+  1. **의존성 추가**(frontend): `@capacitor/core` `@capacitor/cli`(dev) `@capacitor/ios` `@capacitor/android`. **푸시/카메라/음성 플러그인은 추가하지 않는다**(후속 CR). 버전은 bp-issues-front(8.x) 참조하되 우리 Vite/React 19와 호환 최신.
+  2. **`capacitor.config.ts`**(frontend 루트): `appId='com.therecommerce.workmap'`, `appName='WorkMap'`, `webDir='dist'`, `server.allowNavigation=['59.8.160.12']`(운영 BE 호스트), SplashScreen 플러그인 설정(bp-issues 패턴 — backgroundColor는 WorkMap 톤). cleartext는 운영이 http(8186)라 필요(HTTPS 전환 시 제거).
+  3. **API base URL — 운영 BE 절대경로 고정**: 앱은 dev 프록시(`/api`)가 없으므로 `api-client`의 baseURL이 네이티브에서 `http://59.8.160.12:8186`을 향하도록 분기. `Capacitor.isNativePlatform()`로 판별하거나 `build:mobile` 모드 env(`VITE_API_BASE`)로 주입. **웹 빌드는 기존 동작 유지**(상대경로/프록시).
+  4. **package.json 스크립트**(bp-issues 패턴): `build:mobile`(=tsc -b && vite build), `sync`/`sync:ios`/`sync:android`(build:mobile && cap sync), `open:ios`/`open:android`.
+  5. **플랫폼 생성**: `npx cap add ios && npx cap add android` → `ios/`·`android/` 디렉토리 생성. **.gitignore 점검** — 생성 네이티브 폴더 중 빌드 산출물(Pods/build/.gradle)은 무시, 설정(`capacitor.config.ts`·플랫폼 프로젝트 파일)은 커밋.
+  6. **기동 확인**: `npm run sync:ios && npm run open:ios`(Xcode 시뮬레이터), android 동일(Android Studio 에뮬레이터). 운영 BE로 로그인→화면 렌더까지 확인.
+- **모바일 레이아웃 점검(App Shell 후속, 같은 CR 가능)**: ds-ui `AdminShell`이 좁은 폭(폰)에서 LNB를 햄버거/드로어로 접는지 시뮬레이터에서 실측. **부족하면** 모바일 하단 탭바 등 보강(별도 판단 — 과하면 후속 CR). ⚠️ [[workmap-tailwind-lnb-trap]] — FE 라이브러리 추가 시 Tailwind v4 유틸 정렬 변동으로 `hidden md:block` 사이드바가 깨질 수 있음. Capacitor 의존 추가 후 **데스크탑 웹 LNB도 재확인**.
+- **WMP-APP-002 푸시 (설계만 — 후속 CR 구현 가이드)**:
+  - `@capacitor/push-notifications` 추가 → `usePushNotifications(userId)` 훅(bp-issues `src/hooks/usePushNotifications.ts` 이식): 권한 요청→register→`registration` 리스너에서 토큰을 **기존** `registerFcmToken({fcmToken, deviceInfo})` 호출(중복 토큰 스킵), `pushNotificationReceived`=ds-ui Toast, `pushNotificationActionPerformed`=알림 data로 딥링크(workItemId→업무 상세). 로그아웃 시 `deleteFcmToken`.
+  - **선행 인프라(현재 미보유)**: Firebase 프로젝트, Android `google-services.json`, iOS APNs 키 + `GoogleService-Info.plist`. bp-notification 푸시 발송(`/messages/push`)은 CR-028 `BpNotificationGateway`가 이미 담당 — userId 기반 발송 경로 준비됨.
+- **WMP-APP-003 카메라 (설계만)**: `@capacitor/camera` → 촬영/갤러리 → **기존** `POST /api/v1/files/upload`(CR-024, image 4종·10MB·서빙 화이트리스트 재사용, BE 0) → 첨부(WMP-WI-012)/리치에디터 삽입. 웹은 기존 `<input>` 업로드 유지(네이티브 가드 분기).
+- **WMP-APP-004 음성 (설계만)**: 녹음=커뮤니티 플러그인(`capacitor-voice-recorder` 등)→파일 업로드. STT(받아쓰기)=OS 네이티브 STT 또는 BE STT 연동(범위·언어·온오프라인 후속 설계 확정). iOS/Android STT 차이 점검 필요.
+- **핵심 함정**: ① 앱은 dev 프록시 없음 → API 절대 URL 필수(상대경로면 앱에서 요청 실패). ② cleartext http — 운영이 8186 http라 `allowNavigation`+`cleartext` 필요, HTTPS 전환 시 정리. ③ FE 의존 추가 후 Tailwind LNB 트랩 재확인([[workmap-tailwind-lnb-trap]]). ④ 푸시/카메라/음성 플러그인을 App Shell 단계에 섞지 말 것(범위 분리·빌드 단순 유지). ⑤ 네이티브 폴더 .gitignore 정합(산출물 무시·설정 커밋). ⑥ ds-ui 네이티브 위젯 금지 규칙은 앱에서도 동일(웹뷰라 동일 컴포넌트).
+- **에러코드**: 신규 없음(App Shell은 클라 패키징 — BE/API 무변경).
+
+---
+
 ## 5-A. Sprint 완료 게이트
 
 | # | 항목 | 확인 |
