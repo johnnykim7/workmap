@@ -26,6 +26,11 @@ services:
       DB_URL: ${DB_URL:-jdbc:postgresql://host.docker.internal:5432/workmap?stringtype=unspecified}
       DB_USERNAME: ${DB_USERNAME:-platform}
       DB_PASSWORD: ${DB_PASSWORD:-platform}
+      # 업로드 파일 저장 경로(CR-024). 호스트 볼륨에 바인드(아래 volumes)되어 영속·호스트 접근 가능.
+      WORKMAP_UPLOAD_DIR: /home/therecommerce/workmap/uploads
+    volumes:
+      # 리치 에디터 업로드 이미지(CR-024) — 컨테이너 휘발 방지 + nginx 서빙 가능하게 호스트에 바인드.
+      - /home/therecommerce/workmap/uploads:/home/therecommerce/workmap/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8186/actuator/health || exit 1"]
       interval: 15s
