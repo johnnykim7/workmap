@@ -10,9 +10,11 @@ interface Props {
   onToggle: (emoji: string) => void;
 }
 
-export function ReactionBar({ reactions, currentUserId, onToggle }: Props) {
+/** 달린 리액션 칩만 렌더(Slack식 — 추가 버튼은 우상단 hover 툴바의 EmojiPicker가 담당). */
+export function ReactionChips({ reactions, currentUserId, onToggle }: Props) {
+  if (!reactions.length) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="mt-1 flex flex-wrap items-center gap-1">
       {reactions.map((r) => {
         const mine = currentUserId != null && r.userIds?.includes(currentUserId);
         return (
@@ -32,28 +34,33 @@ export function ReactionBar({ reactions, currentUserId, onToggle }: Props) {
           </button>
         );
       })}
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-6" aria-label="리액션 추가">
-            <SmilePlus className="size-4 text-muted-foreground" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-1">
-          <div className="flex gap-0.5">
-            {EMOJI_SET.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => onToggle(e)}
-                className="rounded px-1.5 py-1 text-base outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
     </div>
+  );
+}
+
+/** 이모지 추가 피커 — 우상단 hover 툴바에 들어가는 버튼(고정 이모지 셋). */
+export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-7" aria-label="리액션 추가">
+          <SmilePlus className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto p-1">
+        <div className="flex gap-0.5">
+          {EMOJI_SET.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => onPick(e)}
+              className="rounded px-1.5 py-1 text-base outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

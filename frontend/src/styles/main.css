@@ -12,7 +12,9 @@
  *    밀려 .hidden 유틸리티가 미디어쿼리(md:block)를 이겨 ds-ui LNB가 숨는 사고가 난다.
  *    @layer components는 항상 utilities보다 앞이라 LNB 규칙을 침범하지 않는다. */
 @layer components {
-  .tiptap { outline: none; min-height: 100px; }
+  /* min-height는 에디터(EditorContent의 min-h-[120px])가 자체적으로 가짐.
+   * .tiptap 전역에 주면 읽기 표시(채팅 메시지 본문 등)에 빈 공간이 생겨 휑해진다. */
+  .tiptap { outline: none; }
   .tiptap p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     color: var(--muted-foreground);

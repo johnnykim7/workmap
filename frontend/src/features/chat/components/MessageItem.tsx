@@ -16,11 +16,15 @@ import {
 } from 'lucide-react';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import type { ChatMessage } from '../types';
-import { ReactionBar } from './ReactionBar';
+import { ReactionChips, EmojiPicker } from './ReactionBar';
 import { formatChatTime, initialOf, isEmptyHtml } from './chat-utils';
 
 interface Props {
   message: ChatMessage;
+  /** 직전 메시지와 같은 작성자(연속) — 아바타·이름 생략하고 컴팩트하게. */
+  grouped?: boolean;
+  /** 그루핑이어도 분이 바뀌어 시각은 표시해야 할 때. */
+  groupedShowTime?: boolean;
   currentUserId?: number;
   onToggleReaction: (emoji: string) => void;
   onOpenThread: () => void;
@@ -32,6 +36,8 @@ interface Props {
 
 export function MessageItem({
   message,
+  grouped = false,
+  groupedShowTime = false,
   currentUserId,
   onToggleReaction,
   onOpenThread,
@@ -50,23 +56,45 @@ export function MessageItem({
     setEditing(false);
   };
 
+  const hasReplies = (message.replyCount ?? 0) > 0;
+
   return (
-    <div className="group relative flex gap-3 rounded-md px-2 py-1.5 hover:bg-muted/40">
-      <Avatar className="mt-0.5 size-8 shrink-0">
-        <AvatarFallback className="text-xs">{initialOf(message.authorName)}</AvatarFallback>
-      </Avatar>
+    <div
+      className={cn(
+        'group relative flex gap-3 px-2 hover:bg-muted/40',
+        grouped ? 'py-0.5' : 'mt-2 py-0.5 first:mt-0',
+      )}
+    >
+      {/* 그루핑이면 아바타 자리(size-8)만 비움 */}
+      {grouped ? (
+        <div className="w-8 shrink-0" aria-hidden />
+      ) : (
+        <Avatar className="mt-0.5 size-8 shrink-0">
+          <AvatarFallback className="text-xs">{initialOf(message.authorName)}</AvatarFallback>
+        </Avatar>
+      )}
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-foreground">{message.authorName}</span>
-          <span className="text-xs text-muted-foreground">{formatChatTime(message.createdAt)}</span>
-          {message.editedAt && <span className="text-xs text-muted-foreground">(수정됨)</span>}
-          {message.pinned && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-              <Pin className="size-3" /> 고정
-            </span>
-          )}
-        </div>
+        {!grouped ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-foreground">{message.authorName}</span>
+            <span className="text-xs text-muted-foreground">{formatChatTime(message.createdAt)}</span>
+            {message.editedAt && <span className="text-xs text-muted-foreground">(수정됨)</span>}
+            {message.pinned && (
+              <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+                <Pin className="size-3" /> 고정
+              </span>
+            )}
+          </div>
+        ) : (
+          // 그루핑이어도 분이 바뀌면 시각만 한 줄(이름 자리 톤). 분이 같으면 아무것도 안 띄움.
+          groupedShowTime && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs text-muted-foreground">{formatChatTime(message.createdAt)}</span>
+              {message.editedAt && <span className="text-xs text-muted-foreground">(수정됨)</span>}
+            </div>
+          )
+        )}
 
         {editing ? (
           <div className="mt-1 space-y-1.5">
@@ -84,37 +112,41 @@ export function MessageItem({
           </div>
         ) : (
           <div
-            className="tiptap prose-sm mt-0.5 max-w-none text-sm text-foreground"
+            className="tiptap prose-sm max-w-none text-sm text-foreground"
             // eslint-disable-next-line react/no-danger -- Tiptap 생성 + BE 화이트리스트 HTML(CR-024)
             dangerouslySetInnerHTML={{ __html: message.contentHtml }}
           />
         )}
 
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <ReactionBar
+        {/* 달린 리액션 칩 — 본문 아래 항상(레이아웃 안 밀림). 없으면 아무것도 안 그림. */}
+        {!editing && (
+          <ReactionChips
             reactions={message.reactions ?? []}
             currentUserId={currentUserId}
             onToggle={onToggleReaction}
           />
+        )}
+
+        {/* 답글이 실제로 있을 때만 스레드 요약(Slack식 "답글 N"). */}
+        {!editing && hasReplies && (
           <button
             type="button"
             onClick={onOpenThread}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-primary outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
           >
             <MessageSquareText className="size-3.5" />
-            {message.replyCount ? `답글 ${message.replyCount}` : '스레드'}
+            답글 {message.replyCount}
           </button>
-        </div>
+        )}
       </div>
 
-      {/* hover 액션 — 우상단 부유 */}
+      {/* hover 툴바 — 우상단 부유(absolute라 레이아웃 안 밀림). Slack식 단일 툴바에 전 액션 통합. */}
       {!editing && (
-        <div
-          className={cn(
-            'absolute right-2 top-1 hidden items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm',
-            'group-hover:flex',
-          )}
-        >
+        <div className="absolute -top-3 right-3 hidden items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm group-hover:flex">
+          <EmojiPicker onPick={onToggleReaction} />
+          <Button variant="ghost" size="icon" className="size-7" onClick={onOpenThread} aria-label="스레드">
+            <MessageSquareText className="size-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="size-7" onClick={onToggleBookmark} aria-label="북마크">
             {message.bookmarked ? <BookmarkCheck className="size-4 text-primary" /> : <Bookmark className="size-4" />}
           </Button>

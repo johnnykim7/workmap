@@ -5,7 +5,7 @@ import { X, Check, Pencil, Trash2 } from 'lucide-react';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import type { ChatMessage, ChatReply } from '../types';
 import { useReplies, useReplyMutations } from '../hooks';
-import { ReactionBar } from './ReactionBar';
+import { ReactionChips, EmojiPicker } from './ReactionBar';
 import { MessageComposer } from './MessageComposer';
 import { formatChatTime, initialOf, isEmptyHtml } from './chat-utils';
 
@@ -137,25 +137,28 @@ function ReplyItem({
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: reply.contentHtml }}
             />
-            <div className="mt-1">
-              <ReactionBar
-                reactions={reply.reactions ?? []}
-                currentUserId={currentUserId}
-                onToggle={onToggleReaction}
-              />
-            </div>
+            <ReactionChips
+              reactions={reply.reactions ?? []}
+              currentUserId={currentUserId}
+              onToggle={onToggleReaction}
+            />
           </>
         )}
       </div>
 
-      {mine && !editing && (
+      {!editing && (
         <div className={cn('absolute right-1 top-1 hidden gap-0.5 rounded-md border border-border bg-background p-0.5 group-hover:flex')}>
-          <Button variant="ghost" size="icon" className="size-6" onClick={() => setEditing(true)} aria-label="수정">
-            <Pencil className="size-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="size-6" onClick={onDelete} aria-label="삭제">
-            <Trash2 className="size-3.5 text-destructive" />
-          </Button>
+          <EmojiPicker onPick={onToggleReaction} />
+          {mine && (
+            <>
+              <Button variant="ghost" size="icon" className="size-6" onClick={() => setEditing(true)} aria-label="수정">
+                <Pencil className="size-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="size-6" onClick={onDelete} aria-label="삭제">
+                <Trash2 className="size-3.5 text-destructive" />
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 // 중앙 패널 — 채널 헤더(설정 …메뉴) + 메시지 목록(스켈레톤·5s 폴링) + 작성기.
 // 마지막 메시지를 보면 read-cursor PUT(채널당 1회/마지막 id 변동 시).
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   Button,
   DropdownMenu,
@@ -26,6 +26,20 @@ import {
 import { MessageItem } from './MessageItem';
 import { MessageComposer } from './MessageComposer';
 import { MembersDialog, PinsDialog, NotificationSettingsDialog } from './ChannelDialogs';
+import { isSameDay, formatChatDate } from './chat-utils';
+
+/** 날짜 구분선 — 좌우 가로줄 + 가운데 날짜 칩(Slack식). */
+function DateDivider({ iso }: { iso: string }) {
+  return (
+    <div className="my-3 flex items-center gap-3 px-2">
+      <div className="h-px flex-1 bg-border" />
+      <span className="rounded-full border border-border bg-background px-3 py-0.5 text-xs font-medium text-muted-foreground">
+        {formatChatDate(iso)}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
 
 interface Props {
   channel: ChatChannel | null;
@@ -173,22 +187,45 @@ export function MessagePane({
             />
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {messages.map((m) => (
-              <MessageItem
-                key={m.id}
-                message={m}
-                currentUserId={currentUserId}
-                onToggleReaction={(emoji) => toggleReaction.mutate({ mid: m.id, emoji })}
-                onOpenThread={() => onOpenThread(m)}
-                onToggleBookmark={() =>
-                  m.bookmarked ? removeBookmark.mutate(m.id) : addBookmark.mutate(m.id)
-                }
-                onTogglePin={() => (m.pinned ? unpin.mutate(m.id) : pin.mutate(m.id))}
-                onEdit={(contentHtml) => edit.mutate({ mid: m.id, contentHtml })}
-                onDelete={() => remove.mutate(m.id)}
-              />
-            ))}
+          <div>
+            {messages.map((m, i) => {
+              const prev = messages[i - 1];
+              // 날짜가 바뀌는 첫 메시지 앞엔 날짜 구분선(Slack식). 날짜 경계면 그루핑 해제.
+              const newDay =
+                prev == null || !isSameDay(prev.createdAt, m.createdAt);
+              // 같은 작성자가 1분 이내 연달아 보낸 메시지만 아바타·이름 생략(타이핑하다 쪼개 보낸 한 묶음).
+              // 업무 메시지는 각 건이 독립 단위라 임계를 짧게 — 성격 다른 메시지가 묶이지 않도록.
+              const grouped =
+                !newDay &&
+                prev != null &&
+                prev.authorId === m.authorId &&
+                new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() < 60 * 1000;
+              // 그루핑이어도 분(시:분)이 바뀌면 시각을 표시(사용자 요청). 분이 같으면 생략.
+              const sameMinute =
+                prev != null &&
+                new Date(prev.createdAt).getMinutes() === new Date(m.createdAt).getMinutes() &&
+                new Date(prev.createdAt).getHours() === new Date(m.createdAt).getHours();
+              const groupedShowTime = grouped && !sameMinute;
+              return (
+                <Fragment key={m.id}>
+                  {newDay && <DateDivider iso={m.createdAt} />}
+                  <MessageItem
+                    message={m}
+                    grouped={grouped}
+                    groupedShowTime={groupedShowTime}
+                    currentUserId={currentUserId}
+                    onToggleReaction={(emoji) => toggleReaction.mutate({ mid: m.id, emoji })}
+                    onOpenThread={() => onOpenThread(m)}
+                    onToggleBookmark={() =>
+                      m.bookmarked ? removeBookmark.mutate(m.id) : addBookmark.mutate(m.id)
+                    }
+                    onTogglePin={() => (m.pinned ? unpin.mutate(m.id) : pin.mutate(m.id))}
+                    onEdit={(contentHtml) => edit.mutate({ mid: m.id, contentHtml })}
+                    onDelete={() => remove.mutate(m.id)}
+                  />
+                </Fragment>
+              );
+            })}
             <div ref={endRef} />
           </div>
         )}
