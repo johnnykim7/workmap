@@ -61,18 +61,21 @@ workmap:
     public-base: ${WORKMAP_UPLOAD_PUBLIC_BASE:/api/v1/files/serve}
     # 허용 MIME 타입(쉼표 구분). 기본=이미지 4종.
     allowed-content-types: ${WORKMAP_UPLOAD_ALLOWED_TYPES:image/png,image/jpeg,image/gif,image/webp}
-  # 인증(CR-027 — 이메일 초대 가입 + 비밀번호 OTP).
+  # 인증(CR-027 — 이메일 초대 가입(토큰) + 비밀번호 재설정(토큰)·변경(OTP)).
   auth:
     otp:
       expires-minutes: ${WORKMAP_OTP_EXPIRES_MIN:10}
       max-attempts: ${WORKMAP_OTP_MAX_ATTEMPTS:5}
       resend-cooldown-seconds: ${WORKMAP_OTP_RESEND_COOLDOWN:60}
       invitation-expires-hours: ${WORKMAP_INVITE_EXPIRES_HOURS:72}
+      reset-token-expires-minutes: ${WORKMAP_RESET_TOKEN_EXPIRES_MIN:30}
   # bp-notification 연동(WMP-AUTH-009). apiKey는 운영 env(WMP_NOTI_API_KEY)로 주입 — 소스 미커밋.
   notification:
     base-url: ${WMP_NOTI_BASE_URL:http://59.8.160.12:8185}
     api-key: ${WMP_NOTI_API_KEY:}
     enabled: ${WMP_NOTI_ENABLED:true}
+    # 메일 링크(초대·재설정) 절대 URL 조립용 FE 베이스(CR-027 토큰 보정).
+    web-base-url: ${WMP_WEB_BASE_URL:http://59.8.160.12:3186}
 
 management:
   endpoints:

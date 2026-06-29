@@ -73,12 +73,18 @@ describe('초대 API 계약 (WMP-AUTH-004)', () => {
   });
 });
 
-describe('인증 OTP API 계약 (WMP-AUTH-006/007/008)', () => {
-  it('초대수락_POST_/auth/invitations/accept', async () => {
-    await authApi.acceptInvitation({ email: 'a@b.com', code: '123456', password: 'pw12345678' });
+describe('인증 토큰 API 계약 (WMP-AUTH-006/007/008, 토큰 보정)', () => {
+  it('초대미리보기_GET_/auth/invitations/{token}', async () => {
+    await authApi.previewInvitation('raw-token-abc');
+    expect(last().method).toBe('GET');
+    expect(last().url).toMatch(/\/auth\/invitations\/raw-token-abc$/);
+  });
+
+  it('초대수락_POST_/auth/invitations/accept (토큰+비번)', async () => {
+    await authApi.acceptInvitation({ token: 'raw-token-abc', password: 'pw12345678' });
     expect(last().method).toBe('POST');
     expect(last().url).toMatch(/\/auth\/invitations\/accept$/);
-    expect(last().body).toMatchObject({ email: 'a@b.com', code: '123456' });
+    expect(last().body).toMatchObject({ token: 'raw-token-abc' });
   });
 
   it('비번분실_POST_/auth/password/forgot', async () => {
@@ -87,10 +93,10 @@ describe('인증 OTP API 계약 (WMP-AUTH-006/007/008)', () => {
     expect(last().url).toMatch(/\/auth\/password\/forgot$/);
   });
 
-  it('비번재설정_POST_/auth/password/reset', async () => {
-    await authApi.resetPassword({ email: 'a@b.com', code: '123456', password: 'pw12345678' });
+  it('비번재설정_POST_/auth/password/reset (토큰+비번)', async () => {
+    await authApi.resetPassword({ token: 'raw-token-xyz', password: 'pw12345678' });
     expect(last().url).toMatch(/\/auth\/password\/reset$/);
-    expect(last().body).toMatchObject({ code: '123456' });
+    expect(last().body).toMatchObject({ token: 'raw-token-xyz' });
   });
 
   it('변경인증번호발송_POST_/auth/password/change/request-otp', async () => {

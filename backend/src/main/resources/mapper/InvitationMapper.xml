@@ -5,9 +5,22 @@
 
     <insert id="insert" parameterType="com.therecommerce.workmap.invitation.domain.Invitation"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO invitations (email, name, role, department_id, status, invited_by, expires_at)
-        VALUES (#{email}, #{name}, #{role}, #{departmentId}, #{status}, #{invitedBy}, #{expiresAt})
+        INSERT INTO invitations (email, name, role, department_id, status, token_hash, invited_by, expires_at)
+        VALUES (#{email}, #{name}, #{role}, #{departmentId}, #{status}, #{tokenHash}, #{invitedBy}, #{expiresAt})
     </insert>
+
+    <!-- 초대 수락 토큰으로 조회(PENDING·미만료). CR-027 토큰 보정. -->
+    <select id="findPendingByTokenHash" resultType="com.therecommerce.workmap.invitation.domain.Invitation">
+        SELECT * FROM invitations
+        WHERE token_hash = #{tokenHash} AND status = 'PENDING'
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <!-- 재발송 시 토큰·만료 갱신. -->
+    <update id="updateToken">
+        UPDATE invitations SET token_hash = #{tokenHash}, expires_at = #{expiresAt}, updated_at = now()
+        WHERE id = #{id}
+    </update>
 
     <select id="findById" resultType="com.therecommerce.workmap.invitation.domain.Invitation">
         SELECT * FROM invitations WHERE id = #{id}

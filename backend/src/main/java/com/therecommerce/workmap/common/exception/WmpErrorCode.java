@@ -129,7 +129,11 @@ public enum WmpErrorCode implements ErrorCode {
     // 알림 수신 설정/FCM (7839번대, CR-028 — 각종 알림 확장)
     // NOTIFICATION_NOT_FOUND(7760)·NOTIFICATION_FORBIDDEN(7761)은 기존 재사용.
     NOTIFICATION_PREFERENCE_INVALID_TYPE("WMP-7839", "지원하지 않는 알림 종류입니다.", HttpStatus.BAD_REQUEST),
-    FCM_TOKEN_REQUIRED("WMP-7840", "FCM 토큰은 필수입니다.", HttpStatus.BAD_REQUEST);
+    FCM_TOKEN_REQUIRED("WMP-7840", "FCM 토큰은 필수입니다.", HttpStatus.BAD_REQUEST),
+
+    // 인증 토큰 (7841번대, CR-027 토큰 보정 — 초대·재설정 링크 토큰)
+    INVITATION_TOKEN_INVALID("WMP-7841", "초대 링크가 유효하지 않거나 만료되었습니다. 관리자에게 재발송을 요청하세요.", HttpStatus.GONE),
+    RESET_TOKEN_INVALID("WMP-7842", "재설정 링크가 유효하지 않거나 만료되었습니다. 다시 요청하세요.", HttpStatus.GONE);
 
     private final String code;
     private final String message;

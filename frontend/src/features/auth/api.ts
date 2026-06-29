@@ -13,18 +13,22 @@ export interface LoginResponse {
   user: User;
 }
 
-// CR-027 — 초대 수락 / 비밀번호 재설정·변경 (인증번호 OTP)
-export interface AcceptInvitationRequest {
+// CR-027(토큰 보정) — 초대 수락·비번 재설정=토큰, 변경=인증번호(OTP)
+export interface InvitationPreview {
   email: string;
-  code: string;
+  name: string;
+  role: string;
+  expiresAt: string;
+}
+export interface AcceptInvitationRequest {
+  token: string;
   password: string;
 }
 export interface ForgotPasswordRequest {
   email: string;
 }
 export interface ResetPasswordRequest {
-  email: string;
-  code: string;
+  token: string;
   password: string;
 }
 export interface ChangePasswordRequest {
@@ -38,7 +42,9 @@ export const authApi = {
   logout: () => api.post<Record<string, never>>('/auth/logout'),
   me: () => api.get<User>('/auth/me'),
 
-  // CR-027
+  // CR-027 토큰 보정
+  previewInvitation: (token: string) =>
+    api.get<InvitationPreview>(`/auth/invitations/${encodeURIComponent(token)}`),
   acceptInvitation: (body: AcceptInvitationRequest) =>
     api.post<LoginResponse>('/auth/invitations/accept', body),
   forgotPassword: (body: ForgotPasswordRequest) =>

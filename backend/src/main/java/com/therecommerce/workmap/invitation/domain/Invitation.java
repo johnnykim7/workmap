@@ -26,6 +26,7 @@ public class Invitation {
     private String role;
     private Long departmentId;
     private String status;
+    private String tokenHash; // 초대 수락 토큰 해시(SHA-256). 평문은 메일 링크로만 전달(CR-027 토큰 보정).
     private Long invitedBy;
     private OffsetDateTime expiresAt;
     private OffsetDateTime acceptedAt;

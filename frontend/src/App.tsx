@@ -6,6 +6,7 @@ import { RequireAuth } from '@/components/common/require-auth';
 import { LoginPage } from '@/pages/LoginPage';
 import { InviteAcceptPage } from '@/pages/InviteAcceptPage';
 import { PasswordForgotPage } from '@/pages/PasswordForgotPage';
+import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { AccountPasswordPage } from '@/pages/AccountPasswordPage';
 import { AccountNotificationsPage } from '@/pages/AccountNotificationsPage';
 import { AccountThemePage } from '@/pages/AccountThemePage';
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
   // CR-027 — 공개(로그인 못 하는 사용자가 사용): 초대 수락 · 비밀번호 찾기
   { path: '/invite/accept', element: <InviteAcceptPage /> },
   { path: '/password/forgot', element: <PasswordForgotPage /> },
+  { path: '/password/reset', element: <PasswordResetPage /> },
   {
     element: <RequireAuth />,
     children: [

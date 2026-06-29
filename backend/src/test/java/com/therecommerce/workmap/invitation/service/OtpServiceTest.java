@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 /**
- * OtpService 단위테스트 (POL-013, CR-027). EmailOtpMapper Mock, 실제 BCrypt, NotificationClient Mock.
+ * OtpService 단위테스트 (POL-013-B, CR-027 토큰 보정). 이제 CHANGE(비밀번호 변경) 전용.
+ * EmailOtpMapper Mock, 실제 BCrypt, NotificationClient·OtpAttemptRecorder Mock.
  */
 @ExtendWith(MockitoExtension.class)
 class OtpServiceTest {
@@ -37,34 +38,34 @@ class OtpServiceTest {
 
     @BeforeEach
     void setUp() {
-        props = new AuthOtpProperties(); // 만료10/시도5/쿨다운60/초대72h 기본
+        props = new AuthOtpProperties();
         otpService = new OtpService(otpMapper, passwordEncoder, notificationClient, attemptRecorder, props);
     }
 
     @Test
-    @DisplayName("OTP-1: 발급_6자리저장+이메일발송+이전무효화")
+    @DisplayName("OTP-1: 발급_6자리해시저장+이메일발송(CHANGE)+이전무효화")
     void 발급_해시저장_발송() {
-        when(otpMapper.findLatestAny("a@b.com", "INVITE")).thenReturn(null); // 쿨다운 없음
+        when(otpMapper.findLatestAny("a@b.com", "CHANGE")).thenReturn(null); // 쿨다운 없음
 
-        otpService.issue("a@b.com", OtpPurpose.INVITE, null, "홍길동");
+        otpService.issue("a@b.com", OtpPurpose.CHANGE, 1L, "홍길동");
 
-        verify(otpMapper).consumeAllActive("a@b.com", "INVITE"); // 이전 무효화
+        verify(otpMapper).consumeAllActive("a@b.com", "CHANGE"); // 이전 무효화
         ArgumentCaptor<EmailOtp> captor = ArgumentCaptor.forClass(EmailOtp.class);
         verify(otpMapper).insert(captor.capture());
         EmailOtp saved = captor.getValue();
         assertThat(saved.getCodeHash()).startsWith("$2"); // 평문 미저장(해시)
-        assertThat(saved.getPurpose()).isEqualTo("INVITE");
-        verify(notificationClient).sendEmail(eq("a@b.com"), eq("WMP_INVITE_OTP"), any());
+        assertThat(saved.getPurpose()).isEqualTo("CHANGE");
+        verify(notificationClient).sendEmail(eq("a@b.com"), eq("WMP_CHANGE_OTP"), any());
     }
 
     @Test
     @DisplayName("OTP-2: 재발송쿨다운_60초이내_거부")
     void 재발송쿨다운_거부() {
         EmailOtp recent = EmailOtp.builder()
-                .createdAt(OffsetDateTime.now().minusSeconds(10)).build(); // 10초 전 발급
-        when(otpMapper.findLatestAny("a@b.com", "RESET")).thenReturn(recent);
+                .createdAt(OffsetDateTime.now().minusSeconds(10)).build();
+        when(otpMapper.findLatestAny("a@b.com", "CHANGE")).thenReturn(recent);
 
-        assertThatThrownBy(() -> otpService.issue("a@b.com", OtpPurpose.RESET, 1L, "n"))
+        assertThatThrownBy(() -> otpService.issue("a@b.com", OtpPurpose.CHANGE, 1L, "n"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_RESEND_COOLDOWN);
         verify(otpMapper, never()).insert(any());
@@ -76,9 +77,9 @@ class OtpServiceTest {
         EmailOtp otp = EmailOtp.builder()
                 .id(5L).codeHash(passwordEncoder.encode("123456"))
                 .attemptCount(0).expiresAt(OffsetDateTime.now().plusMinutes(5)).build();
-        when(otpMapper.findLatestActive("a@b.com", "INVITE")).thenReturn(otp);
+        when(otpMapper.findLatestActive("a@b.com", "CHANGE")).thenReturn(otp);
 
-        otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "123456");
+        otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "123456");
 
         verify(otpMapper).markConsumed(5L);
     }
@@ -86,9 +87,9 @@ class OtpServiceTest {
     @Test
     @DisplayName("OTP-4: 인증번호없음_거부(OTP_NOT_FOUND)")
     void 인증번호없음_거부() {
-        when(otpMapper.findLatestActive("a@b.com", "INVITE")).thenReturn(null);
+        when(otpMapper.findLatestActive("a@b.com", "CHANGE")).thenReturn(null);
 
-        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "000000"))
+        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "000000"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_NOT_FOUND);
     }
@@ -99,9 +100,9 @@ class OtpServiceTest {
         EmailOtp expired = EmailOtp.builder()
                 .id(5L).codeHash(passwordEncoder.encode("123456"))
                 .attemptCount(0).expiresAt(OffsetDateTime.now().minusMinutes(1)).build();
-        when(otpMapper.findLatestActive("a@b.com", "RESET")).thenReturn(expired);
+        when(otpMapper.findLatestActive("a@b.com", "CHANGE")).thenReturn(expired);
 
-        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.RESET, "123456"))
+        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "123456"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_EXPIRED);
     }
@@ -126,28 +127,27 @@ class OtpServiceTest {
         EmailOtp otp = EmailOtp.builder()
                 .id(5L).codeHash(passwordEncoder.encode("123456"))
                 .attemptCount(0).expiresAt(OffsetDateTime.now().plusMinutes(5)).build();
-        when(otpMapper.findLatestActive("a@b.com", "INVITE")).thenReturn(otp);
+        when(otpMapper.findLatestActive("a@b.com", "CHANGE")).thenReturn(otp);
 
-        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "999999"))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_MISMATCH);
-        verify(attemptRecorder).increment(5L);    // 독립 트랜잭션으로 시도횟수 커밋
-        verify(attemptRecorder, never()).consume(5L); // 아직 한도 미도달
-    }
-
-    @Test
-    @DisplayName("OTP-8: 불일치 후 한도도달_즉시폐기(다음 시도 차단)")
-    void 불일치_한도도달_폐기() {
-        // attemptCount=4, 한 번 더 틀리면 5 도달 → 즉시 폐기
-        EmailOtp otp = EmailOtp.builder()
-                .id(5L).codeHash(passwordEncoder.encode("123456"))
-                .attemptCount(4).expiresAt(OffsetDateTime.now().plusMinutes(5)).build();
-        when(otpMapper.findLatestActive("a@b.com", "INVITE")).thenReturn(otp);
-
-        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.INVITE, "999999"))
+        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "999999"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_MISMATCH);
         verify(attemptRecorder).increment(5L);
-        verify(attemptRecorder).consume(5L); // 한도 도달 → 폐기
+        verify(attemptRecorder, never()).consume(5L);
+    }
+
+    @Test
+    @DisplayName("OTP-8: 불일치 후 한도도달_즉시폐기")
+    void 불일치_한도도달_폐기() {
+        EmailOtp otp = EmailOtp.builder()
+                .id(5L).codeHash(passwordEncoder.encode("123456"))
+                .attemptCount(4).expiresAt(OffsetDateTime.now().plusMinutes(5)).build();
+        when(otpMapper.findLatestActive("a@b.com", "CHANGE")).thenReturn(otp);
+
+        assertThatThrownBy(() -> otpService.verifyAndConsume("a@b.com", OtpPurpose.CHANGE, "999999"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.OTP_MISMATCH);
+        verify(attemptRecorder).increment(5L);
+        verify(attemptRecorder).consume(5L);
     }
 }

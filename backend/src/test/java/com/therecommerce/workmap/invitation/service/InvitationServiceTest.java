@@ -6,7 +6,6 @@ import com.therecommerce.workmap.auth.service.AuthService;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.invitation.config.AuthOtpProperties;
 import com.therecommerce.workmap.invitation.domain.Invitation;
-import com.therecommerce.workmap.invitation.domain.OtpPurpose;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.AcceptRequest;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.InviteRequest;
 import com.therecommerce.workmap.invitation.mapper.InvitationMapper;
@@ -24,10 +23,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * InvitationService 단위테스트 (WMP-AUTH-004/006, CR-027).
+ * InvitationService 단위테스트 (WMP-AUTH-004/006, CR-027 토큰 보정).
+ * TokenService는 실제 사용(해시 결정적), NotificationClient·매퍼·UserService Mock.
  */
 @ExtendWith(MockitoExtension.class)
 class InvitationServiceTest {
@@ -35,20 +36,24 @@ class InvitationServiceTest {
     @Mock InvitationMapper invitationMapper;
     @Mock UserMapper userMapper;
     @Mock UserService userService;
-    @Mock OtpService otpService;
+    @Mock NotificationClient notificationClient;
     @Mock AuthService authService;
+    TokenService tokenService = new TokenService();
     AuthOtpProperties props;
     InvitationService service;
 
     @BeforeEach
     void setUp() {
         props = new AuthOtpProperties();
-        service = new InvitationService(invitationMapper, userMapper, userService, otpService, authService, props);
+        // 발송하는 케이스에서만 호출되므로 lenient(거부 케이스는 미호출 — UnnecessaryStubbing 회피).
+        lenient().when(notificationClient.webBaseUrl()).thenReturn("http://test/web");
+        service = new InvitationService(invitationMapper, userMapper, userService,
+                tokenService, notificationClient, authService, props);
     }
 
     @Test
-    @DisplayName("INV-1: 초대_invitation생성+INVITE인증번호발송(user는 미생성)")
-    void 초대_invitation생성_발송() {
+    @DisplayName("INV-1: 초대_invitation(토큰해시)생성+수락링크 발송(user 미생성)")
+    void 초대_생성_링크발송() {
         InviteRequest req = new InviteRequest("new@therecommerce.com", "홍길동", "MEMBER", null);
         when(userMapper.existsByEmail(req.email())).thenReturn(false);
         when(invitationMapper.findPendingByEmail(req.email())).thenReturn(null);
@@ -56,7 +61,8 @@ class InvitationServiceTest {
         service.invite(req, 1L);
 
         verify(invitationMapper).insert(any(Invitation.class));
-        verify(otpService).issue(eq("new@therecommerce.com"), eq(OtpPurpose.INVITE), isNull(), eq("홍길동"));
+        // 수락 링크(actionUrl) 포함 이메일 발송
+        verify(notificationClient).sendEmail(eq("new@therecommerce.com"), eq("WMP_INVITE_LINK"), any());
         verify(userService, never()).create(any()); // user는 수락 시점에만 생성
     }
 
@@ -86,50 +92,50 @@ class InvitationServiceTest {
     }
 
     @Test
-    @DisplayName("INV-4: 수락_인증번호검증→user생성→ACCEPTED→자동로그인")
+    @DisplayName("INV-4: 수락_토큰검증→user생성→ACCEPTED→자동로그인")
     void 수락_user생성_로그인() {
-        AcceptRequest req = new AcceptRequest("new@therecommerce.com", "123456", "rawPassword123");
+        AcceptRequest req = new AcceptRequest("raw-token-abc", "rawPassword123");
         Invitation pending = Invitation.builder()
                 .id(9L).email("new@therecommerce.com").name("홍길동").role("MEMBER")
                 .status("PENDING").expiresAt(OffsetDateTime.now().plusHours(1)).build();
-        when(invitationMapper.findPendingByEmail("new@therecommerce.com")).thenReturn(pending);
+        // 서비스가 raw 토큰을 해시해 조회 → 어떤 해시값이든 pending 반환
+        when(invitationMapper.findPendingByTokenHash(anyString())).thenReturn(pending);
         User created = User.builder().id(50L).email("new@therecommerce.com").build();
         when(userMapper.findByEmail("new@therecommerce.com")).thenReturn(created);
         when(authService.issueTokensFor(created)).thenReturn(new LoginResponse("at", "rt", null));
 
         service.accept(req);
 
-        verify(otpService).verifyAndConsume("new@therecommerce.com", OtpPurpose.INVITE, "123456");
         verify(userService).create(any(CreateUserRequest.class));
         verify(invitationMapper).markAccepted(9L);
         verify(authService).issueTokensFor(created);
     }
 
     @Test
-    @DisplayName("INV-5: 수락_PENDING초대없음_거부(INVITATION_NOT_FOUND)")
-    void 수락_초대없음_거부() {
-        AcceptRequest req = new AcceptRequest("none@therecommerce.com", "123456", "rawPassword123");
-        when(invitationMapper.findPendingByEmail("none@therecommerce.com")).thenReturn(null);
+    @DisplayName("INV-5: 수락_토큰무효_거부(INVITATION_TOKEN_INVALID)")
+    void 수락_토큰무효_거부() {
+        AcceptRequest req = new AcceptRequest("bad-token", "rawPassword123");
+        when(invitationMapper.findPendingByTokenHash(anyString())).thenReturn(null);
 
         assertThatThrownBy(() -> service.accept(req))
                 .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(WmpErrorCode.INVITATION_NOT_FOUND);
+                .extracting("errorCode").isEqualTo(WmpErrorCode.INVITATION_TOKEN_INVALID);
         verify(userService, never()).create(any());
     }
 
     @Test
-    @DisplayName("INV-6: 수락_만료초대_EXPIRED처리+거부")
+    @DisplayName("INV-6: 수락_만료토큰_EXPIRED처리+거부")
     void 수락_만료_거부() {
-        AcceptRequest req = new AcceptRequest("old@therecommerce.com", "123456", "rawPassword123");
+        AcceptRequest req = new AcceptRequest("expired-token", "rawPassword123");
         Invitation expired = Invitation.builder()
                 .id(3L).email("old@therecommerce.com").status("PENDING")
                 .expiresAt(OffsetDateTime.now().minusHours(1)).build();
-        when(invitationMapper.findPendingByEmail("old@therecommerce.com")).thenReturn(expired);
+        when(invitationMapper.findPendingByTokenHash(anyString())).thenReturn(expired);
 
         assertThatThrownBy(() -> service.accept(req))
                 .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(WmpErrorCode.INVITATION_EXPIRED);
+                .extracting("errorCode").isEqualTo(WmpErrorCode.INVITATION_TOKEN_INVALID);
         verify(invitationMapper).updateStatus(3L, "EXPIRED");
-        verify(otpService, never()).verifyAndConsume(any(), any(), any());
+        verify(userService, never()).create(any());
     }
 }

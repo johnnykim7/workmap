@@ -22,6 +22,9 @@ public class AuthOtpProperties {
     /** 같은 이메일·용도 재발송 쿨다운(초). 기본 60. */
     private int resendCooldownSeconds = 60;
 
-    /** 초대(invitation) 만료(시간). 기본 72. */
+    /** 초대(invitation) 토큰 만료(시간). 기본 72. */
     private int invitationExpiresHours = 72;
+
+    /** 비밀번호 재설정 토큰 만료(분). 분실은 짧게 — 기본 30(POL-013-A). */
+    private int resetTokenExpiresMinutes = 30;
 }

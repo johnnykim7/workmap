@@ -54,6 +54,11 @@ public class NotificationClient {
         }
     }
 
+    /** WorkMap FE 베이스 URL — 메일 링크(초대·재설정) 절대 URL 조립용(CR-027 토큰 보정). */
+    public String webBaseUrl() {
+        return props.getWebBaseUrl();
+    }
+
     /**
      * 푸시 발송(WMP-NOTI-004, CR-028). bp-notification이 userId의 등록 기기(FCM)로 전송한다.
      * @return 발송 성공 여부(실패해도 예외 안 던짐 — best-effort)

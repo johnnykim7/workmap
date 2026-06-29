@@ -17,6 +17,7 @@ export const ROUTES = {
   // CR-027 — 공개(초대 수락·비번 찾기) + 인증(비번 변경)
   inviteAccept: '/invite/accept',
   passwordForgot: '/password/forgot',
+  passwordReset: '/password/reset',
   accountPassword: '/account/password',
   accountNotifications: '/account/notifications', // CR-028 — 알림 수신 설정
   accountTheme: '/account/theme', // 개인 화면 테마(프리셋)

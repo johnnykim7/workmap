@@ -47,27 +47,35 @@ public final class InvitationDtos {
         }
     }
 
-    // --- 초대 수락 (공개, WMP-AUTH-006) ---
+    // --- 초대 수락 (공개, WMP-AUTH-006, 토큰 보정) ---
 
+    /** 수락 화면 진입 미리보기 — 토큰으로 조회된 초대 정보(비밀번호 입력 전 표시용). */
+    public record InvitationPreview(
+            String email,
+            String name,
+            String role,
+            OffsetDateTime expiresAt
+    ) {
+    }
+
+    /** 초대 수락 — 토큰 + 새 비밀번호(인증번호 제거, 링크 클릭이 본인 확인). */
     public record AcceptRequest(
-            @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 6) String code,
+            @NotBlank String token,
             @NotBlank @Size(min = 8, max = 72) String password
     ) {
     }
 
-    // --- 비밀번호 분실 재설정 (공개, WMP-AUTH-007) ---
+    // --- 비밀번호 분실 재설정 (공개, WMP-AUTH-007, 토큰 보정) ---
 
-    /** 1단계 — 인증번호 발송. 계정 열거 방지로 항상 성공 응답. */
+    /** 1단계 — 재설정 링크 발송. 계정 열거 방지로 항상 성공 응답. */
     public record ForgotRequest(
             @NotBlank @Email String email
     ) {
     }
 
-    /** 2단계 — 인증번호 검증 + 새 비밀번호. */
+    /** 2단계 — 토큰 검증 + 새 비밀번호(인증번호 제거). */
     public record ResetRequest(
-            @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 6) String code,
+            @NotBlank String token,
             @NotBlank @Size(min = 8, max = 72) String password
     ) {
     }

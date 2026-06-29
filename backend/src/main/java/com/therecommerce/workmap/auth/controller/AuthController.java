@@ -10,6 +10,7 @@ import com.therecommerce.workmap.auth.service.AuthService;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.AcceptRequest;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.ChangeRequest;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.ForgotRequest;
+import com.therecommerce.workmap.invitation.dto.InvitationDtos.InvitationPreview;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.ResetRequest;
 import com.therecommerce.workmap.invitation.service.InvitationService;
 import com.therecommerce.workmap.invitation.service.PasswordService;
@@ -53,22 +54,28 @@ public class AuthController {
         return ResponseDto.success(authService.me(userId));
     }
 
-    // --- CR-027: 초대 수락 / 비밀번호 재설정·변경 ---
+    // --- CR-027(토큰 보정): 초대 수락 / 비밀번호 재설정·변경 ---
 
-    /** 초대 수락(공개, WMP-AUTH-006). 인증번호+비밀번호 설정 → user 생성 + 자동 로그인. */
+    /** 초대 수락 화면 진입 미리보기(공개, WMP-AUTH-006). 토큰으로 이메일·이름·역할 표시. 무효/만료 시 410. */
+    @GetMapping("/invitations/{token}")
+    public ResponseDto<InvitationPreview> previewInvitation(@PathVariable String token) {
+        return ResponseDto.success(invitationService.preview(token));
+    }
+
+    /** 초대 수락(공개, WMP-AUTH-006). 토큰+비밀번호 설정 → user 생성 + 자동 로그인. */
     @PostMapping("/invitations/accept")
     public ResponseDto<LoginResponse> acceptInvitation(@Valid @RequestBody AcceptRequest req) {
         return ResponseDto.success(invitationService.accept(req));
     }
 
-    /** 분실 재설정 1단계(공개, WMP-AUTH-007). 계정 열거 방지 — 항상 성공 응답. */
+    /** 분실 재설정 요청(공개, WMP-AUTH-007). 재설정 링크 발송. 계정 열거 방지 — 항상 성공 응답. */
     @PostMapping("/password/forgot")
     public ResponseDto<Void> forgotPassword(@Valid @RequestBody ForgotRequest req) {
         passwordService.requestForgot(req.email());
         return ResponseDto.success(null);
     }
 
-    /** 분실 재설정 2단계(공개, WMP-AUTH-007). 인증번호 검증 + 새 비밀번호. */
+    /** 재설정 완료(공개, WMP-AUTH-007). 토큰 검증 + 새 비밀번호. */
     @PostMapping("/password/reset")
     public ResponseDto<Void> resetPassword(@Valid @RequestBody ResetRequest req) {
         passwordService.reset(req);

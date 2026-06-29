@@ -21,4 +21,10 @@ public class NotificationProperties {
 
     /** 발송 활성화. 비활성 시 발송 자체를 건너뜀(로컬/테스트). 기본 true. */
     private boolean enabled = true;
+
+    /**
+     * WorkMap FE 베이스 URL — 메일 링크(초대 수락·비번 재설정)의 절대 URL 조립용(CR-027 토큰 보정).
+     * 예: http://59.8.160.12:3186 → 링크 = {webBaseUrl}/invite/accept?token=...
+     */
+    private String webBaseUrl = "http://59.8.160.12:3186";
 }
