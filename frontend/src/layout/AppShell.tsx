@@ -35,6 +35,7 @@ import {
   Palette,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
+import { useCanWrite } from '@/lib/permissions';
 import { useUiStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
@@ -145,6 +146,7 @@ function HeaderActions() {
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
   const navigate = useNavigate();
+  const canWrite = useCanWrite(); // VIEWER는 만들기 숨김(CR-031, 서버 403과 일치)
 
   // 새 알림 도착 시 토스트(전역 1회 마운트 — 헤더에만 둬 중복 방지).
   useNewNotificationToast();
@@ -153,10 +155,12 @@ function HeaderActions() {
     <div className="flex w-full items-center justify-between gap-3">
       <HeaderTitle />
       <div className="flex items-center gap-3">
-        {/* 생성/추가 = primary (CLAUDE.md 버튼 일관성) */}
-        <Button variant="primary" size="sm" onClick={openCreate}>
-          <Plus className="size-4" /> 만들기
-        </Button>
+        {/* 생성/추가 = primary (CLAUDE.md 버튼 일관성). VIEWER는 쓰기 불가라 숨김. */}
+        {canWrite && (
+          <Button variant="primary" size="sm" onClick={openCreate}>
+            <Plus className="size-4" /> 만들기
+          </Button>
+        )}
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -11,6 +11,8 @@ import com.therecommerce.workmap.workitem.service.WorkItemLinkService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import com.therecommerce.workmap.common.security.WmpAuthz;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +36,7 @@ public class WorkItemSubResourceController {
         return ResponseDto.success(commentService.list(id));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<SubResourceDtos.CommentResponse> createComment(
@@ -49,6 +52,7 @@ public class WorkItemSubResourceController {
         return ResponseDto.success(attachmentService.list(id));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/attachments")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<SubResourceDtos.AttachmentResponse> createAttachment(
@@ -70,6 +74,7 @@ public class WorkItemSubResourceController {
         return ResponseDto.success(linkService.list(id));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/links")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<List<LinkDtos.LinkView>> createLink(
@@ -79,6 +84,7 @@ public class WorkItemSubResourceController {
         return ResponseDto.success(linkService.create(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @DeleteMapping("/links/{linkId}")
     public ResponseDto<Void> deleteLink(@PathVariable Long id, @PathVariable Long linkId,
                                         @AuthUserInfo("userId") Long userId) {

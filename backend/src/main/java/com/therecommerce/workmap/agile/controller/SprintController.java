@@ -7,6 +7,8 @@ import com.therecommerce.workmap.agile.service.SprintService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import com.therecommerce.workmap.common.security.WmpAuthz;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +33,7 @@ public class SprintController {
         return ResponseDto.success(sprintService.list(projectId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/api/v1/projects/{projectId}/sprints")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<SprintDtos.Response> create(
@@ -40,6 +43,7 @@ public class SprintController {
         return ResponseDto.success(sprintService.create(projectId, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/api/v1/sprints/{sprintId}/start")
     public ResponseDto<SprintDtos.Response> start(
             @PathVariable Long sprintId,
@@ -48,6 +52,7 @@ public class SprintController {
         return ResponseDto.success(sprintService.start(sprintId, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/api/v1/sprints/{sprintId}/complete")
     public ResponseDto<SprintDtos.CompleteResult> complete(
             @PathVariable Long sprintId,

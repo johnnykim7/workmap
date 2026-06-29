@@ -6,6 +6,8 @@ import com.therecommerce.workmap.approval.dto.ApprovalDtos;
 import com.therecommerce.workmap.approval.service.ApprovalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.therecommerce.workmap.common.security.WmpAuthz;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +35,7 @@ public class ApprovalController {
     }
 
     /** 승인/거부 처리. */
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/approvals/{id}/decision")
     public ResponseDto<ApprovalDtos.Response> decide(
             @PathVariable Long id,

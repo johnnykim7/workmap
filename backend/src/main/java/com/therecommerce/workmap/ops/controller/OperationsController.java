@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import com.therecommerce.workmap.common.security.WmpAuthz;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ public class OperationsController {
         return ResponseDto.success(operationsService.throughput(projectId, from, to));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/work-items/{id}/promote-to-backlog")
     public ResponseDto<OpsDtos.PromoteResult> promoteToBacklog(
             @PathVariable Long id,
@@ -50,6 +53,7 @@ public class OperationsController {
     }
 
     /** 현장검증 기록 + (옵션) 발견 이슈 후속 업무 생성(WMP-OPS-004). */
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/work-items/{id}/field-verifications")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<VerificationDtos.CreateResult> createVerification(

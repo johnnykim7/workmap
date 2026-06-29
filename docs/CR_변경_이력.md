@@ -36,6 +36,7 @@
 | CR-028 | 각종 알림 확장 — 트리거 발행 구현(댓글·상태·마감·스프린트·승인) + 외부 채널(bp-notification 이메일/푸시) + 수신 설정 | 신규 | High | v2.2 |
 | CR-029 | 모바일 앱(Capacitor 래핑) — App Shell 구현 + 푸시/카메라/음성 설계 선기재 | 신규 | Medium | v2.2 |
 | CR-030 | 개인 화면 테마 — LNB 톤·포인트색 프리셋 선택(localStorage) | 신규 | Low | v2.2 |
+| CR-031 | VIEWER 읽기전용 강제 — 업무·스프린트·승인 쓰기 @PreAuthorize 가드(설계 누락 보정) | 설계보정 | Medium | v2.2 |
 
 ---
 
@@ -656,6 +657,22 @@
 - **에러코드**: 신규 없음. **마이그레이션**: 없음(BE 무변경).
 - **함정 회피**: ds-ui `dist/style.css`를 재빌드/재import하지 않음(LNB 클릭·hover 깨짐 트랩 — `workmap-tailwind-lnb-trap`). 색 변경은 CSS 변수 값 주입만이라 Tailwind 유틸 정렬 무관.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 면 2개 분리 / 프리셋 / localStorage / 다크모드 제외 / 중규모 착수 승인) | **적용 버전**: v2.2
+- **변경 일자**: 2026-06-29
+
+### CR-031 — VIEWER 읽기전용 강제: 쓰기 @PreAuthorize 가드 (설계 누락 보정)
+
+- **대상 기능 ID**: WMP-AUTH-005(POL-004 역할 권한) — 전 쓰기 엔드포인트
+- **변경 타입**: 설계보정(소규모) | **영향도**: Medium(보안 — 권한 경계. 다수 컨트롤러)
+- **상태**: **구현 완료(2026-06-29). 단위테스트 212/212 PASS. 운영 배포·E2E 대기.**
+- **배경**: 사용자가 역할 드롭다운(소유자/관리자/매니저/멤버/뷰어)의 차이를 질문 → 코드 실측 결과 **VIEWER(읽기전용, POL-004)가 코드상 강제되지 않음**을 발견. 업무(work-items) 쓰기 엔드포인트에 `@PreAuthorize`가 없어 VIEWER도 업무 생성·수정·삭제·상태변경이 가능했음(설계 의도 미구현). 설정(/admin/*)·프로젝트(/projects)·워크스페이스·초대는 이미 가드가 있어 VIEWER 차단되어 있었음 — 누락은 업무·스프린트·승인 영역뿐.
+- **핵심 결정(사용자 합의 2026-06-29)**: ① 차단 범위 = 업무 쓰기 전체 + 프로젝트 쓰기(프로젝트는 이미 MANAGER+ 가드라 추가 불요). ② 수단 = 전역 역할 가드(`@PreAuthorize`, users.role 기준 — project_members.role 아님). ③ **제외 = 저장필터(개인 설정)·채팅(커뮤니케이션 참여)** — VIEWER도 허용(관람자 소통·검색 편의). 조회(GET)는 전부 허용.
+- **변경 내용(구현)**:
+  - **BE**: 공용 SpEL 상수 `common/security/WmpAuthz`(ADMIN/MANAGER/**WRITER**=`hasAnyRole('OWNER','ADMIN','MANAGER','MEMBER')` VIEWER 제외) 신규 — 권한 매핑 한 곳 관리(CLAUDE.md). 쓰기 메서드에 `@PreAuthorize(WmpAuthz.WRITER)` 추가: WorkItemController 10(생성/벌크/수정/삭제/하위작업/상태/담당자/유형전환/측정/스프린트) · WorkItemSubResourceController 4(댓글/첨부/링크 생성·삭제) · SprintController 3(생성/시작/완료) · OperationsController 2(백로그전환/현장검증) · ApprovalController 1(승인결정). **GET은 미적용**(조회 허용). @PreAuthorize 거부는 기존 WmpSecurityExceptionHandler가 403 매핑(에러코드 신규 불요).
+  - **FE**: `lib/permissions.ts`(canWrite/canAdmin/canManageProject/`useCanWrite`) 신규 — 헤더 "만들기" 버튼을 VIEWER에게 숨김(서버 403과 일치하는 UX). 인라인 쓰기 버튼은 서버가 권위(누르면 toast).
+  - **테스트**: WorkItemControllerTest에 AUTHZ-1(VIEWER 업무생성 403)·AUTHZ-2(VIEWER 상태변경 403)·AUTHZ-3(VIEWER 조회 200) 추가.
+- **영향 설계서**: T3-2(§F 쓰기 가드 표기 보강), CR_변경_이력, CLAUDE.md. POL-004는 이미 "VIEWER 읽기전용" 명시 → T1-4 무변경(누락 구현 보정이므로). 스키마·에러코드·마이그레이션 없음.
+- **남은 한계**: project_members.role(프로젝트별 역할)은 여전히 차등 권한 미구현(전역 역할만 강제) — 별도 후속. VIEWER 인라인 버튼 숨김은 헤더 만들기만 적용(나머지는 서버 403 의존).
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 업무+프로젝트 쓰기 차단 / 전역역할가드 / 저장필터·채팅 제외 / 소규모) | **적용 버전**: v2.2
 - **변경 일자**: 2026-06-29
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->

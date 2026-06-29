@@ -4,6 +4,7 @@ import com.therecommerce.common.paging.PageRequest;
 import com.therecommerce.common.paging.PageResponse;
 import com.therecommerce.common.response.ResponseDto;
 import com.therecommerce.common.security.auth.AuthUserInfo;
+import com.therecommerce.workmap.common.security.WmpAuthz;
 import com.therecommerce.workmap.workitem.dto.WorkItemDtos;
 import com.therecommerce.workmap.workitem.service.WorkItemBulkService;
 import com.therecommerce.workmap.workitem.service.WorkItemQueryService;
@@ -11,6 +12,7 @@ import com.therecommerce.workmap.workitem.service.WorkItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -26,6 +28,7 @@ public class WorkItemController {
     private final WorkItemQueryService workItemQueryService;
     private final WorkItemBulkService workItemBulkService;
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<WorkItemDtos.Response> create(
@@ -46,6 +49,7 @@ public class WorkItemController {
     }
 
     /** 벌크 편집(WMP-WI-015) — 다건 일괄 변경, 항목별 FSM 검증·실패 분리 보고(BLK-1/2). */
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/bulk")
     public ResponseDto<WorkItemDtos.BulkResult> bulk(
             @Valid @RequestBody WorkItemDtos.BulkRequest req,
@@ -58,6 +62,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.get(id));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}")
     public ResponseDto<WorkItemDtos.Response> update(
             @PathVariable Long id,
@@ -66,12 +71,14 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.update(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @DeleteMapping("/{id}")
     public ResponseDto<Void> delete(@PathVariable Long id, @AuthUserInfo("userId") Long userId) {
         workItemService.softDelete(id, userId);
         return ResponseDto.success(null);
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/{id}/subtasks")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto<WorkItemDtos.Response> createSubtask(
@@ -81,6 +88,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.createSubtask(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/status")
     public ResponseDto<WorkItemDtos.Response> changeStatus(
             @PathVariable Long id,
@@ -89,6 +97,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.changeStatus(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/assignee")
     public ResponseDto<WorkItemDtos.Response> changeAssignee(
             @PathVariable Long id,
@@ -97,6 +106,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.changeAssignee(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/convert")
     public ResponseDto<WorkItemDtos.Response> convert(
             @PathVariable Long id,
@@ -105,6 +115,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.convert(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/measure")
     public ResponseDto<WorkItemDtos.Response> updateMeasure(
             @PathVariable Long id,
@@ -113,6 +124,7 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.updateMeasure(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/sprint")
     public ResponseDto<WorkItemDtos.Response> changeSprint(
             @PathVariable Long id,

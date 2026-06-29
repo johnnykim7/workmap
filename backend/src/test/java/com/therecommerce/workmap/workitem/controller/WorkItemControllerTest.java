@@ -28,6 +28,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -134,5 +136,41 @@ class WorkItemControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(55));
+    }
+
+    // CR-030 — VIEWER 읽기 전용 강제(POL-004). 쓰기는 403, 조회는 통과.
+
+    @Test
+    @DisplayName("AUTHZ-1: VIEWER가 업무 생성 시도 → 403(읽기전용)")
+    void VIEWER_업무생성_거부() throws Exception {
+        WorkItemDtos.CreateRequest req = new WorkItemDtos.CreateRequest(
+                5L, "TASK", null, null, "제목", null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(post("/api/v1/work-items").with(csrf()).with(WmpAuth.user(99L, "VIEWER"))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("AUTHZ-2: VIEWER가 상태 변경 시도 → 403")
+    void VIEWER_상태변경_거부() throws Exception {
+        WorkItemDtos.ChangeStatusRequest req = new WorkItemDtos.ChangeStatusRequest(10L, null);
+
+        mockMvc.perform(patch("/api/v1/work-items/1/status").with(csrf()).with(WmpAuth.user(99L, "VIEWER"))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("AUTHZ-3: VIEWER도 업무 조회(GET)는 허용")
+    void VIEWER_조회_허용() throws Exception {
+        when(workItemService.get(1L)).thenReturn(sample());
+
+        mockMvc.perform(get("/api/v1/work-items/1").with(WmpAuth.user(99L, "VIEWER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 }

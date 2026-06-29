@@ -122,6 +122,7 @@
 ## F. 업무 항목 (Work Items)
 
 > 핵심 단일 테이블. Epic/Story/Task/Bug/Sub-task는 `issue_type` + `parent_id`/`epic_id` 계층(BIZ-106). 백로그·보드·목록·타임라인·이슈는 모두 work_item의 파생 뷰.
+> **VIEWER 읽기전용 가드(POL-004, CR-031).** 쓰기(POST/PATCH/DELETE — 생성·수정·삭제·상태·담당자·유형전환·측정·스프린트·하위작업·댓글·첨부·링크·스프린트 시작/완료·현장검증·백로그전환·승인결정)는 `@PreAuthorize` `hasAnyRole('OWNER','ADMIN','MANAGER','MEMBER')`로 VIEWER 차단(403). 조회(GET)는 VIEWER 포함 전원 허용. 저장필터·채팅은 개인/소통 영역이라 VIEWER도 쓰기 허용(예외). 가드 SpEL은 `WmpAuthz.WRITER` 상수로 통일 관리.
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
