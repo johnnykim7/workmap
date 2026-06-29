@@ -25,7 +25,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.1",
     "@tanstack/react-query": "^5.62.0",
-    "@tanstack/react-table": "^8.21.3",
     "@therecommerce/ds-ui": "file:../../../bp-platform/design-system/packages/ui",
     "@tiptap/extension-image": "^3.27.1",
     "@tiptap/extension-link": "^3.27.1",
