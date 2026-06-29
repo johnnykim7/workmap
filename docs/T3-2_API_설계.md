@@ -42,17 +42,21 @@
 | POST | /auth/login | 로그인 (JWT 발급) | | P1 | WMP-AUTH-001 |
 | POST | /auth/logout | 로그아웃 (토큰 무효화) | 🔒 | P1 | WMP-AUTH-002 |
 | GET | /auth/me | 내 정보(프로필·역할) 조회 | 🔒 | P1 | WMP-AUTH-003 |
-| POST | /auth/invitations/accept | 초대 수락(이메일+인증번호+새 비밀번호 → user 생성·로그인) | | P1 | WMP-AUTH-006 |
-| POST | /auth/password/forgot | 분실 재설정 1단계 — 인증번호 발송(계정 열거 방지: 항상 성공 응답) | | P1 | WMP-AUTH-007 |
-| POST | /auth/password/reset | 분실 재설정 2단계 — 이메일+인증번호+새 비밀번호 검증·변경 | | P1 | WMP-AUTH-007 |
+| GET | /auth/invitations/{token} | 초대 토큰 미리보기(수락 화면 진입 — 이메일·이름·만료 표시) | | P1 | WMP-AUTH-006 |
+| POST | /auth/invitations/accept | 초대 수락(토큰+새 비밀번호 → user 생성·로그인) | | P1 | WMP-AUTH-006 |
+| POST | /auth/password/forgot | 분실 재설정 — 재설정 링크(토큰) 발송(계정 열거 방지: 항상 성공 응답) | | P1 | WMP-AUTH-007 |
+| POST | /auth/password/reset | 재설정 완료 — 토큰+새 비밀번호 검증·변경 | | P1 | WMP-AUTH-007 |
 | POST | /auth/password/change/request-otp | 변경 1단계 — 본인 이메일로 인증번호 발송 | 🔒 | P1 | WMP-AUTH-008 |
 | POST | /auth/password/change | 변경 2단계 — 현재 비밀번호+인증번호+새 비밀번호(2차 인증) | 🔒 | P1 | WMP-AUTH-008 |
 
-> **인증번호 공통 규칙(POL-013)**: 6자리, 만료 10분, 시도 5회, 재발송 쿨다운 60초. 발송은 bp-notification(WMP-AUTH-009) — 인증번호 평문은 응답·로그에 비노출.
+> **CR-027 토큰 보정**: 초대·분실재설정은 **토큰 링크**(인증번호 입력 제거). 변경(CHANGE)만 인증번호 유지.
+> **토큰 규칙(POL-013-A)**: 추측 불가 랜덤(해시 저장), 초대 만료 72h·재설정 30분, 1회용, 시도제한 불요(고엔트로피). 발송은 bp-notification(WMP-AUTH-009, `WMP_INVITE_LINK`/`WMP_RESET_LINK`) — 토큰 평문은 응답·로그에 비노출(링크 URL만 메일에).
+> **인증번호 규칙(POL-013-B, CHANGE만)**: 6자리, 만료 10분, 시도 5회, 쿨다운 60초.
 > **요청/응답 요약**:
-> - `accept` req: `{ email, code, password }` → res: `{ accessToken, refreshToken, user }`(가입 즉시 로그인) 또는 `{}`(로그인 분리 시).
+> - `GET invitations/{token}` → res: `{ email, name, role, expiresAt }`(무효/만료 시 404/410). 비밀번호 미입력 — 화면 프리필용.
+> - `accept` req: `{ token, password }` → res: `{ accessToken, refreshToken, user }`(가입 즉시 로그인).
 > - `forgot` req: `{ email }` → res: `{}`(200, 존재 여부 불문 동일).
-> - `reset` req: `{ email, code, password }` → res: `{}`.
+> - `reset` req: `{ token, password }` → res: `{}`.
 > - `change/request-otp` req: `{}`(인증 컨텍스트의 이메일 사용) → res: `{}`.
 > - `change` req: `{ currentPassword, code, newPassword }` → res: `{}`. 현재 PW 불일치=401(INVALID_CREDENTIALS), 새 PW=현재 PW 동일 시 400.
 
