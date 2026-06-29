@@ -140,9 +140,10 @@ export function MessageItem({
         )}
       </div>
 
-      {/* hover 툴바 — 우상단 부유(absolute라 레이아웃 안 밀림). Slack식 단일 툴바에 전 액션 통합. */}
+      {/* hover 툴바 — 행 우상단 안쪽에 부유. -top-3로 행 밖에 두면 마우스가 본문→툴바로 갈 때
+          group 경계를 넘어 hover가 풀린다(포커스 잃음). 행 안쪽(top-0)에 두어 group-hover 유지. */}
       {!editing && (
-        <div className="absolute -top-3 right-3 hidden items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm group-hover:flex">
+        <div className="absolute right-2 top-0 z-10 hidden items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm group-hover:flex">
           <EmojiPicker onPick={onToggleReaction} />
           <Button variant="ghost" size="icon" className="size-7" onClick={onOpenThread} aria-label="스레드">
             <MessageSquareText className="size-4" />

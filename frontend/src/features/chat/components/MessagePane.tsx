@@ -243,7 +243,7 @@ export function MessagePane({
       </div>
 
       {/* 다이얼로그 */}
-      <MembersDialog open={membersOpen} onOpenChange={setMembersOpen} channelId={channel.id} />
+      <MembersDialog open={membersOpen} onOpenChange={setMembersOpen} channelId={channel.id} workspaceId={workspaceId} />
       <PinsDialog open={pinsOpen} onOpenChange={setPinsOpen} channelId={channel.id} onOpenMessage={onOpenThread} />
       <NotificationSettingsDialog open={notiOpen} onOpenChange={setNotiOpen} channelId={channel.id} />
       <ConfirmDialog

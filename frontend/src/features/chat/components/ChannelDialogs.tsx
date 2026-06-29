@@ -9,6 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -16,9 +19,9 @@ import {
   SelectValue,
   Skeleton,
 } from '@therecommerce/ds-ui';
-import { Search, UserPlus, X } from 'lucide-react';
+import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
 import { Field } from '@/components/common/field';
-import { useUsers } from '@/features/user/hooks';
+import { useWorkspaceMembers } from '@/features/workspaces/hooks';
 import {
   useChannelMembers,
   useMemberMutations,
@@ -34,16 +37,28 @@ export function MembersDialog({
   open,
   onOpenChange,
   channelId,
+  workspaceId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   channelId: number;
+  workspaceId: number | null;
 }) {
   const { data: members = [], isPending } = useChannelMembers(open ? channelId : null);
   const { add, remove } = useMemberMutations(channelId);
-  const [keyword, setKeyword] = useState('');
-  const { data: userPage } = useUsers(keyword, 0, 10);
+  // 채널 멤버 후보 = 이 워크스페이스의 멤버만(슬랙식 격리, BIZ-112). 전사 사용자 검색 금지.
+  const { data: wsMembers = [] } = useWorkspaceMembers(open && workspaceId != null ? workspaceId : undefined);
   const memberIds = new Set(members.map((m) => m.userId));
+  // 추가 후보 = 이 워크스페이스 멤버 중 아직 채널에 없는 사람(슬랙식 격리, BIZ-112).
+  const addable = wsMembers.filter((u) => !memberIds.has(u.userId));
+
+  // 콤보박스(드롭다운 + 검색) — 멤버 많아도 깔끔, 타이핑 필터.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const candidates = addable.filter(
+    (u) => q === '' || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,36 +69,61 @@ export function MembersDialog({
 
         <div className="space-y-3">
           <div>
-            <div className="mb-1.5 text-xs font-medium text-muted-foreground">멤버 추가</div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="이름/이메일 검색"
-                className="pl-8"
-              />
+            <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+              멤버 추가 (워크스페이스 멤버)
             </div>
-            {keyword.trim() && (
-              <div className="mt-1.5 max-h-40 overflow-y-auto rounded-md border border-border">
-                {(userPage?.items ?? [])
-                  .filter((u) => !memberIds.has(u.id))
-                  .map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => add.mutate(u.id)}
-                      className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
-                    >
-                      <Avatar className="size-6">
-                        <AvatarFallback className="text-xs">{initialOf(u.name)}</AvatarFallback>
-                      </Avatar>
-                      <span className="flex-1 truncate">{u.name}</span>
-                      <UserPlus className="size-4 text-muted-foreground" />
-                    </button>
-                  ))}
-              </div>
-            )}
+            {/* 드롭다운(콤보박스) — 평소엔 닫혀있고, 열면 검색 + 워크스페이스 멤버 목록. 멤버 많아도 깔끔. */}
+            <Popover open={pickerOpen} onOpenChange={(v) => { setPickerOpen(v); if (!v) setQuery(''); }}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between font-normal text-muted-foreground"
+                  disabled={addable.length === 0}
+                >
+                  {addable.length === 0
+                    ? (wsMembers.length === 0 ? '워크스페이스 멤버 없음' : '추가할 멤버 없음')
+                    : '멤버 선택…'}
+                  <ChevronDown className="size-4 shrink-0 opacity-60" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                <div className="relative border-b border-border">
+                  <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="이름/이메일 검색"
+                    className="border-0 pl-8 focus-visible:ring-0"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto p-1">
+                  {candidates.length === 0 ? (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">검색 결과가 없습니다.</p>
+                  ) : (
+                    candidates.map((u) => (
+                      <button
+                        key={u.userId}
+                        type="button"
+                        onClick={() => {
+                          add.mutate(u.userId);
+                          setPickerOpen(false);
+                          setQuery('');
+                        }}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
+                      >
+                        <Avatar className="size-6">
+                          <AvatarFallback className="text-xs">{initialOf(u.name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="min-w-0 flex-1 truncate">{u.name}</span>
+                        <span className="truncate text-xs text-muted-foreground">{u.email}</span>
+                        <UserPlus className="size-4 shrink-0 text-muted-foreground" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div>
