@@ -67,7 +67,7 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Building2 className="size-4" />

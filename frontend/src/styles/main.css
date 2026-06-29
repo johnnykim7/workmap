@@ -128,6 +128,19 @@ html, body, #root {
   font-size: 0.875rem; /* 14px — 서브메뉴는 한 단계 작게 */
 }
 
+/* LNB 접기/펼치기 토글(sidebar-trigger) — 보조 기능이라 절제: LNB 글자색 60% + 배경 하이라이트 제거.
+ * ghost Button 기본은 --foreground(다크 LNB에서 묻힘) + hover/focus 시 사각 배경 음영이 생긴다 →
+ * LNB 톤을 따르되 배경 음영을 없애 아이콘만 깔끔하게. */
+[data-slot="sidebar-trigger"] {
+  color: var(--sidebar-foreground);
+  opacity: 0.6;
+}
+[data-slot="sidebar-trigger"]:hover,
+[data-slot="sidebar-trigger"]:focus-visible,
+[data-slot="sidebar-trigger"][data-state="open"] {
+  background: transparent;
+}
+
 /* CR-024 사고 방지(LNB 보호) — Tailwind v4 유틸리티 정렬이 tiptap 추가로 흔들리면 .hidden이
  * .md:block/.md:flex 뒤로 와서 이긴다 → ds-ui 사이드바 각 레이어(sidebar·gap·container)가
  * `hidden md:block` 조합에서 숨겨져 LNB가 통째로 사라진다.
