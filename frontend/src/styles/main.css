@@ -52,6 +52,16 @@
 [data-slot="admin-shell-header"] {
   border-color: var(--border);
   border-bottom-style: solid;
+  /* GNB(헤더) = LNB 톤과 한 세트(배경/글자 같이) — 화면 테마(themes.ts)가 --sidebar* 주입.
+   * (단 [만들기] 버튼은 --primary 포인트색이라 어떤 LNB 톤에서도 그대로 잘 보임) */
+  background: var(--sidebar);
+  color: var(--sidebar-foreground);
+}
+/* 다크 LNB 프리셋일 때만 헤더 타이틀·보조텍스트를 밝게 강제(어두운 배경 대비).
+ * 라이트 프리셋(흰 헤더)에서는 적용 안 함 → muted 텍스트 위계 보존. */
+[data-sidebar-dark] [data-slot="admin-shell-header"] .text-foreground,
+[data-sidebar-dark] [data-slot="admin-shell-header"] .text-muted-foreground {
+  color: var(--sidebar-foreground);
 }
 [data-slot="sidebar"],
 [data-slot="sidebar-container"],
@@ -78,6 +88,11 @@
    *     써서 톤이 달랐다 → --border와 동일하게 맞춰 테이블·카드·LNB·GNB 전 라인을 한 색으로 통일.
    * (테이블 행은 위 [data-slot=table-row] 규칙이 이 --border를 쓰게 이미 고정함.) */
   --border: oklch(89% .005 286.32);
+
+  /* 화면 테마(프리셋) — 포인트색(--primary*)·LNB 톤(--sidebar*)은 themes.ts가 런타임에
+   * documentElement 인라인으로 주입(setProperty)한다. 여기 :root에 박지 않는다
+   * (박으면 주입과 충돌/기본값 고정). 미주입 시 ds-ui globals.css 기본값(zinc) 사용.
+   * --sidebar-border 기본값만 구조 라인 톤 통일용으로 둔다(라이트 프리셋이 덮어씀). */
   --sidebar-border: var(--border);
 
   --wm-status-not-started: #94a3b8; /* slate-400 */
@@ -91,6 +106,26 @@
 
 html, body, #root {
   height: 100%;
+}
+
+/* 본문 바탕 = 화면 테마(themes.ts)의 --background 틴트. AdminShell content는 배경 클래스가 없어
+ * 투명(흰색)이라 테마 색이 안 보였다 → content 영역에 --background를 깔아 프리셋 색이 본문에도 반영.
+ * 카드(--card=흰색)와 미세 단차가 생겨 화면 전체가 은은하게 테마색을 띤다. */
+[data-slot="admin-shell-content"] {
+  background: var(--background);
+}
+
+/* LNB 메뉴 글자·아이콘 키움 — ds-ui 기본은 text-[13px]/아이콘 14px라 작다(테마 무관 전 화면 공통).
+ * ds-ui 재빌드 없이 소비앱에서 셀렉터로만 키운다(LNB 깨짐 트랩 회피). */
+[data-slot="sidebar-menu-button"] {
+  font-size: 0.875rem; /* 14px */
+}
+[data-slot="sidebar-menu-button"] > svg {
+  width: 1.125rem; /* 18px */
+  height: 1.125rem;
+}
+[data-slot="sidebar-menu-sub-button"] {
+  font-size: 0.875rem; /* 14px — 서브메뉴는 한 단계 작게 */
 }
 
 /* CR-024 사고 방지(LNB 보호) — Tailwind v4 유틸리티 정렬이 tiptap 추가로 흔들리면 .hidden이

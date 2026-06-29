@@ -35,6 +35,7 @@
 | CR-027 | 이메일 초대 가입 + 비밀번호 재설정/변경(인증번호 OTP) + bp-notification 연동 | 신규 | High | v2.2 |
 | CR-028 | 각종 알림 확장 — 트리거 발행 구현(댓글·상태·마감·스프린트·승인) + 외부 채널(bp-notification 이메일/푸시) + 수신 설정 | 신규 | High | v2.2 |
 | CR-029 | 모바일 앱(Capacitor 래핑) — App Shell 구현 + 푸시/카메라/음성 설계 선기재 | 신규 | Medium | v2.2 |
+| CR-030 | 개인 화면 테마 — LNB 톤·포인트색 프리셋 선택(localStorage) | 신규 | Low | v2.2 |
 
 ---
 
@@ -629,6 +630,32 @@
 - **마이그레이션**: 없음(스키마 무변경).
 - **참고**: `dev-labs/bp-issues-front` — `capacitor.config.ts`·`package.json` 스크립트·`src/hooks/usePushNotifications.ts`(FCM 토큰 BE 등록 패턴) 이식 대상.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, Capacitor 채택 / iOS·Android 둘 다 / App Shell만 구현·푸시·카메라·음성 설계만 / API 운영BE 고정 / 설계 먼저) | **적용 버전**: v2.2
+- **변경 일자**: 2026-06-29
+
+---
+
+### CR-030 — 개인 화면 테마: LNB 톤·포인트색 프리셋 선택(localStorage)
+
+- **대상 기능 ID**: WMP-ACC-003(신규·구현) — 계정 영역 화면 테마 설정
+- **변경 타입**: 신규 기능(중규모) | **영향도**: Low(FE 전용. BE/API/스키마/에러코드 변경 0)
+- **상태**: **구현 완료(2026-06-29). 단위테스트 10/10 PASS·tsc+vite build 통과. 운영 배포·화면 E2E 미수행(다음 작업).**
+- **배경**: 사용자가 "흑/백 위주라 밋밋하다"며 디자인 톤 논의 시작 → ds-ui 기본 `--primary`가 zinc-900(검정) 고정이라 버튼·링크·활성메뉴·진행률이 전부 무채색이던 것이 원인(실측). 단일 포인트색 시반(teal→indigo) 후, 사용자가 "면(LNB·GNB·버튼·바탕)별로 색을 정할 수 있게" 요구 → 면 분리 테마로 확장. 다크모드는 제외(포인트색·LNB 톤만), 저장은 localStorage(BE 무관·기기 단위).
+- **핵심 설계 결정(사용자 합의 2026-06-29)**:
+  - **면 분리 = 2개**: ① 포인트색(Accent — 버튼·링크·활성메뉴·진행률·포커스) ② LNB 톤(Sidebar+GNB 헤더 한 세트). 본문 바탕(`--background`)·상태색(`--wm-status-*`)은 **테마 무관 고정**(가독성·의미색 보존). 근거: Slack/Notion/Linear가 이 2면 구조. 면을 더 쪼개면 알록달록·CLAUDE.md "색 절제" 위반.
+  - **선택 방식 = 프리셋 6종 카드**(자유 색상 선택 아님). 검증된 (LNB 톤+포인트색) 조합만 노출 → 난장판 방지.
+  - **저장 = localStorage**(기기/브라우저 단위). BE preference 저장은 후속(구조는 BE 확장 가능하게 분리).
+  - **다크모드 제외** — 배경은 라이트 고정. badges 등 라이트 전용 색 하드코딩을 손대지 않기 위함(다크는 별도 대규모 작업).
+- **변경 내용(구현)**:
+  - **FE 신규**: `lib/themes.ts`(프리셋 6종 + `applyTheme` 토큰 주입, ds-ui CSS 변수를 documentElement 인라인으로 덮어씀) · `store/theme-store.ts`(Zustand persist `workmap-theme`, rehydrate 시 주입) · `pages/AccountThemePage.tsx`(프리셋 카드, 클릭=즉시 전체 적용, 미니 프리뷰) · `main.tsx` 부트스트랩(첫 페인트 전 localStorage 직접 읽어 주입 → FOUC 방지).
+  - **진입점**: `route-paths.accountTheme`(`/account/theme`) + App 라우트 + AppShell 계정 메뉴 "화면 테마"(Palette 아이콘).
+  - **main.css**: 시반 하드코딩 `:root` 블록 제거(themes.ts 주입과 충돌 방지). GNB 헤더 배경/글자를 `var(--sidebar*)` 참조로 정식화 — 헤더 보조텍스트 색 강제는 `[data-sidebar-dark]`(다크 LNB 프리셋)일 때만 적용(라이트 프리셋 muted 위계 보존).
+  - **프리셋 6종**: 기본(라이트·indigo) / 다크 사이드바(indigo) / 틸 / 다크+틸 / 블루 / 로즈. 첫 항목이 기본값.
+  - **T1-1**: 모듈 I(계정) 등에 WMP-ACC-003(화면 테마) 신규. **T3-3**: "계정 > 화면 테마" 화면 추가.
+  - **T1-3~T1-6 / T3-1 / T3-2**: **무변경**(클라 표현 설정 — 비즈규칙·FSM·이벤트·스키마·API 무관).
+- **영향 설계서**: T1-1, T3-3, CR_변경_이력, CLAUDE.md(진행상태). (T1-3/4/5/6·T3-1/2 무변경.)
+- **에러코드**: 신규 없음. **마이그레이션**: 없음(BE 무변경).
+- **함정 회피**: ds-ui `dist/style.css`를 재빌드/재import하지 않음(LNB 클릭·hover 깨짐 트랩 — `workmap-tailwind-lnb-trap`). 색 변경은 CSS 변수 값 주입만이라 Tailwind 유틸 정렬 무관.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 면 2개 분리 / 프리셋 / localStorage / 다크모드 제외 / 중규모 착수 승인) | **적용 버전**: v2.2
 - **변경 일자**: 2026-06-29
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->

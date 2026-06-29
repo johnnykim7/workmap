@@ -5,6 +5,19 @@ import { Toaster } from '@therecommerce/ds-ui';
 import './styles/main.css';
 import { App } from './App';
 import { queryClient } from '@/lib/query-client';
+import { applyTheme, DEFAULT_THEME_ID } from '@/lib/themes';
+
+// 개인 테마 — 첫 페인트 전에 저장된 프리셋을 주입(FOUC 방지). store rehydrate 전에 직접 읽음.
+// zustand persist 키 'workmap-theme' → { state: { themeId }, version }.
+(function bootstrapTheme() {
+  try {
+    const raw = localStorage.getItem('workmap-theme');
+    const id = raw ? JSON.parse(raw)?.state?.themeId : null;
+    applyTheme(id ?? DEFAULT_THEME_ID);
+  } catch {
+    applyTheme(DEFAULT_THEME_ID);
+  }
+})();
 
 // MSW — dev에서 T3-2 계약 목킹(실 BE 계약 미러). 실 BE 연동 시:
 //   VITE_USE_MOCK=false pnpm dev  → MSW 끄고 vite proxy로 BE(8186) 호출.

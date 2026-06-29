@@ -32,6 +32,7 @@ import {
   LayoutGrid,
   KeyRound,
   Bell,
+  Palette,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useUiStore } from '@/store/ui-store';
@@ -47,8 +48,8 @@ import { CreateModal } from '@/components/common/create-modal';
 
 // 글로벌 LNB 고정 메뉴 (§9.1). 프로젝트·메시지(채널)는 선택 WS 기준 children으로 동적 주입.
 const FIXED_MENU = [
-  { path: ROUTES.home, label: '회사 홈', icon: <Map className="size-4" /> },
-  { path: ROUTES.inbox, label: '받은함', icon: <Inbox className="size-4" /> },
+  { path: ROUTES.home, label: '대시보드', icon: <Map className="size-4" /> },
+  { path: ROUTES.inbox, label: '알림', icon: <Inbox className="size-4" /> },
   { path: ROUTES.search, label: '검색', icon: <Search className="size-4" /> },
 ];
 
@@ -174,6 +175,9 @@ function HeaderActions() {
             <DropdownMenuItem onSelect={() => navigate(ROUTES.accountNotifications)}>
               <Bell className="size-4" /> 알림 설정
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate(ROUTES.accountTheme)}>
+              <Palette className="size-4" /> 화면 테마
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate(ROUTES.accountPassword)}>
               <KeyRound className="size-4" /> 비밀번호 변경
             </DropdownMenuItem>
@@ -228,7 +232,7 @@ export function AppShell() {
       ...FIXED_MENU,
       {
         path: ROUTES.chat,
-        label: '메시지',
+        label: '워크룸',
         icon: <MessageSquare className="size-4" />,
         children: channelChildren,
       },
