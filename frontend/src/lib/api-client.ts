@@ -1,9 +1,15 @@
 // API 클라이언트 — bp-common-lib ResponseDto<T> 래퍼를 푸는 fetch 헬퍼.
 // BE 포트 8186(전역 포트 레지스트리). Sprint2 인증 API부터 실제 사용.
+import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '@/store/auth-store';
 
 // T3-2 §API 기본 규격: Base URL = /api/v1. dev는 MSW가 /api/v1을 가로챈다.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+// 네이티브 앱(Capacitor, CR-029)은 dev 프록시가 없으므로 운영 BE 절대 URL을 향한다.
+// 웹은 기존대로 상대경로(MSW/프록시). VITE_API_BASE_URL로 명시 오버라이드 가능.
+const NATIVE_API_BASE = 'http://59.8.160.12:8186/api/v1';
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (Capacitor.isNativePlatform() ? NATIVE_API_BASE : '/api/v1');
 
 // bp-common-lib ResponseDto<T> 실 형태: { success, data, error?, timestamp }
 // 성공: { success:true, data, error:null }. 실패: { success:false, data:null, error:{code,message} }
