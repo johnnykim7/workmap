@@ -15,7 +15,7 @@ async function loginAs(email: string, password: string) {
 describe('전사 검색 계약 (§13.9)', () => {
   beforeEach(async () => {
     useAuthStore.getState().clear();
-    await loginAs('admin@therecommerce.com', 'admin1234');
+    await loginAs('admin@workmap.com', 'admin1234');
   });
 
   it('projectId없이_전사검색_PageResponse', async () => {

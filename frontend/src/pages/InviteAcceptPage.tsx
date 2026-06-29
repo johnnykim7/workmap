@@ -56,7 +56,7 @@ export function InviteAcceptPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Field label="이메일" required error={errors.email?.message} htmlFor="email">
-            <Input id="email" type="email" placeholder="name@therecommerce.com" {...register('email')} />
+            <Input id="email" type="email" placeholder="name@workmap.com" {...register('email')} />
           </Field>
           <Field label="인증번호" required error={errors.code?.message} htmlFor="code">
             <Input id="code" inputMode="numeric" maxLength={6} placeholder="6자리 숫자" {...register('code')} />

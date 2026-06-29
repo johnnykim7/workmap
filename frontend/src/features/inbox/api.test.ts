@@ -15,7 +15,7 @@ async function loginAs(email: string, password: string) {
 describe('받은함 계약 (T3-2 §L)', () => {
   beforeEach(async () => {
     useAuthStore.getState().clear();
-    await loginAs('admin@therecommerce.com', 'admin1234'); // id=1, mock 알림 수신자
+    await loginAs('admin@workmap.com', 'admin1234'); // id=1, mock 알림 수신자
   });
 
   it('받은함_목록과배지_통합반환', async () => {

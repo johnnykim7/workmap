@@ -80,7 +80,7 @@ export function UserDialog({ open, onOpenChange, busy = false, editing, onCreate
 
         <form onSubmit={submit} className="space-y-3">
           <Field label="이메일" required error={errors.email?.message}>
-            <Input type="email" placeholder="user@therecommerce.com" disabled={isEdit} {...register('email')} />
+            <Input type="email" placeholder="user@workmap.com" disabled={isEdit} {...register('email')} />
           </Field>
 
           {!isEdit && (

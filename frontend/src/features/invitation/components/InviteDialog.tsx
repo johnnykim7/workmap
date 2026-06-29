@@ -63,7 +63,7 @@ export function InviteDialog({ open, onOpenChange, busy = false, onInvite }: Pro
 
         <form onSubmit={submit} className="space-y-3">
           <Field label="이메일" required error={errors.email?.message}>
-            <Input type="email" placeholder="user@therecommerce.com" {...register('email')} />
+            <Input type="email" placeholder="user@workmap.com" {...register('email')} />
           </Field>
           <Field label="이름" required error={errors.name?.message}>
             <Input placeholder="이름" {...register('name')} />

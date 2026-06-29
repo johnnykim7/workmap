@@ -15,7 +15,7 @@ async function loginAs(email: string, password: string) {
 describe('회사홈 대시보드 계약 (T3-2 §G)', () => {
   beforeEach(async () => {
     useAuthStore.getState().clear();
-    await loginAs('admin@therecommerce.com', 'admin1234');
+    await loginAs('admin@workmap.com', 'admin1234');
   });
 
   it('지표_5개필드_숫자반환', async () => {

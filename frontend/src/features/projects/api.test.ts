@@ -18,14 +18,14 @@ describe('인증 계약 (T3-2 §A)', () => {
   beforeEach(() => useAuthStore.getState().clear());
 
   it('로그인_정상자격_토큰과유저반환', async () => {
-    const res = await loginAs('admin@therecommerce.com', 'admin1234');
+    const res = await loginAs('admin@workmap.com', 'admin1234');
     expect(res.accessToken).toBeTruthy();
     expect(res.user.role).toBe('ADMIN');
     expect(res.user).not.toHaveProperty('password');
   });
 
   it('로그인_잘못된비번_401에러', async () => {
-    await expect(authApi.login({ email: 'admin@therecommerce.com', password: 'wrong' }))
+    await expect(authApi.login({ email: 'admin@workmap.com', password: 'wrong' }))
       .rejects.toMatchObject({ status: 401 });
   });
 });
@@ -33,7 +33,7 @@ describe('인증 계약 (T3-2 §A)', () => {
 describe('프로젝트 목록 계약 (T3-2 §D)', () => {
   beforeEach(async () => {
     useAuthStore.getState().clear();
-    await loginAs('admin@therecommerce.com', 'admin1234');
+    await loginAs('admin@workmap.com', 'admin1234');
   });
 
   it('필터없음_배열반환_보관제외', async () => {
@@ -53,7 +53,7 @@ describe('프로젝트 목록 계약 (T3-2 §D)', () => {
 
   it('BIZ108_비공개프로젝트_비멤버목록제외', async () => {
     // PLN(id3, PRIVATE, createdBy=2). dev(id3)는 멤버 아님 → 목록에서 빠짐.
-    await loginAs('dev@therecommerce.com', 'dev1234');
+    await loginAs('dev@workmap.com', 'dev1234');
     const list = await projectApi.list({});
     expect(list.some((p) => p.key === 'PLN')).toBe(false);
   });
@@ -63,7 +63,7 @@ describe('프로젝트 생성 계약 (T3-2 §D)', () => {
   beforeEach(() => useAuthStore.getState().clear());
 
   it('Manager_생성성공_201과PLANNING', async () => {
-    await loginAs('manager@therecommerce.com', 'manager1234');
+    await loginAs('manager@workmap.com', 'manager1234');
     const p = await projectApi.create({
       name: '신규 테스트', key: 'TST', workspaceId: 1, templateId: 1, visibility: 'PUBLIC',
     });
@@ -73,21 +73,21 @@ describe('프로젝트 생성 계약 (T3-2 §D)', () => {
   });
 
   it('중복키_409거부', async () => {
-    await loginAs('manager@therecommerce.com', 'manager1234');
+    await loginAs('manager@workmap.com', 'manager1234');
     await expect(projectApi.create({
       name: '중복', key: 'WMS', workspaceId: 1, templateId: 1, visibility: 'PUBLIC',
     })).rejects.toMatchObject({ status: 409 });
   });
 
   it('잘못된키형식_400거부', async () => {
-    await loginAs('manager@therecommerce.com', 'manager1234');
+    await loginAs('manager@workmap.com', 'manager1234');
     await expect(projectApi.create({
       name: '나쁜키', key: 'bad-key', workspaceId: 1, templateId: 1, visibility: 'PUBLIC',
     })).rejects.toMatchObject({ status: 400 });
   });
 
   it('Member권한_생성403거부', async () => {
-    await loginAs('dev@therecommerce.com', 'dev1234');
+    await loginAs('dev@workmap.com', 'dev1234');
     await expect(projectApi.create({
       name: '권한없음', key: 'NOPE', workspaceId: 1, templateId: 1, visibility: 'PUBLIC',
     })).rejects.toMatchObject({ status: 403 });
@@ -97,7 +97,7 @@ describe('프로젝트 생성 계약 (T3-2 §D)', () => {
 describe('멤버 계약 (T3-2 §E)', () => {
   beforeEach(async () => {
     useAuthStore.getState().clear();
-    await loginAs('manager@therecommerce.com', 'manager1234');
+    await loginAs('manager@workmap.com', 'manager1234');
   });
 
   it('멤버목록_userId와role포함', async () => {

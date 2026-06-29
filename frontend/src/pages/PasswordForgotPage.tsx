@@ -88,7 +88,7 @@ export function PasswordForgotPage() {
         {step === 1 ? (
           <form onSubmit={emailForm.handleSubmit(onSendCode)} className="mt-6 flex flex-col gap-4">
             <Field label="이메일" required error={emailForm.formState.errors.email?.message} htmlFor="email">
-              <Input id="email" type="email" placeholder="name@therecommerce.com" {...emailForm.register('email')} />
+              <Input id="email" type="email" placeholder="name@workmap.com" {...emailForm.register('email')} />
             </Field>
             <Button type="submit" variant="primary" className="mt-2 w-full" disabled={sending}>
               {sending && <Spinner className="size-4" />}

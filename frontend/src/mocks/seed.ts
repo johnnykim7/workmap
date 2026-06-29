@@ -19,11 +19,11 @@ export interface ProjectMemberRow {
 }
 
 export const seedUsers: SeedUser[] = [
-  { id: 1, name: '김관리', email: 'admin@therecommerce.com', password: 'admin1234', role: 'ADMIN', departmentId: 1, active: true },
-  { id: 2, name: '이매니저', email: 'manager@therecommerce.com', password: 'manager1234', role: 'MANAGER', departmentId: 1, active: true },
-  { id: 3, name: '박개발', email: 'dev@therecommerce.com', password: 'dev1234', role: 'MEMBER', departmentId: 1, active: true },
-  { id: 4, name: '최운영', email: 'ops@therecommerce.com', password: 'ops1234', role: 'MEMBER', departmentId: 2, active: true },
-  { id: 5, name: '정뷰어', email: 'viewer@therecommerce.com', password: 'viewer1234', role: 'VIEWER', departmentId: 2, active: true },
+  { id: 1, name: '김관리', email: 'admin@workmap.com', password: 'admin1234', role: 'ADMIN', departmentId: 1, active: true },
+  { id: 2, name: '이매니저', email: 'manager@workmap.com', password: 'manager1234', role: 'MANAGER', departmentId: 1, active: true },
+  { id: 3, name: '박개발', email: 'dev@workmap.com', password: 'dev1234', role: 'MEMBER', departmentId: 1, active: true },
+  { id: 4, name: '최운영', email: 'ops@workmap.com', password: 'ops1234', role: 'MEMBER', departmentId: 2, active: true },
+  { id: 5, name: '정뷰어', email: 'viewer@workmap.com', password: 'viewer1234', role: 'VIEWER', departmentId: 2, active: true },
 ];
 
 export const seedWorkspaces: Workspace[] = [

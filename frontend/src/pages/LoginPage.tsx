@@ -44,7 +44,7 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Field label="이메일" required error={errors.email?.message} htmlFor="email">
-            <Input id="email" type="email" placeholder="name@therecommerce.com" {...register('email')} />
+            <Input id="email" type="email" placeholder="name@workmap.com" {...register('email')} />
           </Field>
           <Field label="비밀번호" required error={errors.password?.message} htmlFor="password">
             <Input id="password" type="password" placeholder="••••••••" {...register('password')} />

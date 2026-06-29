@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useAuthStore } from './auth-store';
 import type { User } from '@/types/domain';
 
-const user: User = { id: 1, name: '김관리', email: 'admin@therecommerce.com', role: 'ADMIN', active: true };
+const user: User = { id: 1, name: '김관리', email: 'admin@workmap.com', role: 'ADMIN', active: true };
 
 describe('auth-store', () => {
   beforeEach(() => useAuthStore.getState().clear());
@@ -21,7 +21,7 @@ describe('auth-store', () => {
     expect(s.isAuthenticated).toBe(true);
     expect(s.accessToken).toBe('a');
     expect(s.refreshToken).toBe('r');
-    expect(s.user?.email).toBe('admin@therecommerce.com');
+    expect(s.user?.email).toBe('admin@workmap.com');
   });
 
   it('clear_호출_세션비워짐', () => {
