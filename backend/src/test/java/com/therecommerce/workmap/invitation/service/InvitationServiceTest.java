@@ -38,6 +38,7 @@ class InvitationServiceTest {
     @Mock UserService userService;
     @Mock NotificationClient notificationClient;
     @Mock AuthService authService;
+    @Mock com.therecommerce.workmap.workspace.service.WorkspaceService workspaceService;
     TokenService tokenService = new TokenService();
     AuthOtpProperties props;
     InvitationService service;
@@ -48,13 +49,13 @@ class InvitationServiceTest {
         // 발송하는 케이스에서만 호출되므로 lenient(거부 케이스는 미호출 — UnnecessaryStubbing 회피).
         lenient().when(notificationClient.webBaseUrl()).thenReturn("http://test/web");
         service = new InvitationService(invitationMapper, userMapper, userService,
-                tokenService, notificationClient, authService, props);
+                tokenService, notificationClient, authService, workspaceService, props);
     }
 
     @Test
     @DisplayName("INV-1: 초대_invitation(토큰해시)생성+수락링크 발송(user 미생성)")
     void 초대_생성_링크발송() {
-        InviteRequest req = new InviteRequest("new@therecommerce.com", "홍길동", "MEMBER", null);
+        InviteRequest req = new InviteRequest("new@therecommerce.com", "홍길동", "MEMBER", null, null);
         when(userMapper.existsByEmail(req.email())).thenReturn(false);
         when(invitationMapper.findPendingByEmail(req.email())).thenReturn(null);
 
@@ -69,7 +70,7 @@ class InvitationServiceTest {
     @Test
     @DisplayName("INV-2: 이미가입된이메일_초대거부(EMAIL_DUPLICATED)")
     void 가입이메일_거부() {
-        InviteRequest req = new InviteRequest("dup@therecommerce.com", "중복", null, null);
+        InviteRequest req = new InviteRequest("dup@therecommerce.com", "중복", null, null, null);
         when(userMapper.existsByEmail(req.email())).thenReturn(true);
 
         assertThatThrownBy(() -> service.invite(req, 1L))
@@ -81,7 +82,7 @@ class InvitationServiceTest {
     @Test
     @DisplayName("INV-3: PENDING초대중복_거부(INVITATION_PENDING_DUPLICATED)")
     void PENDING중복_거부() {
-        InviteRequest req = new InviteRequest("p@therecommerce.com", "보류", null, null);
+        InviteRequest req = new InviteRequest("p@therecommerce.com", "보류", null, null, null);
         when(userMapper.existsByEmail(req.email())).thenReturn(false);
         when(invitationMapper.findPendingByEmail(req.email())).thenReturn(Invitation.builder().id(1L).build());
 
@@ -109,6 +110,24 @@ class InvitationServiceTest {
         verify(userService).create(any(CreateUserRequest.class));
         verify(invitationMapper).markAccepted(9L);
         verify(authService).issueTokensFor(created);
+        verify(workspaceService, never()).addMember(any(), any()); // WS 미지정이면 합류 없음
+    }
+
+    @Test
+    @DisplayName("INV-7: 수락_초대에 WS지정 시 그 WS 자동 합류(CR-033)")
+    void 수락_WS자동합류() {
+        AcceptRequest req = new AcceptRequest("raw-token-ws", "rawPassword123");
+        Invitation pending = Invitation.builder()
+                .id(9L).email("ws@therecommerce.com").name("가입자").role("MEMBER")
+                .status("PENDING").workspaceId(3L).expiresAt(OffsetDateTime.now().plusHours(1)).build();
+        when(invitationMapper.findPendingByTokenHash(anyString())).thenReturn(pending);
+        User created = User.builder().id(50L).email("ws@therecommerce.com").build();
+        when(userMapper.findByEmail("ws@therecommerce.com")).thenReturn(created);
+        when(authService.issueTokensFor(created)).thenReturn(new LoginResponse("at", "rt", null));
+
+        service.accept(req);
+
+        verify(workspaceService).addMember(3L, 50L); // 지정 WS로 자동 합류
     }
 
     @Test

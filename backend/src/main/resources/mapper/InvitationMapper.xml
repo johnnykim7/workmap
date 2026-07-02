@@ -5,8 +5,8 @@
 
     <insert id="insert" parameterType="com.therecommerce.workmap.invitation.domain.Invitation"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO invitations (email, name, role, department_id, status, token_hash, invited_by, expires_at)
-        VALUES (#{email}, #{name}, #{role}, #{departmentId}, #{status}, #{tokenHash}, #{invitedBy}, #{expiresAt})
+        INSERT INTO invitations (email, name, role, department_id, status, token_hash, workspace_id, invited_by, expires_at)
+        VALUES (#{email}, #{name}, #{role}, #{departmentId}, #{status}, #{tokenHash}, #{workspaceId}, #{invitedBy}, #{expiresAt})
     </insert>
 
     <!-- 초대 수락 토큰으로 조회(PENDING·미만료). CR-027 토큰 보정. -->

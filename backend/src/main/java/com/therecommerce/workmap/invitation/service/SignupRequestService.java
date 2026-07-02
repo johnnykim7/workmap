@@ -57,9 +57,9 @@ public class SignupRequestService {
     @Transactional
     public void approve(Long id, ApproveRequest req, Long adminId) {
         SignupRequest sr = getPending(id);
-        // 초대 발송(이미 가입/PENDING 초대면 InvitationService가 거부).
+        // 초대 발송(이미 가입/PENDING 초대면 InvitationService가 거부). 승인 시 지정한 WS로 합류(CR-033).
         invitationService.invite(
-                new InviteRequest(sr.getEmail(), sr.getName(), req.roleOrDefault(), null), adminId);
+                new InviteRequest(sr.getEmail(), sr.getName(), req.roleOrDefault(), null, req.workspaceId()), adminId);
         signupMapper.markProcessed(id, "APPROVED", adminId, null);
     }
 

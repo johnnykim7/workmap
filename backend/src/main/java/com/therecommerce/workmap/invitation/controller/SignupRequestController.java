@@ -34,7 +34,7 @@ public class SignupRequestController {
     @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
     public ResponseDto<Void> approve(@PathVariable Long id, @RequestBody(required = false) ApproveRequest req,
                                      @AuthUserInfo("userId") Long adminId) {
-        signupRequestService.approve(id, req != null ? req : new ApproveRequest(null), adminId);
+        signupRequestService.approve(id, req != null ? req : new ApproveRequest(null, null), adminId);
         return ResponseDto.success(null);
     }
 

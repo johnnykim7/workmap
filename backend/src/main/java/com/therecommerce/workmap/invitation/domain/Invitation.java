@@ -27,6 +27,7 @@ public class Invitation {
     private Long departmentId;
     private String status;
     private String tokenHash; // 초대 수락 토큰 해시(SHA-256). 평문은 메일 링크로만 전달(CR-027 토큰 보정).
+    private Long workspaceId; // 지정 시 수락 완료 시점에 그 WS 멤버로 자동 합류(CR-033). null=미지정.
     private Long invitedBy;
     private OffsetDateTime expiresAt;
     private OffsetDateTime acceptedAt;

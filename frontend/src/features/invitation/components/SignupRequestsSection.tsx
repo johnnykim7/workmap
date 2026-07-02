@@ -9,6 +9,8 @@ import { UserPlus, Check, X } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ROLE_LABEL } from '@/features/user/components/UserDialog';
 import { useSignupRequests, useSignupRequestMutations } from '../signup-hooks';
+import { useWorkspaces } from '@/features/workspaces/hooks';
+import { useWorkspaceStore } from '@/store/workspace-store';
 import type { SignupRequestResponse } from '../signup-api';
 import type { UserRole } from '@/types/domain';
 
@@ -17,8 +19,13 @@ const ROLES = Object.keys(ROLE_LABEL) as UserRole[];
 export function SignupRequestsSection() {
   const { data: requests } = useSignupRequests('PENDING');
   const { approve, reject } = useSignupRequestMutations();
+  const { data: workspaces = [] } = useWorkspaces();
+  const currentWs = useWorkspaceStore((s) => s.currentWorkspaceId);
   const [roleById, setRoleById] = useState<Record<number, string>>({});
+  const [wsById, setWsById] = useState<Record<number, string>>({});
   const [rejecting, setRejecting] = useState<SignupRequestResponse | null>(null);
+
+  const wsFor = (id: number) => wsById[id] ?? (currentWs != null ? String(currentWs) : '');
 
   if (!requests || requests.length === 0) return null;
 
@@ -37,15 +44,21 @@ export function SignupRequestsSection() {
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <Select value={roleById[r.id] ?? 'MEMBER'} onValueChange={(v) => setRoleById((m) => ({ ...m, [r.id]: v }))}>
-                <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLES.map((role) => <SelectItem key={role} value={role}>{ROLE_LABEL[role]}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <Select value={wsFor(r.id)} onValueChange={(v) => setWsById((m) => ({ ...m, [r.id]: v }))}>
+                <SelectTrigger className="h-8 w-32"><SelectValue placeholder="워크스페이스" /></SelectTrigger>
+                <SelectContent>
+                  {workspaces.map((ws) => <SelectItem key={ws.id} value={String(ws.id)}>{ws.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button
                 variant="primary" size="sm" className="gap-1"
-                disabled={approve.isPending}
-                onClick={() => approve.mutate({ id: r.id, role: roleById[r.id] ?? 'MEMBER' })}
+                disabled={approve.isPending || !wsFor(r.id)}
+                onClick={() => approve.mutate({ id: r.id, role: roleById[r.id] ?? 'MEMBER', workspaceId: Number(wsFor(r.id)) })}
               >
                 <Check className="size-3.5" /> 승인
               </Button>
@@ -60,7 +73,7 @@ export function SignupRequestsSection() {
         ))}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        승인 시 지정한 역할로 <Badge variant="secondary">초대 메일</Badge>이 발송됩니다.
+        승인 시 지정한 역할·워크스페이스로 <Badge variant="secondary">초대 메일</Badge>이 발송되고, 가입 완료 시 그 워크스페이스에 자동 합류합니다.
       </p>
 
       <ConfirmDialog

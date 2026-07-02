@@ -21,7 +21,8 @@ export function useSignupRequestMutations() {
   };
 
   const approve = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) => signupRequestApi.approve(id, role),
+    mutationFn: ({ id, role, workspaceId }: { id: number; role: string; workspaceId?: number | null }) =>
+      signupRequestApi.approve(id, role, workspaceId),
     onSuccess: () => { invalidate(); toast.success('가입을 승인하고 초대를 발송했습니다.'); },
     onError: (e) => toast.error(msg(e, '승인에 실패했습니다.')),
   });

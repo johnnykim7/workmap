@@ -19,12 +19,13 @@ public final class InvitationDtos {
 
     // --- 초대 (Admin) ---
 
-    /** 사용자 초대 요청(WMP-AUTH-004). */
+    /** 사용자 초대 요청(WMP-AUTH-004). workspaceId 지정 시 수락 후 그 WS 자동 합류(CR-033). */
     public record InviteRequest(
             @NotBlank @Email String email,
             @NotBlank @Size(max = 50) String name,
             String role,
-            Long departmentId
+            Long departmentId,
+            Long workspaceId
     ) {
         public String roleOrDefault() {
             return (role == null || role.isBlank()) ? UserRole.MEMBER.name() : role;

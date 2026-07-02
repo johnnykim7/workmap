@@ -76,7 +76,7 @@ class SignupRequestServiceTest {
                 .id(9L).email("new@therecommerce.com").name("홍길동").status("PENDING").build();
         when(signupMapper.findById(9L)).thenReturn(sr);
 
-        service.approve(9L, new ApproveRequest("MANAGER"), 1L);
+        service.approve(9L, new ApproveRequest("MANAGER", null), 1L);
 
         verify(invitationService).invite(any(InviteRequest.class), eq(1L));
         verify(signupMapper).markProcessed(9L, "APPROVED", 1L, null);
@@ -88,7 +88,7 @@ class SignupRequestServiceTest {
         SignupRequest sr = SignupRequest.builder().id(9L).status("APPROVED").build();
         when(signupMapper.findById(9L)).thenReturn(sr);
 
-        assertThatThrownBy(() -> service.approve(9L, new ApproveRequest(null), 1L))
+        assertThatThrownBy(() -> service.approve(9L, new ApproveRequest(null, null), 1L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.SIGNUP_REQUEST_ALREADY_PROCESSED);
         verify(invitationService, never()).invite(any(), any());

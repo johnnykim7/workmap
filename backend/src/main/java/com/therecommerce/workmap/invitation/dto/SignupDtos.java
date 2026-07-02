@@ -24,9 +24,10 @@ public final class SignupDtos {
     ) {
     }
 
-    /** 승인(Admin) — 생성될 user의 역할 지정. */
+    /** 승인(Admin) — 생성될 user의 역할·합류 워크스페이스 지정(CR-033). */
     public record ApproveRequest(
-            String role
+            String role,
+            Long workspaceId
     ) {
         public String roleOrDefault() {
             return (role == null || role.isBlank()) ? UserRole.MEMBER.name() : role;

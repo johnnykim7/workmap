@@ -7,6 +7,7 @@ export interface InviteRequest {
   name: string;
   role?: string | null;
   departmentId?: number | null;
+  workspaceId?: number | null; // CR-033 — 수락 시 이 WS로 자동 합류
 }
 
 export interface InvitationResponse {

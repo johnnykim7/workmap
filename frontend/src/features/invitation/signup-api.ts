@@ -13,8 +13,8 @@ export interface SignupRequestResponse {
 export const signupRequestApi = {
   list: (status?: string) =>
     api.get<SignupRequestResponse[]>(`/signup-requests${status ? `?status=${status}` : ''}`),
-  approve: (id: number, role: string) =>
-    api.post<Record<string, never>>(`/signup-requests/${id}/approve`, { role }),
+  approve: (id: number, role: string, workspaceId?: number | null) =>
+    api.post<Record<string, never>>(`/signup-requests/${id}/approve`, { role, workspaceId: workspaceId ?? null }),
   reject: (id: number, reason?: string) =>
     api.post<Record<string, never>>(`/signup-requests/${id}/reject`, { reason: reason ?? null }),
 };

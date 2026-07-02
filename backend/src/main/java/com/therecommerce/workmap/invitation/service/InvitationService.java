@@ -41,6 +41,7 @@ public class InvitationService {
     private final TokenService tokenService;
     private final NotificationClient notificationClient;
     private final AuthService authService;
+    private final com.therecommerce.workmap.workspace.service.WorkspaceService workspaceService;
     private final AuthOtpProperties props;
 
     @Transactional
@@ -59,6 +60,7 @@ public class InvitationService {
                 .departmentId(req.departmentId())
                 .status("PENDING")
                 .tokenHash(tokenService.hash(rawToken))
+                .workspaceId(req.workspaceId())
                 .invitedBy(invitedBy)
                 .expiresAt(OffsetDateTime.now().plusHours(props.getInvitationExpiresHours()))
                 .build();
@@ -120,6 +122,13 @@ public class InvitationService {
         invitationMapper.markAccepted(invitation.getId()); // 토큰은 ACCEPTED로 소비(재사용 불가)
 
         User user = userMapper.findByEmail(invitation.getEmail());
+
+        // CR-033: 초대에 WS가 지정돼 있으면 그 WS 멤버로 자동 합류(같은 트랜잭션).
+        // 빈 WS 선택 화면 방지 — 가입 직후 바로 그 WS로 진입. addMember는 ON CONFLICT DO NOTHING.
+        if (invitation.getWorkspaceId() != null) {
+            workspaceService.addMember(invitation.getWorkspaceId(), user.getId());
+        }
+
         return authService.issueTokensFor(user);
     }
 

@@ -127,11 +127,11 @@ describe('가입 요청 API 계약 (WMP-AUTH-010, CR-032)', () => {
     expect(last().url).toMatch(/\/signup-requests\?status=PENDING$/);
   });
 
-  it('승인_POST_/signup-requests/{id}/approve (역할)', async () => {
-    await signupRequestApi.approve(9, 'MANAGER');
+  it('승인_POST_/signup-requests/{id}/approve (역할+WS, CR-033)', async () => {
+    await signupRequestApi.approve(9, 'MANAGER', 3);
     expect(last().method).toBe('POST');
     expect(last().url).toMatch(/\/signup-requests\/9\/approve$/);
-    expect(last().body).toMatchObject({ role: 'MANAGER' });
+    expect(last().body).toMatchObject({ role: 'MANAGER', workspaceId: 3 });
   });
 
   it('거절_POST_/signup-requests/{id}/reject', async () => {
