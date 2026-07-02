@@ -67,12 +67,12 @@
 |--------|------|------|------|----------|-------------|
 | GET | /users | 사용자 목록(검색·페이징) | 🔒 | P1 | WMP-AUTH-005 |
 | POST | /users | 사용자 직접 생성(이름·역할·부서·비밀번호 — 시드/마이그레이션용, Admin) | 🔒 Admin | P2 | WMP-AUTH-005 |
-| POST | /invitations | 사용자 초대(이메일·이름·역할·부서 → invitations 생성 + 인증번호 발송) | 🔒 Admin | P1 | WMP-AUTH-004 |
+| POST | /invitations | 사용자 초대(이메일·이름·역할·부서·**workspaceId(CR-033)** → invitations 생성 + 링크 발송. 수락 시 그 WS 자동 합류) | 🔒 Admin | P1 | WMP-AUTH-004 |
 | GET | /invitations | 초대 목록(상태 필터: PENDING/ACCEPTED/EXPIRED) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | POST | /invitations/{id}/resend | 초대 인증번호 재발송(쿨다운 적용) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | DELETE | /invitations/{id} | 초대 취소(REVOKED) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | GET | /signup-requests | 가입 요청 목록(상태 필터) | 🔒 Admin | P1 | WMP-AUTH-010 |
-| POST | /signup-requests/{id}/approve | 승인(역할 지정 → 초대 발송) | 🔒 Admin | P1 | WMP-AUTH-010 |
+| POST | /signup-requests/{id}/approve | 승인(**역할·workspaceId 지정(CR-033)** → 초대 발송) | 🔒 Admin | P1 | WMP-AUTH-010 |
 | POST | /signup-requests/{id}/reject | 거절(사유 선택) | 🔒 Admin | P1 | WMP-AUTH-010 |
 | PATCH | /users/{id} | 사용자 수정(역할·부서) | 🔒 Admin | P1 | WMP-AUTH-005 |
 | PATCH | /users/{id}/deactivate | 비활성화(소프트 삭제) | 🔒 Admin | P1 | WMP-AUTH-005 |

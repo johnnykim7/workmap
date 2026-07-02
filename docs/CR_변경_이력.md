@@ -38,6 +38,7 @@
 | CR-030 | 개인 화면 테마 — LNB 톤·포인트색 프리셋 선택(localStorage) | 신규 | Low | v2.2 |
 | CR-031 | VIEWER 읽기전용 강제 — 업무·스프린트·승인 쓰기 @PreAuthorize 가드(설계 누락 보정) | 설계보정 | Medium | v2.2 |
 | CR-032 | 가입 요청(셀프 신청 → 관리자 승인 → 초대 발송) — signup_requests + 로그인 화면 진입 | 신규 | Medium | v2.2 |
+| CR-033 | 초대·가입승인에 워크스페이스 지정 + 수락 시 자동 합류(빈 WS 선택 화면 해소) | 설계보정/신규 | Medium | v2.2 |
 
 ---
 
@@ -702,6 +703,22 @@
 - **에러코드**: WMP-7843~(SIGNUP_REQUEST_NOT_FOUND/ALREADY_PROCESSED/PENDING_DUPLICATED). 이미 가입=기존 7741 재사용. **마이그레이션**: V12.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-06-29, 승인=역할지정 후 초대발송 / 로그인화면 링크 / 받은함 표시만 / 중규모) | **적용 버전**: v2.2
 - **변경 일자**: 2026-06-29
+
+### CR-033 — 초대·가입승인에 워크스페이스 지정 + 수락 시 자동 합류
+
+- **대상 기능 ID**: WMP-AUTH-004/006/010(보정)
+- **변경 타입**: 설계보정/신규(중규모) | **영향도**: Medium(초대/가입 경로에 WS 합류 추가. 신규 컬럼·화면 필드)
+- **상태**: **설계 캐스케이드 완료(2026-07-02). 구현 진행.**
+- **배경**: 운영 확인에서 **관리자 초대로 가입 완료한 사용자가 "속한 워크스페이스가 없습니다" 빈 화면에 갇힘** 발견(사용자 캡처). 실측: `InvitationService.accept`에 WS 합류 처리가 전혀 없었음 — user만 생성. CR-018 WS 격리(BIZ-112)로 신규 가입자는 아무 WS도 못 봄. **설계 구멍**(초대에 "어느 WS로 부를지"가 없었음).
+- **핵심 결정(사용자 합의 2026-07-02)**:
+  - **초대 = 관리자가 초대 시 WS 지정** → 수락 시 그 WS 자동 합류. (이견 없음 — "관리자가 속한 WS로 부르면 끝".)
+  - **가입 요청(CR-032) = 사용자는 WS를 고르지 않음**. WS 모델(격리)에서 신규 신청자는 어떤 WS가 있는지 모르고 목록 노출도 불가(BIZ-112). 사용자는 "회사 합류"만 신청 → **관리자가 승인 시 역할+WS 지정** → 초대 발송 → 수락 시 지정 WS 합류. (슬랙 등도 셀프 가입은 도메인 기반이며 외부인이 WS를 고르지 않음 — 사용자 관찰 "WS 제품에서 사용자가 먼저 요청하는 걸 본 적 없다"와 일치.)
+  - WS 없이 초대도 허용(workspace_id nullable) — 그 경우 가입 후 미소속(관리자가 별도 WS 추가).
+- **변경 내용(설계)**: T1-1(004 입력에 WS·006 수락 시 자동합류·010 승인에 WS 지정) · T3-1(`invitations.workspace_id` nullable, **V13** + 수락 시 workspace_members 자동 insert=WorkspaceService.addMember 재사용, ON CONFLICT DO NOTHING) · T3-2(POST /invitations·/signup-requests/{id}/approve에 workspaceId) · T3-3(InviteDialog WS 선택=기본 현재 WS·가입요청 승인에 WS 선택).
+- **구현(예정)**: BE V13 + Invitation 도메인/InviteRequest/ApproveRequest에 workspaceId + accept 시 `if(workspaceId!=null) workspaceService.addMember(wsId, userId)` + SignupRequestService.approve가 WS를 InviteRequest에 전달 + 테스트. FE InviteDialog WS Select(기본=workspace-store 현재 WS)·SignupRequestsSection 승인에 WS Select.
+- **영향 설계서**: T1-1, T3-1, T3-2, T3-3, CR_변경_이력, CLAUDE.md. **에러코드 신규 없음**(WS 미존재=기존 7722 재사용). **마이그레이션**: V13.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-07-02, 초대=관리자 WS 지정 / 가입요청=승인 시 관리자가 역할+WS 지정 / 중규모) | **적용 버전**: v2.2
+- **변경 일자**: 2026-07-02
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
