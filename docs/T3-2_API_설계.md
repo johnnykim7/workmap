@@ -48,6 +48,7 @@
 | POST | /auth/password/reset | 재설정 완료 — 토큰+새 비밀번호 검증·변경 | | P1 | WMP-AUTH-007 |
 | POST | /auth/password/change/request-otp | 변경 1단계 — 본인 이메일로 인증번호 발송 | 🔒 | P1 | WMP-AUTH-008 |
 | POST | /auth/password/change | 변경 2단계 — 현재 비밀번호+인증번호+새 비밀번호(2차 인증) | 🔒 | P1 | WMP-AUTH-008 |
+| POST | /auth/signup-requests | 가입 요청(공개 — 이메일·이름·사유). user 미생성, PENDING 접수 | | P1 | WMP-AUTH-010 |
 
 > **CR-027 토큰 보정**: 초대·분실재설정은 **토큰 링크**(인증번호 입력 제거). 변경(CHANGE)만 인증번호 유지.
 > **토큰 규칙(POL-013-A)**: 추측 불가 랜덤(해시 저장), 초대 만료 72h·재설정 30분, 1회용, 시도제한 불요(고엔트로피). 발송은 bp-notification(WMP-AUTH-009, `WMP_INVITE_LINK`/`WMP_RESET_LINK`) — 토큰 평문은 응답·로그에 비노출(링크 URL만 메일에).
@@ -70,6 +71,9 @@
 | GET | /invitations | 초대 목록(상태 필터: PENDING/ACCEPTED/EXPIRED) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | POST | /invitations/{id}/resend | 초대 인증번호 재발송(쿨다운 적용) | 🔒 Admin | P2 | WMP-AUTH-004 |
 | DELETE | /invitations/{id} | 초대 취소(REVOKED) | 🔒 Admin | P2 | WMP-AUTH-004 |
+| GET | /signup-requests | 가입 요청 목록(상태 필터) | 🔒 Admin | P1 | WMP-AUTH-010 |
+| POST | /signup-requests/{id}/approve | 승인(역할 지정 → 초대 발송) | 🔒 Admin | P1 | WMP-AUTH-010 |
+| POST | /signup-requests/{id}/reject | 거절(사유 선택) | 🔒 Admin | P1 | WMP-AUTH-010 |
 | PATCH | /users/{id} | 사용자 수정(역할·부서) | 🔒 Admin | P1 | WMP-AUTH-005 |
 | PATCH | /users/{id}/deactivate | 비활성화(소프트 삭제) | 🔒 Admin | P1 | WMP-AUTH-005 |
 
