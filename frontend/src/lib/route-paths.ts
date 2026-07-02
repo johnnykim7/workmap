@@ -18,6 +18,7 @@ export const ROUTES = {
   inviteAccept: '/invite/accept',
   passwordForgot: '/password/forgot',
   passwordReset: '/password/reset',
+  signupRequest: '/signup-request',
   accountPassword: '/account/password',
   accountNotifications: '/account/notifications', // CR-028 — 알림 수신 설정
   accountTheme: '/account/theme', // 개인 화면 테마(프리셋)

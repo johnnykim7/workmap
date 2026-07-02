@@ -10,6 +10,7 @@ import { PageHead } from '@/components/badges';
 import { AdminTabs } from '@/features/admin/components/AdminTabs';
 import { UserDialog, ROLE_LABEL } from '@/features/user/components/UserDialog';
 import { InviteDialog } from '@/features/invitation/components/InviteDialog';
+import { SignupRequestsSection } from '@/features/invitation/components/SignupRequestsSection';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
@@ -57,6 +58,9 @@ export function UsersPage() {
           </div>
         }
       />
+
+      {/* CR-032 — 대기 중인 가입 요청(승인=역할지정 후 초대발송·거절). */}
+      <SignupRequestsSection />
 
       {/* CR-027 — 대기 중인 초대(PENDING). 재발송/취소. */}
       {pendingInvites && pendingInvites.length > 0 && (

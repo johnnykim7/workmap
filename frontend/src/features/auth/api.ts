@@ -36,6 +36,12 @@ export interface ChangePasswordRequest {
   code: string;
   newPassword: string;
 }
+// CR-032 — 셀프 가입 요청(공개)
+export interface SignupRequestBody {
+  email: string;
+  name: string;
+  reason?: string;
+}
 
 export const authApi = {
   login: (body: LoginRequest) => api.post<LoginResponse>('/auth/login', body),
@@ -55,4 +61,7 @@ export const authApi = {
     api.post<Record<string, never>>('/auth/password/change/request-otp'),
   changePassword: (body: ChangePasswordRequest) =>
     api.post<Record<string, never>>('/auth/password/change', body),
+  // CR-032
+  requestSignup: (body: SignupRequestBody) =>
+    api.post<Record<string, never>>('/auth/signup-requests', body),
 };

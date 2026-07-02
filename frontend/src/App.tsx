@@ -7,6 +7,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { InviteAcceptPage } from '@/pages/InviteAcceptPage';
 import { PasswordForgotPage } from '@/pages/PasswordForgotPage';
 import { PasswordResetPage } from '@/pages/PasswordResetPage';
+import { SignupRequestPage } from '@/pages/SignupRequestPage';
 import { AccountPasswordPage } from '@/pages/AccountPasswordPage';
 import { AccountNotificationsPage } from '@/pages/AccountNotificationsPage';
 import { AccountThemePage } from '@/pages/AccountThemePage';
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
   { path: '/invite/accept', element: <InviteAcceptPage /> },
   { path: '/password/forgot', element: <PasswordForgotPage /> },
   { path: '/password/reset', element: <PasswordResetPage /> },
+  { path: '/signup-request', element: <SignupRequestPage /> },
   {
     element: <RequireAuth />,
     children: [

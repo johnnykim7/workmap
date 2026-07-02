@@ -2,6 +2,7 @@
 // fetch 스텁으로 요청 URL/메서드/바디가 BE InvitationController·AuthController 계약과 일치하는지 검증.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invitationApi } from './api';
+import { signupRequestApi } from './signup-api';
 import { authApi } from '@/features/auth/api';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -109,5 +110,33 @@ describe('인증 토큰 API 계약 (WMP-AUTH-006/007/008, 토큰 보정)', () =>
     await authApi.changePassword({ currentPassword: 'cur12345', code: '123456', newPassword: 'new12345' });
     expect(last().url).toMatch(/\/auth\/password\/change$/);
     expect(last().body).toMatchObject({ currentPassword: 'cur12345', code: '123456', newPassword: 'new12345' });
+  });
+});
+
+describe('가입 요청 API 계약 (WMP-AUTH-010, CR-032)', () => {
+  it('가입요청_POST_/auth/signup-requests (공개)', async () => {
+    await authApi.requestSignup({ email: 'x@y.com', name: '홍길동', reason: '합류' });
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/auth\/signup-requests$/);
+    expect(last().body).toMatchObject({ email: 'x@y.com', name: '홍길동' });
+  });
+
+  it('신청목록_GET_/signup-requests?status', async () => {
+    await signupRequestApi.list('PENDING');
+    expect(last().method).toBe('GET');
+    expect(last().url).toMatch(/\/signup-requests\?status=PENDING$/);
+  });
+
+  it('승인_POST_/signup-requests/{id}/approve (역할)', async () => {
+    await signupRequestApi.approve(9, 'MANAGER');
+    expect(last().method).toBe('POST');
+    expect(last().url).toMatch(/\/signup-requests\/9\/approve$/);
+    expect(last().body).toMatchObject({ role: 'MANAGER' });
+  });
+
+  it('거절_POST_/signup-requests/{id}/reject', async () => {
+    await signupRequestApi.reject(9, '권한 없음');
+    expect(last().url).toMatch(/\/signup-requests\/9\/reject$/);
+    expect(last().body).toMatchObject({ reason: '권한 없음' });
   });
 });

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.invitation.mapper.SignupRequestMapper">
+
+    <insert id="insert" parameterType="com.therecommerce.workmap.invitation.domain.SignupRequest"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO signup_requests (email, name, reason, status)
+        VALUES (#{email}, #{name}, #{reason}, #{status})
+    </insert>
+
+    <select id="findById" resultType="com.therecommerce.workmap.invitation.domain.SignupRequest">
+        SELECT * FROM signup_requests WHERE id = #{id}
+    </select>
+
+    <select id="findPendingByEmail" resultType="com.therecommerce.workmap.invitation.domain.SignupRequest">
+        SELECT * FROM signup_requests
+        WHERE email = #{email} AND status = 'PENDING'
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="findByStatus" resultType="com.therecommerce.workmap.invitation.domain.SignupRequest">
+        SELECT * FROM signup_requests
+        <where>
+            <if test="status != null and status != ''">status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <update id="markProcessed">
+        UPDATE signup_requests
+        SET status = #{status}, processed_by = #{processedBy}, reject_reason = #{rejectReason},
+            processed_at = now(), updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

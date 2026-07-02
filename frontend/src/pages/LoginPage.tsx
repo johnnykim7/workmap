@@ -62,9 +62,12 @@ export function LoginPage() {
           </Link>
         </p>
 
-        {/* 가입 안내 — self-signup 부재(WMP-AUTH-004 관리자 초대 모델). #1 */}
+        {/* CR-032 — 셀프 가입 요청(관리자 승인 후 초대). */}
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          계정이 없으신가요? 관리자에게 계정 생성을 요청하세요.
+          계정이 없으신가요?{' '}
+          <Link to={ROUTES.signupRequest} className="text-primary hover:underline">
+            가입 요청
+          </Link>
         </p>
 
         {/* 안내 계정. 운영 계정 정책 확정 시 제거. */}

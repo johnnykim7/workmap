@@ -19,6 +19,8 @@ public class WmpSecurityWhitelist implements SecurityWhitelist {
                 "/api/v1/auth/invitations/*",
                 "/api/v1/auth/password/forgot",
                 "/api/v1/auth/password/reset",
+                // CR-032: 셀프 가입 요청은 로그인 못 하는 사람이 쓰므로 공개(신청만 — 승인/거절은 Admin).
+                "/api/v1/auth/signup-requests",
                 // 업로드 파일 정적 서빙(CR-024). <img src>는 인증 헤더가 없으므로 GET 서빙 경로만 공개.
                 // 서빙은 /files/serve/{name}으로 분리 — 업로드(/files/upload)와 패턴이 안 겹쳐 인증 유지.
                 "/api/v1/files/serve/*",

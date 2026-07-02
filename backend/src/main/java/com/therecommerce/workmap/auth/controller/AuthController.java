@@ -12,8 +12,10 @@ import com.therecommerce.workmap.invitation.dto.InvitationDtos.ChangeRequest;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.ForgotRequest;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.InvitationPreview;
 import com.therecommerce.workmap.invitation.dto.InvitationDtos.ResetRequest;
+import com.therecommerce.workmap.invitation.dto.SignupDtos.SignupRequestBody;
 import com.therecommerce.workmap.invitation.service.InvitationService;
 import com.therecommerce.workmap.invitation.service.PasswordService;
+import com.therecommerce.workmap.invitation.service.SignupRequestService;
 import com.therecommerce.workmap.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class AuthController {
     private final AuthService authService;
     private final InvitationService invitationService;
     private final PasswordService passwordService;
+    private final SignupRequestService signupRequestService;
 
     @PostMapping("/login")
     public ResponseDto<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
@@ -79,6 +82,13 @@ public class AuthController {
     @PostMapping("/password/reset")
     public ResponseDto<Void> resetPassword(@Valid @RequestBody ResetRequest req) {
         passwordService.reset(req);
+        return ResponseDto.success(null);
+    }
+
+    /** 가입 요청(공개, WMP-AUTH-010, CR-032). 셀프 신청 접수 — user 미생성. */
+    @PostMapping("/signup-requests")
+    public ResponseDto<Void> requestSignup(@Valid @RequestBody SignupRequestBody req) {
+        signupRequestService.request(req);
         return ResponseDto.success(null);
     }
 

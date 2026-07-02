@@ -133,7 +133,12 @@ public enum WmpErrorCode implements ErrorCode {
 
     // 인증 토큰 (7841번대, CR-027 토큰 보정 — 초대·재설정 링크 토큰)
     INVITATION_TOKEN_INVALID("WMP-7841", "초대 링크가 유효하지 않거나 만료되었습니다. 관리자에게 재발송을 요청하세요.", HttpStatus.GONE),
-    RESET_TOKEN_INVALID("WMP-7842", "재설정 링크가 유효하지 않거나 만료되었습니다. 다시 요청하세요.", HttpStatus.GONE);
+    RESET_TOKEN_INVALID("WMP-7842", "재설정 링크가 유효하지 않거나 만료되었습니다. 다시 요청하세요.", HttpStatus.GONE),
+
+    // 가입 요청 (7843번대, CR-032 — 셀프 신청 → 관리자 승인)
+    SIGNUP_REQUEST_NOT_FOUND("WMP-7843", "가입 요청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    SIGNUP_REQUEST_ALREADY_PROCESSED("WMP-7844", "이미 처리된 가입 요청입니다.", HttpStatus.CONFLICT),
+    SIGNUP_REQUEST_PENDING_DUPLICATED("WMP-7845", "이미 접수된 가입 요청이 있습니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
