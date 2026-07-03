@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Skeleton } from '@therecommerce/ds-ui';
-import { Inbox, AlertTriangle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Inbox, AlertTriangle, Settings } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { PageHead } from '@/components/badges';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pager } from '@/components/common/pager';
+import { usePageParam } from '@/lib/use-page-param';
 import { useInbox, useMarkRead, type InboxFilter } from '@/features/inbox/hooks';
 import { NotificationRow } from '@/features/inbox/components/NotificationRow';
 
@@ -19,7 +21,7 @@ const TABS: { key: InboxFilter; label: string }[] = [
 export function InboxPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<InboxFilter>('all');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePageParam();
 
   const { data, isPending, isError } = useInbox(filter, page, PAGE_SIZE);
   const markRead = useMarkRead(filter, page);
@@ -102,23 +104,6 @@ export function InboxPage() {
           <Pager page={page} totalPages={totalPages} onPage={setPage} />
         </>
       )}
-    </div>
-  );
-}
-
-function Pager({ page, totalPages, onPage }: {
-  page: number; totalPages: number; onPage: (p: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="mt-3 flex items-center justify-center gap-3">
-      <Button variant="ghost" size="sm" disabled={page <= 0} onClick={() => onPage(page - 1)}>
-        <ChevronLeft className="size-4" /> 이전
-      </Button>
-      <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-      <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => onPage(page + 1)}>
-        다음 <ChevronRight className="size-4" />
-      </Button>
     </div>
   );
 }

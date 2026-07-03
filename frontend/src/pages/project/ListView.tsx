@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@therecommerce/ds-ui';
-import { Table as TableIcon, Columns2, ChevronLeft, ChevronRight, AlertTriangle, ListX } from 'lucide-react';
+import { Table as TableIcon, Columns2, AlertTriangle, ListX } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useMembers } from '@/features/members/hooks';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
@@ -16,6 +16,8 @@ import { BulkEditBar } from '@/features/workitem/components/BulkEditBar';
 import { SplitView } from '@/features/workitem/components/SplitView';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pager } from '@/components/common/pager';
+import { usePageParam } from '@/lib/use-page-param';
 import { PageHead } from '@/components/badges';
 import type { WorkItemResponse } from '@/types/domain';
 
@@ -32,7 +34,7 @@ export function ListView() {
   const assigneeName = useAssigneeName(projectId);
 
   const [mode, setMode] = useState<Mode>('table');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePageParam();
   const [filter, setFilter] = useState<Omit<WorkItemListParams, 'projectId' | 'page' | 'size'>>({
     sort: 'createdAt', direction: 'DESC',
   });
@@ -154,23 +156,6 @@ export function ListView() {
           <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
-    </div>
-  );
-}
-
-function Pager({ page, totalPages, onPage, busy }: {
-  page: number; totalPages: number; onPage: (p: number) => void; busy?: boolean;
-}) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="mt-3 flex items-center justify-center gap-3">
-      <Button variant="ghost" size="sm" disabled={busy || page <= 0} onClick={() => onPage(page - 1)}>
-        <ChevronLeft className="size-4" /> 이전
-      </Button>
-      <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-      <Button variant="ghost" size="sm" disabled={busy || page >= totalPages - 1} onClick={() => onPage(page + 1)}>
-        다음 <ChevronRight className="size-4" />
-      </Button>
     </div>
   );
 }

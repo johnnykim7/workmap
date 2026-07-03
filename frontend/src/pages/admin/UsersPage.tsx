@@ -5,8 +5,10 @@ import {
   Button, Badge, SearchInput,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@therecommerce/ds-ui';
-import { Plus, Pencil, UserX, Users, AlertTriangle, ChevronLeft, ChevronRight, Mail, Send, X } from 'lucide-react';
+import { Plus, Pencil, UserX, Users, AlertTriangle, Mail, Send, X } from 'lucide-react';
 import { PageHead } from '@/components/badges';
+import { Pager } from '@/components/common/pager';
+import { usePageParam } from '@/lib/use-page-param';
 import { AdminTabs } from '@/features/admin/components/AdminTabs';
 import { UserDialog, ROLE_LABEL } from '@/features/user/components/UserDialog';
 import { InviteDialog } from '@/features/invitation/components/InviteDialog';
@@ -21,7 +23,7 @@ import type { InvitationResponse } from '@/features/invitation/api';
 
 export function UsersPage() {
   const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePageParam();
   const { data, isPending, isError, isPlaceholderData } = useUsers(keyword, page);
   const { create, update, deactivate } = useUserMutations();
 
@@ -159,17 +161,7 @@ export function UsersPage() {
             </Table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <Button variant="ghost" size="sm" disabled={page <= 0} onClick={() => setPage((p) => p - 1)}>
-                <ChevronLeft className="size-4" /> 이전
-              </Button>
-              <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-              <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
-                다음 <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          )}
+          <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
 

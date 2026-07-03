@@ -6,9 +6,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Button, SearchInput, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
-import { SearchX, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SearchX, AlertTriangle } from 'lucide-react';
 import { PageHead } from '@/components/badges';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pager } from '@/components/common/pager';
+import { usePageParam } from '@/lib/use-page-param';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { WorkItemTable } from '@/features/workitem/components/WorkItemTable';
 import { useSearch } from '@/features/search/hooks';
@@ -48,7 +50,7 @@ export function SearchPage() {
   const [keyword, setKeyword] = useState('');
   const [filter, setFilter] = useState<Pick<SearchParams, 'issueType' | 'commonStatus' | 'priority' | 'label'>>({});
   const [quick, setQuick] = useState<Set<Quick>>(new Set());
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePageParam();
 
   // 회사 홈 카드 도착지: /search?quick=blocked|unassigned 진입 시 해당 퀵필터 선점.
   useEffect(() => {
@@ -220,23 +222,6 @@ export function SearchPage() {
           <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
-    </div>
-  );
-}
-
-function Pager({ page, totalPages, onPage, busy }: {
-  page: number; totalPages: number; onPage: (p: number) => void; busy?: boolean;
-}) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="mt-3 flex items-center justify-center gap-3">
-      <Button variant="ghost" size="sm" disabled={busy || page <= 0} onClick={() => onPage(page - 1)}>
-        <ChevronLeft className="size-4" /> 이전
-      </Button>
-      <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-      <Button variant="ghost" size="sm" disabled={busy || page >= totalPages - 1} onClick={() => onPage(page + 1)}>
-        다음 <ChevronRight className="size-4" />
-      </Button>
     </div>
   );
 }

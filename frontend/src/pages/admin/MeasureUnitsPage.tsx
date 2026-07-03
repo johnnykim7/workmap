@@ -5,8 +5,10 @@ import {
   Button, Badge,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@therecommerce/ds-ui';
-import { Plus, Pencil, Trash2, Ruler, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Ruler, AlertTriangle } from 'lucide-react';
 import { PageHead } from '@/components/badges';
+import { Pager } from '@/components/common/pager';
+import { usePageParam } from '@/lib/use-page-param';
 import { AdminTabs } from '@/features/admin/components/AdminTabs';
 import { MeasureUnitDialog } from '@/features/admin/components/MeasureUnitDialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -22,7 +24,7 @@ const VALUE_TYPE_LABEL: Record<string, string> = {
 };
 
 export function MeasureUnitsPage() {
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePageParam();
   const { data, isPending, isError } = useMeasureUnits(page);
   const { create, update, remove } = useMeasureUnitMutations();
 
@@ -127,17 +129,7 @@ export function MeasureUnitsPage() {
             </Table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <Button variant="ghost" size="sm" disabled={page <= 0} onClick={() => setPage((p) => p - 1)}>
-                <ChevronLeft className="size-4" /> 이전
-              </Button>
-              <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-              <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
-                다음 <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          )}
+          <Pager page={page} totalPages={totalPages} onPage={setPage} />
         </>
       )}
 
