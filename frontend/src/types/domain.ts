@@ -191,10 +191,11 @@ export interface ProjectTemplate {
 // 주의: id는 BE 시드 순서가 아니라 자체 매핑값. 실제 생성은 templateId(아래 id)를 BE로 전달.
 // BE 시드 default_tabs/issue_type_codes와 일치(CR-019 정합 — BE가 정본).
 export const PROJECT_TEMPLATES: ProjectTemplate[] = [
-  { id: 4, code: 'DEFAULT', name: '기본형', description: '모든 보기를 켠 범용 프로젝트(필요 없는 탭은 생성 후 끄기)', defaultTabs: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] },
-  { id: 1, code: 'DEV', name: '개발형', description: '개발 프로젝트(백로그·스프린트·보드 중심)', defaultTabs: ['summary', 'backlog', 'board', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] },
-  { id: 2, code: 'OPS', name: '운영형', description: '운영·고객대응(접수·처리·보류 워크플로)', defaultTabs: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['TASK', 'BUG'] },
-  { id: 3, code: 'PLAN', name: '계획형', description: '계획·경영공통(타임라인·목록 중심)', defaultTabs: ['summary', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK'] },
+  // issueTypeCodes는 BE project_template.issue_type_codes(V7 DOC 편입 포함)와 일치시킨다.
+  { id: 4, code: 'DEFAULT', name: '기본형', description: '모든 보기를 켠 범용 프로젝트(필요 없는 탭은 생성 후 끄기)', defaultTabs: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK', 'DOC'] },
+  { id: 1, code: 'DEV', name: '개발형', description: '개발 프로젝트(백로그·스프린트·보드 중심)', defaultTabs: ['summary', 'backlog', 'board', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK', 'DOC'] },
+  { id: 2, code: 'OPS', name: '운영형', description: '운영·고객대응(접수·처리·보류 워크플로)', defaultTabs: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'], issueTypeCodes: ['TASK', 'BUG', 'SUBTASK'] },
+  { id: 3, code: 'PLAN', name: '계획형', description: '계획·경영공통(타임라인·목록 중심)', defaultTabs: ['summary', 'timeline', 'reports'], issueTypeCodes: ['EPIC', 'STORY', 'TASK', 'DOC'] },
 ];
 
 /** templateId → 프로젝트 유형(탭 프리셋·배지용). 미지정/미상은 DEV로 폴백. */

@@ -1,0 +1,8 @@
+
+# Playwright E2E 산출물
+/test-results/
+/e2e/report/
+/e2e/.state.json
+/e2e/_probe*.ts
+/e2e/probe-*.png
+/playwright-report/
