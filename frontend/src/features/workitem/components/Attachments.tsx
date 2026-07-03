@@ -1,15 +1,12 @@
-// 첨부 섹션 (WMP-WI-012, §9.3) — 파일 메타데이터(이름 + 경로/URL) 등록·목록.
-// BE가 바이너리 업로드가 아닌 메타데이터 등록 방식이라(파일 경로/URL), 네이티브 file input 없이 폼으로 처리.
-import { useEffect, useState, type MutableRefObject } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+// 첨부 섹션 (WMP-WI-012, §9.3) — 실제 파일 업로드(POST /files/upload → 저장 URL) 후 첨부 등록·목록.
+// 파일 선택은 숨김 <input type=file>을 ds-ui Button으로 트리거(네이티브 위젯 노출 금지 규칙 준수).
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
-  Button, Spinner, Input,
+  Button, Spinner, toast,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@therecommerce/ds-ui';
-import { Plus, Paperclip, ExternalLink } from 'lucide-react';
-import { Field } from '@/components/common/field';
+import { Plus, Paperclip, ExternalLink, Upload, X } from 'lucide-react';
+import { uploadFile } from '@/lib/upload';
 import { fmtDate } from '@/lib/date';
 import type { WorkItemResponse } from '@/types/domain';
 import { useAttachments, useCreateAttachment } from '../hooks';
@@ -65,12 +62,13 @@ export function Attachments({ item, addRef }: {
   );
 }
 
-const schema = z.object({
-  fileName: z.string().trim().min(1, '파일 이름을 입력하세요.').max(255),
-  filePath: z.string().trim().min(1, '경로 또는 URL을 입력하세요.'),
-  contentType: z.string().trim().optional(),
-});
-type FormValues = z.infer<typeof schema>;
+const MAX_SIZE = 10 * 1024 * 1024; // BE multipart 10MB 제한과 동일.
+
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
 
 function AddAttachmentDialog({ item, open, onOpenChange }: {
   item: WorkItemResponse;
@@ -78,47 +76,96 @@ function AddAttachmentDialog({ item, open, onOpenChange }: {
   onOpenChange: (v: boolean) => void;
 }) {
   const create = useCreateAttachment(item.id);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { fileName: '', filePath: '', contentType: '' },
-  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [picked, setPicked] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { if (open) reset({ fileName: '', filePath: '', contentType: '' }); }, [open, reset]);
+  useEffect(() => { if (open) { setPicked(null); setUploading(false); } }, [open]);
 
-  const submit = handleSubmit((v) => {
-    create.mutate(
-      { fileName: v.fileName.trim(), filePath: v.filePath.trim(), contentType: v.contentType?.trim() || null },
-      { onSuccess: () => onOpenChange(false) },
-    );
-  });
+  const busy = uploading || create.isPending;
+
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일 재선택 허용
+    if (!file) return;
+    if (file.size > MAX_SIZE) {
+      toast.error('파일이 너무 큽니다(최대 10MB).');
+      return;
+    }
+    setPicked(file);
+  };
+
+  const submit = async () => {
+    if (!picked) return;
+    setUploading(true);
+    try {
+      const uploaded = await uploadFile(picked); // POST /files/upload → 저장 URL
+      setUploading(false);
+      create.mutate(
+        {
+          fileName: uploaded.fileName,
+          filePath: uploaded.url,
+          fileSize: uploaded.fileSize,
+          contentType: uploaded.contentType || null,
+        },
+        { onSuccess: () => onOpenChange(false) },
+      );
+    } catch (err) {
+      setUploading(false);
+      const msg = err instanceof Error && err.message ? err.message : '파일 업로드에 실패했습니다.';
+      toast.error(msg);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!create.isPending) onOpenChange(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>첨부 추가</DialogTitle>
-          <DialogDescription>파일 경로 또는 URL을 등록합니다.</DialogDescription>
+          <DialogDescription>파일을 선택해 업로드합니다(최대 10MB).</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
-          <Field label="파일 이름" required error={errors.fileName?.message}>
-            <Input placeholder="예: 설계도.pdf" {...register('fileName')} />
-          </Field>
-          <Field label="경로 / URL" required error={errors.filePath?.message}>
-            <Input placeholder="https://… 또는 파일 경로" {...register('filePath')} />
-          </Field>
-          <Field label="콘텐츠 타입" error={errors.contentType?.message}>
-            <Input placeholder="(선택) 예: application/pdf" {...register('contentType')} />
-          </Field>
-          <DialogFooter>
-            <Button type="button" variant="ghost" disabled={create.isPending} onClick={() => onOpenChange(false)}>
-              취소
-            </Button>
-            <Button type="submit" variant="primary" disabled={create.isPending}>
-              {create.isPending && <Spinner className="size-4" />}
-              추가
-            </Button>
-          </DialogFooter>
-        </form>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={onPick}
+          aria-hidden
+        />
+
+        <div className="space-y-3">
+          {picked ? (
+            <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+              <Paperclip className="size-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate font-medium" title={picked.name}>{picked.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{fmtSize(picked.size)}</span>
+              {!busy && (
+                <Button variant="ghost" size="sm" className="size-6 shrink-0 p-0" onClick={() => setPicked(null)} title="선택 해제">
+                  <X className="size-4" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-6 text-sm text-muted-foreground hover:bg-muted/40"
+            >
+              <Upload className="size-5" />
+              파일 선택
+            </button>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" disabled={busy} onClick={() => onOpenChange(false)}>
+            취소
+          </Button>
+          <Button type="button" variant="primary" disabled={!picked || busy} onClick={submit}>
+            {busy && <Spinner className="size-4" />}
+            {uploading ? '업로드 중…' : '추가'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

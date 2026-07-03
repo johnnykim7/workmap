@@ -72,6 +72,26 @@ class FileStorageServiceTest {
     }
 
     @Test
+    @DisplayName("화이트리스트에포함된문서타입_업로드_허용됨")
+    void store_allowedDocumentType_succeeds() {
+        // 첨부(WMP-WI-012)는 문서류도 업로드 가능 — 화이트리스트에 pdf를 두면 통과한다.
+        UploadProperties docProps = new UploadProperties();
+        docProps.setDir(tempDir.toString());
+        docProps.setPublicBase("/api/v1/files/serve");
+        docProps.setAllowedContentTypes(List.of("image/png", "application/pdf"));
+        FileStorageService docService = new FileStorageService(docProps);
+
+        MockMultipartFile pdf = new MockMultipartFile(
+                "file", "설계도.pdf", "application/pdf", "PDFDATA".getBytes());
+
+        FileUploadResponse res = docService.store(pdf);
+
+        assertThat(res.url()).endsWith(".pdf");
+        assertThat(res.fileName()).isEqualTo("설계도.pdf");
+        assertThat(res.contentType()).isEqualTo("application/pdf");
+    }
+
+    @Test
     @DisplayName("저장파일명_UUID생성_원본명과무관")
     void store_generatesUuidName_notOriginal() {
         MockMultipartFile file = new MockMultipartFile(

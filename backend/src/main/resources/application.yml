@@ -59,8 +59,8 @@ workmap:
     dir: ${WORKMAP_UPLOAD_DIR:/home/therecommerce/workmap/uploads}
     # 공개 URL prefix. 정적 서빙 경로(GET /api/v1/files/serve/{name})·화이트리스트와 동일해야 함.
     public-base: ${WORKMAP_UPLOAD_PUBLIC_BASE:/api/v1/files/serve}
-    # 허용 MIME 타입(쉼표 구분). 기본=이미지 4종.
-    allowed-content-types: ${WORKMAP_UPLOAD_ALLOWED_TYPES:image/png,image/jpeg,image/gif,image/webp}
+    # 허용 MIME 타입(쉼표 구분). 이미지 4종(에디터 인라인) + 첨부 문서류(WMP-WI-012 실제 업로드).
+    allowed-content-types: ${WORKMAP_UPLOAD_ALLOWED_TYPES:image/png,image/jpeg,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,text/plain,text/csv}
   # 인증(CR-027 — 이메일 초대 가입(토큰) + 비밀번호 재설정(토큰)·변경(OTP)).
   auth:
     otp:
