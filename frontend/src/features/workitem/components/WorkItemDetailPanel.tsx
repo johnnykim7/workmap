@@ -67,9 +67,13 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
         />
       </div>
       {stacked ? (
-        // 분할뷰 우측: 좁아서 세로로 쌓임(반응형). 본문+세부사항 통째로 이 영역만 스크롤.
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-6">
+        // 분할뷰 우측: 좁아서 세로로 쌓임(반응형). 본문+세부사항 통째로 이 영역만 세로 스크롤.
+        // min-w-0 + overflow-x-hidden: 세부사항(w-80 등) 자식 폭이 컨테이너를 넘어 가로 스크롤이
+        // 생기던 것 차단. 세로만 스크롤한다.
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          {/* [&_aside]:w-full: SidePanel의 lg:w-80(뷰포트 기준 320px 고정)이 좁은 분할뷰 우측에서
+              가로 넘침을 만들던 것 차단 — stacked에서는 세부사항을 항상 전체폭 세로 쌓기. */}
+          <div className="flex flex-col gap-6 [&_aside]:w-full [&_aside]:lg:w-full">
             {body}
             <DetailSidePanel item={item} sprints={sprints} />
           </div>
@@ -77,9 +81,9 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       ) : (
         // 풀페이지: 본문(설명) 좌 + 세부사항 우 — Jira 정합으로 좌/우 각각 독립 스크롤.
         // 헤더는 위에서 고정됐고, 이 flex-row 영역이 남은 높이를 채워 두 컬럼이 각자 overflow-y-auto.
-        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1 overflow-y-auto">{body}</div>
-          <div className="overflow-y-auto lg:shrink-0">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">{body}</div>
+          <div className="min-w-0 overflow-x-hidden overflow-y-auto lg:shrink-0">
             <DetailSidePanel item={item} sprints={sprints} />
           </div>
         </div>
