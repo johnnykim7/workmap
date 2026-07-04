@@ -30,6 +30,24 @@ export function isViewable(contentType?: string | null, nameOrPath?: string | nu
   return fileKind(contentType, nameOrPath) !== 'other';
 }
 
+/**
+ * 서빙 URL에 파일명·다운로드 옵션을 붙인다(CR-037 보정).
+ * - name: Content-Disposition filename(다운로드 시 원본명, Spring 기본 f.txt 방지).
+ * - download=true: attachment(내려받기). 미리보기(inline)는 download 생략.
+ * - 우리 서빙 경로(/files/serve/)가 아닌 외부 URL(http…)은 손대지 않는다.
+ */
+export function buildFileUrl(url: string, name?: string | null, download?: boolean): string {
+  if (!url) return url;
+  // 외부 절대 URL(다른 오리진)은 파라미터를 붙이지 않는다(서버가 우리 것이 아님).
+  const isOurServe = url.includes('/files/serve/');
+  if (!isOurServe) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  const params: string[] = [];
+  if (name) params.push(`name=${encodeURIComponent(name)}`);
+  if (download) params.push('download=true');
+  return params.length ? `${url}${sep}${params.join('&')}` : url;
+}
+
 /** 사람이 읽는 파일 크기 표기. */
 export function formatFileSize(bytes?: number | null): string {
   if (bytes == null) return '';

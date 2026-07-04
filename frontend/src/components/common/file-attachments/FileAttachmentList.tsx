@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { uploadFile } from '@/lib/upload';
 import { fmtDate } from '@/lib/date';
-import { useFileViewer, fileKind, isViewable, formatFileSize, type ViewerFile } from '@/components/common/file-viewer';
+import { useFileViewer, fileKind, isViewable, formatFileSize, buildFileUrl, type ViewerFile } from '@/components/common/file-viewer';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import type { AttachmentAdapter, AttachmentItem } from './types';
 import { FileTypeIcon } from './FileTypeIcon';
@@ -109,7 +109,8 @@ export function FileAttachmentList({
 
   const downloadOne = (item: AttachmentItem) => {
     const a = document.createElement('a');
-    a.href = item.filePath;
+    // 서버가 원본 파일명으로 내려주도록 ?name=&download=true(서버 Content-Disposition 우선).
+    a.href = buildFileUrl(item.filePath, item.fileName, true);
     a.download = item.fileName || '';
     a.target = '_blank';
     a.rel = 'noreferrer noopener';

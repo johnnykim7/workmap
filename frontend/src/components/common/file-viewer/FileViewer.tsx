@@ -11,7 +11,7 @@ import { Button, cn } from '@therecommerce/ds-ui';
 import {
   X, Download, ZoomIn, ZoomOut, Maximize2, RotateCcw, ChevronLeft, ChevronRight, FileText,
 } from 'lucide-react';
-import { fileKind } from './file-kind';
+import { fileKind, buildFileUrl } from './file-kind';
 import type { FileViewerContextValue, ViewerFile } from './types';
 
 const FileViewerContext = createContext<FileViewerContextValue | null>(null);
@@ -60,7 +60,9 @@ export function useFileViewer(): FileViewerContextValue {
 
 function downloadFile(file: ViewerFile) {
   const a = document.createElement('a');
-  a.href = file.url;
+  // 서버 Content-Disposition이 download 파일명을 결정하도록 ?name=&download=true를 붙인다
+  // (a.download은 cross-origin/서버 헤더에 밀려 무시될 수 있어 서버가 원본명을 내려주게 함).
+  a.href = buildFileUrl(file.url, file.name, true);
   a.download = file.name || '';
   a.target = '_blank';
   a.rel = 'noreferrer noopener';
@@ -124,7 +126,7 @@ function Lightbox({
         {kind === 'image' ? (
           <ImagePane key={file.url} file={file} />
         ) : kind === 'pdf' ? (
-          <iframe title={file.name} src={file.url} className="h-full w-full bg-white" onClick={(e) => e.stopPropagation()} />
+          <iframe title={file.name} src={buildFileUrl(file.url, file.name)} className="h-full w-full bg-white" onClick={(e) => e.stopPropagation()} />
         ) : (
           <UnsupportedPane file={file} onDownload={() => downloadFile(file)} />
         )}
