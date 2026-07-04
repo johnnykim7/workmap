@@ -32,7 +32,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
   const addAttachmentRef = useRef<() => void>(() => {});
 
   const body = (
-    <div className="min-w-0 flex-1 space-y-6">
+    <div className="min-w-0 flex-1 space-y-6 lg:pl-4">
       <ApprovalBanner item={item} />
       <DetailBody item={item} />
       {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
