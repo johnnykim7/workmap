@@ -1,8 +1,9 @@
 // 목록 뷰 (/projects/:key/list) — §9.5. 표 ⇄ 분할뷰 토글 + 퀵필터 + 정렬 + 벌크편집.
 // 분할 모드 우측은 §9.3 업무 상세 패널 재사용. 데이터=실 BE GET /work-items(통합목록), PATCH /work-items/bulk.
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@therecommerce/ds-ui';
+import { ROUTES } from '@/lib/route-paths';
 import { Table as TableIcon, Columns2, AlertTriangle, ListX } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useMembers } from '@/features/members/hooks';
@@ -26,6 +27,7 @@ const PAGE_SIZE = 20;
 
 export function ListView() {
   const { key = '' } = useParams();
+  const navigate = useNavigate();
   const { data: project, isPending: projectPending } = useProjectByKey(key);
   const projectId = project?.id;
 
@@ -143,7 +145,7 @@ export function ListView() {
               sort={filter.sort}
               direction={filter.direction ?? 'DESC'}
               onSort={toggleSort}
-              onRowClick={(it) => { setMode('split'); setSplitSelected(it); }}
+              onRowClick={(it) => navigate(ROUTES.workItem(it.key))}
             />
           ) : (
             <SplitView
