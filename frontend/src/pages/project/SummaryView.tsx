@@ -1,12 +1,12 @@
-// 프로젝트 요약 탭 — 개요/진행률/지연/막힘 + 멤버 패널(T3-3 §프로젝트 요약). Sprint 2.
-// 라우트는 :key, BE는 numeric id 요구 → useProjectByKey로 해소 후 id로 summary/members 호출.
+// 프로젝트 요약 탭 — 개요/진행률/지연/막힘(T3-3 §프로젝트 요약). Sprint 2.
+// 멤버 관리는 요약에서 제거 — 프로젝트 설정으로 이전 예정(전역 사용자=설정>사용자와 별개 레이어).
+// 라우트는 :key, BE는 numeric id 요구 → useProjectByKey로 해소 후 id로 summary 호출.
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Skeleton } from '@therecommerce/ds-ui';
 import { Settings } from 'lucide-react';
 import { useProjectByKey, useProjectSummary } from '@/features/projects/hooks';
 import { ProjectSettingsDialog } from '@/features/projects/components/ProjectSettingsDialog';
-import { MembersPanel } from '@/features/members/components/MembersPanel';
 import { PageShell } from '@/components/common/page-shell';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -61,8 +61,6 @@ export function SummaryView() {
           </div>
         </>
       )}
-
-      <MembersPanel projectId={project?.id} />
 
       {canManage && (
         <ProjectSettingsDialog

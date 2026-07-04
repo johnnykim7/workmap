@@ -221,10 +221,16 @@ export function AppShell() {
   const { data: channels = [] } = useChannels(currentWorkspaceId);
 
   const menuItems = useMemo(() => {
-    const projectChildren = projects.map((p) => ({
-      path: ROUTES.project(p.key),
-      label: p.name,
-    }));
+    // 그룹 헤더('프로젝트')는 children이 있으면 클릭 시 펼치기만 됨(ds-ui AdminShell 동작).
+    // → 프로젝트 목록/관리 화면(/projects) 진입점이 없어져, children 최상단에 별도 항목으로 제공.
+    // children은 label 텍스트만 렌더 가능(아이콘/색 불가) → 대괄호로 구분 표식.
+    const projectChildren = [
+      { path: ROUTES.projects, label: '[전체 프로젝트]' },
+      ...projects.map((p) => ({
+        path: ROUTES.project(p.key),
+        label: p.name,
+      })),
+    ];
     const channelChildren = channels.map((c) => {
       const unread = c.unreadCount > 0 ? `  (${c.unreadCount > 99 ? '99+' : c.unreadCount})` : '';
       return {
