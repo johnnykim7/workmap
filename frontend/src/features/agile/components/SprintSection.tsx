@@ -22,14 +22,18 @@ interface Props {
   // 인라인 생성(§6.1) — 이 구역에 항목 추가. busy면 입력 잠금. 미지정 시 + 만들기 행 숨김.
   onInlineCreate?: (title: string) => void;
   inlineBusy?: boolean;
+  // 드롭 영역 id 오버라이드(CR-036) — Epic별 그룹처럼 백로그 구역이 여러 개일 때 유일 id 필요.
+  // 지정해도 이동 대상 sprintId는 백로그(null) 그대로라 드롭 동작은 동일.
+  dropIdOverride?: string;
 }
 
 export function SprintSection({
   section, collapsed, assigneeName, onItemClick, emptyHint, header, epicName,
-  epicOptions, onChangeEpic, onInlineCreate, inlineBusy,
+  epicOptions, onChangeEpic, onInlineCreate, inlineBusy, dropIdOverride,
 }: Props) {
-  // 드롭 id: 스프린트면 sp-{id}, 백로그면 sp-backlog. data.sprintId=null이면 백로그로 이동.
-  const dropId = section.sprint ? `sp-${section.sprint.id}` : 'sp-backlog';
+  // 드롭 id: 스프린트면 sp-{id}, 백로그면 sp-backlog(그룹별 유일 id는 dropIdOverride).
+  // data.sprintId=null이면 백로그로 이동.
+  const dropId = dropIdOverride ?? (section.sprint ? `sp-${section.sprint.id}` : 'sp-backlog');
   const { setNodeRef, isOver } = useDroppable({
     id: dropId,
     data: { sprintId: section.sprint ? section.sprint.id : null },

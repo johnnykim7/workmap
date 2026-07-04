@@ -35,9 +35,10 @@ export function TypeBadge({ type, withLabel = true }: { type: IssueType; withLab
 }
 
 // Epic 소속 칩(§6.1 백로그) — "이 항목이 어느 Epic 소속인지" 한 컬럼 표시(Jira식).
-// Epic은 별도 계층이 아니라 느슨한 그룹핑(epicId)이라 트리가 아닌 칩으로 표현. violet=Epic 색 통일.
-export function EpicChip({ name, onClick }: { name: string; onClick?: () => void }) {
-  const cls = `inline-flex max-w-[120px] items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium ${TYPE_BG.violet}`;
+// Epic은 별도 계층이 아니라 느슨한 그룹핑(epicId)이라 트리가 아닌 칩으로 표현.
+// color(CR-036): Epic별 고유 색(epicColor 해시 결과). 미지정 시 violet 단색(기존 동작).
+export function EpicChip({ name, color = 'violet', onClick }: { name: string; color?: string; onClick?: () => void }) {
+  const cls = `inline-flex max-w-[120px] items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium ${TYPE_BG[color] ?? TYPE_BG.violet}`;
   if (onClick) {
     return (
       <button type="button" onClick={onClick} className={`${cls} hover:brightness-95`} title={name}>

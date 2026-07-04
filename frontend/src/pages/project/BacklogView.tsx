@@ -6,15 +6,18 @@ import {
   DndContext, PointerSensor, useSensor, useSensors, closestCenter, type DragEndEvent,
 } from '@dnd-kit/core';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@therecommerce/ds-ui';
-import { Plus, ListTodo, AlertTriangle } from 'lucide-react';
+import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
 } from '@/features/agile/hooks';
 import { useProjectItems, useCreateWorkItem, useChangeEpic } from '@/features/workitem/hooks';
 import { filterByEpic } from '@/features/agile/epic-filter';
+import { groupByEpic } from '@/features/agile/epic-group';
+import { epicColor } from '@/features/agile/epic-color';
 import { SprintSection } from '@/features/agile/components/SprintSection';
 import { SprintHeader } from '@/features/agile/components/SprintHeader';
+import { EpicGroupHeader } from '@/features/agile/components/EpicGroupHeader';
 import { CreateSprintDialog } from '@/features/agile/components/CreateSprintDialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
@@ -45,6 +48,13 @@ export function BacklogView() {
 
   // Epic 필터(§6.1) — 선택 시 해당 Epic 소속 항목만(Epic 자신은 항상 표시 유지). 'ALL'=전체.
   const [epicFilter, setEpicFilter] = useState<string>('ALL');
+
+  // 보기 토글(CR-036) — 'priority'(우선순위순, 기본) ↔ 'epic'(Epic별 그룹). 백로그 영역만 그룹핑.
+  const [viewMode, setViewMode] = useState<'priority' | 'epic'>('priority');
+  // Epic 그룹 접기 상태(CR-036) — key=epicId 문자열('none'=미지정). 기본 펼침.
+  const [groupCollapsed, setGroupCollapsed] = useState<Record<string, boolean>>({});
+  const toggleGroup = (gid: string) =>
+    setGroupCollapsed((c) => ({ ...c, [gid]: !c[gid] }));
 
   const changeSprint = useChangeItemSprint(projectId ?? 0);
   const createSprint = useCreateSprint(projectId ?? 0);
@@ -77,10 +87,10 @@ export function BacklogView() {
   );
 
   // 구역 인라인 생성(§6.1) — 스프린트 구역이면 sprintId 프리필(BE CreateRequest 지원).
-  // Epic 필터가 걸려 있으면 그 Epic 소속으로 생성(Jira: 필터 컨텍스트 상속). projectId·기본유형·제목만(가볍게).
-  const inlineCreate = (sprintId: number | null) => (title: string) => {
+  // Epic 컨텍스트 상속: 명시 epicId(Epic별 그룹) > Epic 필터 > 없음. projectId·기본유형·제목만(가볍게).
+  const inlineCreate = (sprintId: number | null, groupEpicId?: number | null) => (title: string) => {
     if (!projectId) return;
-    const epicId = epicFilter !== 'ALL' ? Number(epicFilter) : null;
+    const epicId = groupEpicId != null ? groupEpicId : (epicFilter !== 'ALL' ? Number(epicFilter) : null);
     createItem.mutate({ projectId, issueType: defaultIssueType, title, sprintId, epicId });
   };
 
@@ -114,18 +124,45 @@ export function BacklogView() {
 
   const header = (
     <div className="mb-3 flex items-center justify-between gap-2">
-      {/* Epic 필터(§6.1) — 큰 묶음(Epic) 단위로 좁혀 보기. Epic이 없으면 숨김. */}
-      {epics.length > 0 ? (
-        <Select value={epicFilter} onValueChange={setEpicFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Epic 필터" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">모든 Epic</SelectItem>
-            {epics.map((e) => (
-              <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : <span />}
+      <div className="flex items-center gap-2">
+        {/* Epic 필터(§6.1) — 큰 묶음(Epic) 단위로 좁혀 보기. Epic이 없으면 숨김. */}
+        {epics.length > 0 && (
+          <Select value={epicFilter} onValueChange={setEpicFilter}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Epic 필터" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">모든 Epic</SelectItem>
+              {epics.map((e) => (
+                <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {/* 보기 토글(CR-036) — 우선순위순 ↔ Epic별. Epic이 있어야 의미 있어 없으면 숨김. */}
+        {epics.length > 0 && (
+          <div className="inline-flex overflow-hidden rounded-md border border-border" role="group" aria-label="백로그 보기 전환">
+            <button
+              type="button"
+              onClick={() => setViewMode('priority')}
+              aria-pressed={viewMode === 'priority'}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium ${
+                viewMode === 'priority' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <ListOrdered className="size-3.5" /> 우선순위순
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('epic')}
+              aria-pressed={viewMode === 'epic'}
+              className={`inline-flex items-center gap-1 border-l border-border px-2.5 py-1.5 text-xs font-medium ${
+                viewMode === 'epic' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Layers className="size-3.5" /> Epic별
+            </button>
+          </div>
+        )}
+      </div>
       <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
         <Plus className="size-4" />
         스프린트 만들기
@@ -168,30 +205,65 @@ export function BacklogView() {
             );
           })}
 
-          {/* 백로그 구역 */}
-          <SprintSection
-            section={withFilter(backlog.backlog)}
-            assigneeName={assigneeName}
-            epicName={epicName}
-            epicOptions={epicOptions}
-            onChangeEpic={onChangeEpic}
-            onItemClick={(id) => openItem(backlog.backlog.items, id)}
-            onInlineCreate={inlineCreate(null)}
-            inlineBusy={createItem.isPending}
-            emptyHint="미계획 항목이 없습니다"
-            header={
-              <div className="flex items-center gap-3 rounded-t-md bg-muted/60 px-3 py-2">
-                <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <ListTodo className="size-4" />
-                  백로그
+          {/* 백로그 구역 — 우선순위순(평면) 또는 Epic별(그룹) (CR-036) */}
+          {viewMode === 'priority' ? (
+            <SprintSection
+              section={withFilter(backlog.backlog)}
+              assigneeName={assigneeName}
+              epicName={epicName}
+              epicOptions={epicOptions}
+              onChangeEpic={onChangeEpic}
+              onItemClick={(id) => openItem(backlog.backlog.items, id)}
+              onInlineCreate={inlineCreate(null)}
+              inlineBusy={createItem.isPending}
+              emptyHint="미계획 항목이 없습니다"
+              header={
+                <div className="flex items-center gap-3 rounded-t-md bg-muted/60 px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <ListTodo className="size-4" />
+                    백로그
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {backlog.backlog.itemCount}건
+                    {backlog.backlog.storyPointsSum > 0 ? ` · ${backlog.backlog.storyPointsSum}pt` : ''}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {backlog.backlog.itemCount}건
-                  {backlog.backlog.storyPointsSum > 0 ? ` · ${backlog.backlog.storyPointsSum}pt` : ''}
-                </span>
-              </div>
-            }
-          />
+              }
+            />
+          ) : (
+            // Epic별 그룹 보기(CR-036) — 백로그 영역 항목을 epicId로 묶어 그룹 헤더(접기/펼치기) + 소속 항목.
+            // Epic 필터가 걸려 있으면 그 필터도 함께 적용(교집합). 각 그룹은 SprintSection 재사용(드롭 타깃=백로그 동일).
+            groupByEpic(filterByEpic(backlog.backlog.items, epicFilter), epics.map((e) => e.id)).map((group) => {
+              const gid = group.epicId != null ? `e-${group.epicId}` : 'e-none';
+              const gName = group.epicId != null ? (epicName(group.epicId) ?? `Epic #${group.epicId}`) : 'Epic 미지정';
+              return (
+                <SprintSection
+                  key={gid}
+                  // itemCount/storyPointsSum는 그룹 헤더에서 안 쓰므로 원본 유지, items만 그룹으로 교체.
+                  section={{ ...backlog.backlog, items: group.items }}
+                  dropIdOverride={`sp-backlog-${gid}`}
+                  collapsed={groupCollapsed[gid]}
+                  assigneeName={assigneeName}
+                  epicName={epicName}
+                  epicOptions={epicOptions}
+                  onChangeEpic={onChangeEpic}
+                  onItemClick={(id) => openItem(backlog.backlog.items, id)}
+                  onInlineCreate={inlineCreate(null, group.epicId)}
+                  inlineBusy={createItem.isPending}
+                  emptyHint="이 Epic에 항목이 없습니다"
+                  header={
+                    <EpicGroupHeader
+                      name={gName}
+                      color={group.epicId != null ? epicColor(group.epicId) : undefined}
+                      count={group.items.length}
+                      collapsed={!!groupCollapsed[gid]}
+                      onToggle={() => toggleGroup(gid)}
+                    />
+                  }
+                />
+              );
+            })
+          )}
         </div>
       </DndContext>
 

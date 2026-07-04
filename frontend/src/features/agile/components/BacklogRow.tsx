@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@therecommerce
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
 import { TypeBadge, PriorityBadge, StatusBadge, Avatar2, EpicChip } from '@/components/badges';
+import { epicColor } from '../epic-color';
 import { GripVertical, CalendarClock, Layers } from 'lucide-react';
 
 const NO_EPIC = '__no_epic__';
@@ -65,7 +66,7 @@ export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions,
               {/* ds-ui SelectTrigger base가 직계 span에 `line-clamp-1`(세로 box)을 강제해 아이콘/텍스트가
                   세로로 쌓였다(#23). EpicChip(span 버전)·placeholder 모두 div로 감싸 그 영향을 피한다. */}
               {epicName ? (
-                <div className="flex min-w-0 max-w-full items-center"><EpicChip name={epicName} /></div>
+                <div className="flex min-w-0 max-w-full items-center"><EpicChip name={epicName} color={epicColor(item.epicId)} /></div>
               ) : (
                 <div className="flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted">
                   <Layers className="size-3 shrink-0" /> Epic 지정
@@ -80,7 +81,7 @@ export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions,
             </SelectContent>
           </Select>
         ) : (
-          epicName && <EpicChip name={epicName} />
+          epicName && <EpicChip name={epicName} color={epicColor(item.epicId)} />
         )}
       </div>
 
