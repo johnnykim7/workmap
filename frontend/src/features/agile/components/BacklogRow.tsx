@@ -1,12 +1,15 @@
 // 백로그 행(§6.1) — 스프린트/백로그 구역의 항목 한 줄. 드래그로 구역 이동(useDraggable).
 // 표시: 유형·키·제목·우선순위·추정·담당자·상태. 색은 상태/우선순위/막힘 신호에만.
 import { useDraggable } from '@dnd-kit/core';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@therecommerce/ds-ui';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from '@therecommerce/ds-ui';
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
 import { TypeBadge, PriorityBadge, StatusBadge, Avatar2, EpicChip } from '@/components/badges';
 import { epicColor } from '../epic-color';
-import { GripVertical, CalendarClock, Layers } from 'lucide-react';
+import { GripVertical, CalendarClock, Layers, MoreHorizontal, Inbox, ArrowRight } from 'lucide-react';
 
 const NO_EPIC = '__no_epic__';
 
@@ -19,9 +22,12 @@ interface Props {
   // 행에서 직접 Epic 변경(§6.1, Jira식 인라인 연결). 후보 + 변경 핸들러가 있으면 칩이 드롭다운이 된다.
   epicOptions?: { id: number; title: string }[];
   onChangeEpic?: (epicId: number | null) => void;
+  // 행 … 메뉴 스프린트 이동/백로그 되돌리기 — 이동 대상 스프린트 목록 + 핸들러(sprintId=null=백로그).
+  sprintOptions?: { id: number; name: string }[];
+  onMoveToSprint?: (sprintId: number | null) => void;
 }
 
-export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions, onChangeEpic }: Props) {
+export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions, onChangeEpic, sprintOptions, onMoveToSprint }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `bl-${item.id}`,
     data: { workItemId: item.id, sprintId: item.sprintId ?? null },
@@ -101,6 +107,44 @@ export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions,
       <div className="flex w-6 shrink-0 justify-center"><PriorityBadge priority={item.priority} /></div>
       <div className="flex w-20 shrink-0 justify-center"><StatusBadge status={item.commonStatus} /></div>
       <div className="flex w-6 shrink-0 justify-center"><Avatar2 name={assigneeName} /></div>
+
+      {/* 행 … 메뉴 — 드래그 대신 클릭으로 스프린트 이동/백로그 되돌리기(드래그 조준 부담 없음). */}
+      <div className="flex w-6 shrink-0 justify-center">
+        {onMoveToSprint && (() => {
+          const inBacklog = item.sprintId == null;
+          const targets = (sprintOptions ?? []).filter((s) => s.id !== item.sprintId);
+          // 되돌리기(백로그에 이미 있으면 불필요) + 이동 대상 스프린트가 하나도 없으면 메뉴 숨김.
+          if (inBacklog && targets.length === 0) return null;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="이동 메뉴"
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {!inBacklog && (
+                  <DropdownMenuItem onClick={() => onMoveToSprint(null)}>
+                    <Inbox className="size-4" /> 백로그로 되돌리기
+                  </DropdownMenuItem>
+                )}
+                {targets.length > 0 && (
+                  <>
+                    {!inBacklog && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel>스프린트로 이동</DropdownMenuLabel>
+                    {targets.map((s) => (
+                      <DropdownMenuItem key={s.id} onClick={() => onMoveToSprint(s.id)}>
+                        <ArrowRight className="size-4" /> {s.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        })()}
+      </div>
     </div>
   );
 }

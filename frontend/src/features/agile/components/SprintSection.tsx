@@ -19,6 +19,9 @@ interface Props {
   // 행에서 Epic 변경(§6.1) — 후보 + 핸들러. 있으면 칩이 드롭다운이 된다.
   epicOptions?: { id: number; title: string }[];
   onChangeEpic?: (workItemId: number, epicId: number | null) => void;
+  // 행 … 메뉴 스프린트 이동/백로그 되돌리기 — 이동 대상 스프린트 목록 + 핸들러.
+  sprintOptions?: { id: number; name: string }[];
+  onMoveToSprint?: (workItemId: number, sprintId: number | null) => void;
   // 인라인 생성(§6.1) — 이 구역에 항목 추가. busy면 입력 잠금. 미지정 시 + 만들기 행 숨김.
   onInlineCreate?: (title: string) => void;
   inlineBusy?: boolean;
@@ -30,6 +33,7 @@ interface Props {
 export function SprintSection({
   section, collapsed, assigneeName, onItemClick, emptyHint, header, epicName,
   epicOptions, onChangeEpic, onInlineCreate, inlineBusy, dropIdOverride,
+  sprintOptions, onMoveToSprint,
 }: Props) {
   // 드롭 id: 스프린트면 sp-{id}, 백로그면 sp-backlog(그룹별 유일 id는 dropIdOverride).
   // data.sprintId=null이면 백로그로 이동.
@@ -66,6 +70,8 @@ export function SprintSection({
                     ? undefined
                     : (epicId) => onChangeEpic(item.id, epicId)
                 }
+                sprintOptions={sprintOptions}
+                onMoveToSprint={onMoveToSprint ? (sprintId) => onMoveToSprint(item.id, sprintId) : undefined}
               />
             ))
           )}

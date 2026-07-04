@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  DndContext, PointerSensor, useSensor, useSensors, closestCenter, type DragEndEvent,
+  DndContext, PointerSensor, useSensor, useSensors, pointerWithin, type DragEndEvent,
 } from '@dnd-kit/core';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@therecommerce/ds-ui';
 import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers } from 'lucide-react';
@@ -67,6 +67,17 @@ export function BacklogView() {
   const epicOptions = useMemo(() => epics.map((e) => ({ id: e.id, title: e.title })), [epics]);
   const onChangeEpic = (workItemId: number, epicId: number | null) =>
     changeEpic.mutate({ workItemId, epicId });
+
+  // 행 … 메뉴로 스프린트 이동/백로그 되돌리기 — 드래그 조준 부담 없이 클릭으로.
+  // 완료 스프린트는 이동 대상에서 제외(진행 가능한 구역만). 되돌리기=sprintId:null.
+  const sprintOptions = useMemo(
+    () => (backlog?.sprints ?? [])
+      .filter((s) => s.sprint && s.sprint.status !== 'COMPLETED')
+      .map((s) => ({ id: s.sprint!.id, name: s.sprint!.name })),
+    [backlog],
+  );
+  const onMoveToSprint = (workItemId: number, sprintId: number | null) =>
+    changeSprint.mutate({ workItemId, sprintId });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -172,7 +183,8 @@ export function BacklogView() {
 
   return (
     <PageShell header={header}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      {/* pointerWithin: 커서 위치 기준 충돌 판정 — Epic별 그룹으로 백로그가 쪼개져도 커서가 올라간 구역에 정확히 드롭(closestCenter는 중심점 거리라 그룹 사이 여백에서 오조준). */}
+      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
         <div className="flex flex-col gap-4">
           {/* 스프린트 구역들 */}
           {backlog.sprints.map((section) => {
@@ -186,6 +198,8 @@ export function BacklogView() {
                 epicName={epicName}
                 epicOptions={epicOptions}
                 onChangeEpic={onChangeEpic}
+                sprintOptions={sprintOptions}
+                onMoveToSprint={onMoveToSprint}
                 onItemClick={(id) => openItem(section.items, id)}
                 onInlineCreate={inlineCreate(section.sprint!.id)}
                 inlineBusy={createItem.isPending}
@@ -213,6 +227,8 @@ export function BacklogView() {
               epicName={epicName}
               epicOptions={epicOptions}
               onChangeEpic={onChangeEpic}
+              sprintOptions={sprintOptions}
+              onMoveToSprint={onMoveToSprint}
               onItemClick={(id) => openItem(backlog.backlog.items, id)}
               onInlineCreate={inlineCreate(null)}
               inlineBusy={createItem.isPending}
@@ -247,6 +263,8 @@ export function BacklogView() {
                   epicName={epicName}
                   epicOptions={epicOptions}
                   onChangeEpic={onChangeEpic}
+                  sprintOptions={sprintOptions}
+                  onMoveToSprint={onMoveToSprint}
                   onItemClick={(id) => openItem(backlog.backlog.items, id)}
                   onInlineCreate={inlineCreate(null, group.epicId)}
                   inlineBusy={createItem.isPending}
