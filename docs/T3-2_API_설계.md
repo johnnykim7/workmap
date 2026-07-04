@@ -141,6 +141,7 @@
 | DELETE | /work-items/{id} | 소프트 삭제(deleted_at) | 🔒 | P1 | WMP-WI-003 |
 | POST | /work-items/{id}/subtasks | 하위 작업(Sub-task) 생성 | 🔒 | P1 | WMP-WI-005 |
 | PATCH | /work-items/{id}/status | 상태 전이(FSM 화이트리스트 + 공통상태 환산) | 🔒 | P1 | WMP-WI-007 |
+| PATCH | /work-items/{id}/flag | 막힘 깃발 토글(상태 불변, Jira Flag 방식) | 🔒 | P1 | WMP-WI-007 |
 | PATCH | /work-items/{id}/assignee | 담당자/보고자 지정·변경 | 🔒 | P1 | WMP-WI-006 |
 | PATCH | /work-items/{id}/convert | 유형 전환(Move/Convert, 계층 재검증) | 🔒 | P1 | WMP-WI-014 |
 | PATCH | /work-items/bulk | 벌크 편집(상태·담당자·스프린트·라벨 일괄) | 🔒 | P1 | WMP-WI-015 |
@@ -185,7 +186,7 @@
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
-| GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그, Epic 그룹 트리) | 🔒 | P1 | WMP-AGL-001 |
+| GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그). `?includeCompleted=true`(선택, 기본 false)면 완료 스프린트 구역을 맨 앞에 포함(CR-040) | 🔒 | P1 | WMP-AGL-001 |
 | GET | /projects/{id}/sprints | 스프린트 목록 | 🔒 | P1 | WMP-AGL-001 |
 | POST | /projects/{id}/sprints | 스프린트 생성 | 🔒 | P1 | WMP-AGL-001 |
 | PATCH | /sprints/{id} | 스프린트 편집(name·goal·startDate·endDate, status 무변경) | 🔒 | P2 | WMP-AGL-007 |
@@ -207,7 +208,17 @@
 > ```
 > - `groups`는 **ACTIVE 스프린트마다 1개**(id 오름차순). 각 그룹의 `columns`는 프로젝트 워크플로 상태(sort_order)별 컬럼 + 해당 스프린트 소속 카드.
 > - **ACTIVE 스프린트가 0개**(운영형 칸반 / 스크럼 미시작): `groups` 길이 1, 그 그룹의 `sprintId=null·sprintName=null`, 카드 = 백로그(sprint_id=NULL) 제외 프로젝트 전체(기존 단일 보드 동작 보존).
-> - 카드 status 변경은 보드가 직접 하지 않고 `PATCH /work-items/{id}/status`(FSM 가드, WMP-WI-007) 경유(직접 UPDATE 금지, BIZ-010).
+> - 카드 status 변경은 보드가 직접 하지 않고 `PATCH /work-items/{id}/status`(FSM 가드, WMP-WI-007) 경유(직접 UPDATE 금지, BIZ-010). 드래그로는 막힘이 만들어지지 않는다(CR-040) — 막힘은 상태가 아니라 깃발.
+
+> **막힘 깃발 토글(`PATCH /work-items/{id}/flag`, WMP-WI-007, CR-040)**: 상태(status_id/common_status)를 바꾸지 않고 Jira Flag처럼 막힘 표시만 켜고 끈다.
+> ```
+> Request  { flagged: boolean, reason?: string }
+>   - flagged=true  → reason(=block_reason) 필수(BIZ-005). 미입력 시 400 WMP-7712(BLOCK_REASON_REQUIRED).
+>   - flagged=false → 즉시 해제, block_reason도 null로 제거(확인 없음).
+> Response → WorkItem(변경 후) { ..., flagged, blockReason }  // status는 불변
+> ```
+> - 진입: 업무상세 …액션 메뉴의 깃발 버튼(상태 Select 아님). 켤 때 사유 다이얼로그, 끌 때 즉시.
+> - 막힘 시 `WorkItemBlocked` 이벤트 발행 → 담당자 알림(NotificationType.BLOCKED). 상태 전이(WorkItemStatusChanged)는 발생하지 않는다.
 
 ## H. 운영 실행 (Operations)
 
@@ -261,7 +272,7 @@
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
-| GET | /dashboard/blocked | 막힌 업무 목록(BLOCKED) | 🔒 | P1 | WMP-HOME-001·002 |
+| GET | /dashboard/blocked | 막힌 업무 목록(flagged=true, CR-040) | 🔒 | P1 | WMP-HOME-001·002 |
 | GET | /dashboard/delayed | 지연 업무 목록(기한 초과 미완료, POL-002) | 🔒 | P1 | WMP-HOME-002 |
 | GET | /dashboard/unassigned | 미배정 업무 목록(담당자 없음) | 🔒 | P1 | WMP-HOME-002 |
 | GET | /dashboard/metrics | 지표 카드(진행/오늘마감/이번주/미배정/장기미변경) | 🔒 | P1 | WMP-HOME-001 |

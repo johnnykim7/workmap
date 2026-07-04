@@ -28,7 +28,7 @@
 | work_item — 운영형 워크플로 | RECEIVED → CHECKING → PROCESSING → FIELD_CHECK → DONE / HOLD |
 | work_item — 현장검증형 워크플로 | TODO → IN_PROGRESS → DEV_DONE → FIELD_VERIFYING → OPS_APPLIED |
 | work_item — 범용 워크플로(CR-019) | TODO → IN_PROGRESS → DONE (되돌리기/재개 역전이 허용) |
-| work_item — 공통 횡단 상태 | BLOCKED (어느 상태에서든 진입, 해제 시 직전 상태 복귀) |
+| work_item — 막힘 깃발(flagged) | 상태 전이가 아님. 어느 상태에서든 깃발 ON/OFF, 상태(status_id) 불변(Jira Flag 방식, CR-040) |
 | approval (승인 게이트, work_item 결합) | PENDING → APPROVED / REJECTED (게이트 상태의 전진 전이 조건) |
 | sprint (스프린트) | FUTURE → ACTIVE → COMPLETED |
 | project (프로젝트) | PLANNING → ACTIVE → DONE / ARCHIVED |
@@ -43,8 +43,8 @@
 
 > 각 워크플로는 `상태 코드 / 진입조건 / 허용 다음 상태(화이트리스트)` 표로 정의된다.
 > **화이트리스트 방식**: '허용 다음 상태'에 없는 전이는 전면 차단(BIZ-010).
-> **공통상태군 매핑**: 각 워크플로 상태는 집계용 공통 상태군(시작전/진행중/검토중/완료/보류/차단)으로 환산된다 — 회사홈·보고서 집계의 기준(POL-001).
-> **공통 횡단 규칙**: BLOCKED 진입 시 block_reason 필수(BIZ-005), DONE 계열(DONE/OPS_APPLIED) 진입 시 completed_at 자동(BIZ-006).
+> **공통상태군 매핑**: 각 워크플로 상태는 집계용 공통 상태군(시작전/진행중/검토중/완료/보류)으로 환산된다 — 회사홈·보고서 집계의 기준(POL-001). "차단"은 상태군이 아니라 flagged 깃발로 별도 집계(CR-040).
+> **공통 규칙**: 막힘 깃발(flagged) ON 시 block_reason 필수(BIZ-005, 상태 불변), DONE 계열(DONE/OPS_APPLIED) 진입 시 completed_at 자동(BIZ-006).
 
 ### 1) 개발형 워크플로 (DEV)
 
@@ -159,24 +159,24 @@ stateDiagram-v2
 - DONE 진입 시 completed_at 자동(BIZ-006). 되돌리기/재개로 역전이 허용(범용이라 유연).
 - 시스템 기본 시드(`workflow.is_system=true`). 디폴트 템플릿의 `default_workflow_id`로 참조.
 
-### 공통 횡단 상태 — BLOCKED (막힘)
+### 막힘 깃발 — flagged (Jira Flag 방식, CR-040)
 
-> 워크플로에 종속되지 않는 횡단 상태. **모든 워크플로의 모든 상태에서 진입 가능**, 해제 시 직전 상태로 복귀.
+> **막힘은 상태가 아니라 깃발이다.** 워크플로 상태(status_id/common_status)와 완전히 독립. 어느 상태에서든 깃발을 켜고 끌 수 있으며, 깃발을 켜도 상태는 그대로 유지된다(진행 중이면 진행 중인 채로 막힘 표시). Jira의 Flag(Impediment)와 동일 철학 — 상태를 바꾸지 않으므로 "어느 단계에서 막혔는지"가 그대로 보이고, 풀 때 복귀 경로를 여러 개 만들 필요가 없다.
 
 ```mermaid
 stateDiagram-v2
     direction LR
-    AnyState --> BLOCKED : 차단 발생(block_reason 필수)
-    BLOCKED --> AnyState : 차단 해소(직전 상태 복귀)
+    NotFlagged --> Flagged : 막힘 표시(block_reason 필수)
+    Flagged --> NotFlagged : 막힘 해제(즉시, 상태 불변)
 ```
 
-| 상태 코드 | 진입 조건 | 허용 다음 상태(화이트리스트) | 공통상태군 |
-|-----------|-----------|------------------------------|-----------|
-| BLOCKED (막힘) | 어느 상태에서든 차단 발생 | 직전 상태(prev_status로 복귀) | 차단 |
+| 필드 | 켜기 조건 | 끄기 | 상태 영향 |
+|------|-----------|------|-----------|
+| flagged (막힘 깃발) | 어느 상태에서든 막힘 표시(block_reason 필수) | 즉시 해제(확인 없음) | 없음 — status_id/common_status 불변 |
 
-- 관련 기능 ID: WMP-WI-007, 회사홈 막힘 중심 대시보드(§9.2)
-- **진입 시 block_reason 필수(BIZ-005).** 해제 시 block_reason은 이력으로 보존.
-- BLOCKED 진입 직전 상태를 `prev_status`에 저장 → 해제 시 그 상태로만 복귀(화이트리스트).
+- 관련 기능 ID: WMP-WI-007(진입점 이동), 회사홈 막힘 중심 대시보드(§9.2) — 집계는 flagged=true 기준(CR-040).
+- **깃발 ON 시 block_reason 필수(BIZ-005).** OFF 시 block_reason도 함께 제거.
+- 상태 전이(FSM 화이트리스트)는 막힘과 무관하게 그대로 동작 — 막힘 깃발은 전이 경로에 개입하지 않는다.
 
 ---
 
@@ -218,9 +218,9 @@ stateDiagram-v2
 | 검토중 | IN_REVIEW, FIELD_CHECK, FIELD_VERIFYING |
 | 완료 | DONE, OPS_APPLIED |
 | 보류 | HOLD |
-| 차단 | BLOCKED |
 
 > 새 워크플로/상태를 추가하면 그 상태 행에 공통 상태군만 지정하면 집계에 자동 편입(코드 변경 0).
+> **"차단"은 공통 상태군이 아니다(CR-040).** 막힘은 상태가 아니라 flagged 깃발이므로, 어느 상태군(진행중 등)이든 유지한 채 flagged=true로 별도 집계된다(회사홈 막힘 대시보드).
 
 ---
 
@@ -333,13 +333,13 @@ stateDiagram-v2
 ### validating | 검증
 - **설명**: 드롭 대상 컬럼으로의 전이가 해당 워크플로 화이트리스트에 있는지 클라이언트 선검증
 - **허용 다음 상태**: committing(허용), reverted(거부)
-- **비고**: 클라이언트 선검증은 UX용. 서버가 최종 권위(BLOCKED 사유 미입력 등은 서버에서만 판단). 워크플로 전이표는 마스터에서 받아 캐시.
+- **비고**: 클라이언트 선검증은 UX용. 서버가 최종 권위(전이 화이트리스트·승인 게이트는 서버에서만 판단). 워크플로 전이표는 마스터에서 받아 캐시.
 - **관련 기능 ID**: WMP-AGL-005, WMP-WI-007
 
 ### committing | 반영 중
 - **설명**: 낙관적으로 카드를 새 컬럼에 두고 PATCH 요청 발신
 - **허용 다음 상태**: settled(성공), reverted(실패)
-- **비고**: **BLOCKED로의 전이면 차단 사유 입력 모달을 먼저 띄운 뒤 committing 진입**(BIZ-005). 모달 취소 시 reverted.
+- **비고**: 드래그 전이는 순수 상태 전이만 — **막힘은 드래그로 만들어지지 않는다(CR-040).** 막힘 표시는 업무상세 …액션 메뉴의 깃발 버튼으로만(상태 불변, block_reason 사유 입력).
 - **관련 기능 ID**: WMP-AGL-005, WMP-WI-007
 
 ### settled | 확정
@@ -404,9 +404,9 @@ stateDiagram-v2
 1. **워크플로 = 마스터 데이터(POL-001).** 상태/전이는 코드 enum이 아니라 `workflow` 테이블에 시드로 등록하고, 관리자가 워크플로 편집기(§13.5)로 유형/프로젝트별로 편집한다. 위 3종(개발형/운영형/현장검증형)은 시스템 기본 시드.
 2. work_item.status는 소속 프로젝트/유형에 매핑된 워크플로의 상태 집합에서만 값을 가진다.
 3. '허용 다음 상태'에 없는 전이는 전면 차단(BIZ-010, 화이트리스트). 정의 안 된 전이 = 거부.
-4. BLOCKED는 워크플로 횡단 상태 — 어느 상태에서든 진입(block_reason 필수, BIZ-005), 해제 시 prev_status로만 복귀.
+4. 막힘은 상태가 아니라 flagged 깃발이다(CR-040) — 어느 상태에서든 켜고 끌 수 있고 상태(status_id)는 불변. 켤 때 block_reason 필수(BIZ-005), 끄면 즉시 해제·사유 제거. 상태 전이 화이트리스트에 개입하지 않는다.
 5. DONE 계열(DONE/OPS_APPLIED) 진입 시 completed_at 자동(BIZ-006). 재오픈 시 null.
-6. 각 워크플로 상태는 공통 상태군(시작전/진행중/검토중/완료/보류/차단)으로 환산되어 회사홈·보고서 집계의 기준이 된다(POL-001).
+6. 각 워크플로 상태는 공통 상태군(시작전/진행중/검토중/완료/보류)으로 환산되어 회사홈·보고서 집계의 기준이 된다(POL-001). "차단"은 상태군이 아니라 flagged 기반 별도 집계(CR-040).
 7. sprint는 프로젝트당 동시 ACTIVE **여러 개 허용(CR-039, 병렬 스프린트)**. FUTURE→ACTIVE는 앞 스프린트 ACTIVE여도 차단하지 않는다(SPR-1 폐기).
 8. UI FSM(보드/백로그 드래그)은 낙관적 업데이트 + 서버 권위 롤백. 보드 드래그는 validating(FSM 선검증) 포함, 백로그 드래그는 소속 변경이라 미포함.
 9. 승인 게이트 상태(is_approval=true)의 전진 전이는 화이트리스트 통과 + approval=APPROVED 조건부(BIZ-110). 승인/거부는 지정 승인자만(BIZ-111), 거부 시 이전/지정 상태로 반려(POL-011).

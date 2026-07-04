@@ -43,6 +43,8 @@
 | CR-035 | 타임라인 간트 고도화(SVAR React Gantt — 드래그·의존성선·크리티컬패스) | 변경 | High | v2.3 |
 | CR-037 | 첨부 실파일 업로드 전환 + 공통 첨부 컴포넌트·파일 뷰어(그리드/목록·삭제·다운로드·이미지 줌뷰어) | 신규/설계보정 | Medium | v2.3 |
 | CR-038 | 스프린트 편집·삭제 (Jira식 편집 폼 + …메뉴 편집/삭제, FUTURE만 삭제·담긴 항목 백로그 복귀) | 신규 | Medium | v2.3 |
+| CR-039 | 병렬 스프린트 + 보드 스프린트별 아코디언 (SPR-1 폐기) | 변경 | High | v2.3 |
+| CR-040 | 막힘(BLOCKED)을 Jira Flag 방식으로 전환 — 상태 전이 폐기, flagged 깃발 | 변경 | Medium | v2.3 |
 
 ---
 
@@ -762,6 +764,34 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-07-04, "SVAR 코어+크리티컬패스 자체계산", "이 정공법으로 설계 진행", 대규모) | **적용 버전**: v2.3
 - **변경 일자**: 2026-07-04
 
+### CR-040 — 막힘(BLOCKED)을 Jira Flag 방식으로 전환 (상태 전이 폐기)
+
+- **대상 기능 ID**: WMP-WI-007(막힘, 진입점·구현 방식 변경)·WMP-HOME-001·002(막힘 집계 기준 변경)
+- **변경 타입**: 규칙 개정 + 스키마 변경(BE+FE) | **영향도**: Medium
+- **상태**: **설계 캐스케이드 완료(2026-07-05). 구현 착수.**
+- **배경**: 막힘이 "상태 전이"(common_status='BLOCKED' + prev_status_id에 직전 상태 저장→해제 시 복귀) 방식으로 구현돼 있으나, 어느 워크플로에도 BLOCKED 상태가 시드되지 않아 **화면·API 어디로도 막힘을 발동할 수 없는 반쪽 구현**이었음(실측: `WorkItemService.changeStatus`가 `toStatusId`로 workflow_status 행을 조회하는데 BLOCKED 행이 없어 넘길 id가 없음). 사용자와 Jira 실제 동작을 대조한 결과, Jira는 막힘을 **Flag(Impediment)** — 상태를 바꾸지 않고 깃발만 다는 방식 — 로 권장하고 "Blocked 상태 컬럼"을 비권장한다. WorkMap도 Flag 방식으로 전환한다.
+- **핵심 설계 결정(사용자 합의 2026-07-05)**:
+  - **Jira Flag 방식**: 막힘은 상태가 아니라 상태 독립적 깃발(`work_items.flagged`). 켜도 status_id/common_status 불변(진행 중이면 진행 중인 채로 막힘 표시), 풀면 깃발만 제거.
+  - **기존 BLOCKED 상태 전이 로직 제거**: `changeStatus`의 toBlocked/fromBlocked 분기·prev_status 저장·복귀 로직 전면 삭제.
+  - **prev_status_id 컬럼 DROP**(V14) — 복귀 로직 폐기로 사용처 소멸(사용자 결정: DROP).
+  - **막힘 해제는 즉시**(확인 다이얼로그 없음, Jira 정합). 켤 때만 사유(block_reason) 필수.
+  - **CommonStatus.BLOCKED enum / FE WorkStatus 'BLOCKED'는 잔존**(레거시 파싱용). 신규 발생 없음. 삭제 시 타입 파급이 커서 후속 정리 CR 여지로 남김.
+- **변경 내용**:
+  - **T1-3**: BIZ-005 = "상태가 BLOCKED로 전이되면 사유 필수" → "막힘 깃발(flagged) ON 시 사유 필수, 상태 불변".
+  - **T1-5**: "공통 횡단 상태 BLOCKED" 섹션 → "막힘 깃발(flagged)" 개정(상태 전이 아님·복귀 로직 삭제), 공통상태군에서 "차단" 제거(flagged 별도 집계), 보드 드래그 committing 비고·불변식 4번 개정.
+  - **T3-1**: work_items에 `flagged BOOLEAN Y false` 추가 + `idx_wi_flagged` 부분 인덱스 + prev_status_id DROP 명기 + block_reason 설명 정정 + CommonStatusGroup 표 BLOCKED 레거시 표기.
+  - **T3-2**: `PATCH /work-items/{id}/flag`(막힘 토글, 상태 불변) 신규 + 요청/응답 계약 + `/dashboard/blocked` 설명을 flagged 기준으로 정정.
+  - **T3-3**: 업무상세 …액션 메뉴에 "막힘 표시/해제(🚩)" 진입점(상태 Select 아님), 회사홈 막힘 목록·보드 카드 배지를 flagged 기준으로.
+  - **BE 구현(예정)**: `changeStatus` BLOCKED 3분기 제거 → 화이트리스트 전이만. `toggleFlag(id, {flagged, reason})` 서비스 + `PATCH /flag` 컨트롤러 + `WorkItemMapper.updateFlag` + `updateStatus`에서 prev_status_id/block_reason 제거. WorkItemBlocked 이벤트·BLOCKED 알림은 flag 토글 시 발행으로 이동. 집계(DashboardMapper·ProjectMapper) "차단"을 flagged=true로. V14 마이그레이션(flagged 추가·BLOCKED 데이터 승격·prev_status_id DROP·인덱스).
+  - **FE 구현(예정)**: domain.ts flagged 필드, api `toggleFlag` + `changeStatus` blockReason 제거, DetailHeader 진입점 이동(상태 Select→…메뉴 깃발), 보드 KanbanBoard/WorkItemCard BLOCKED 드롭 로직 제거·flagged 배지, 대시보드 flagged 기준.
+- **에러코드**: `BLOCK_REASON_REQUIRED`(WMP-7712) 재사용(flagged=true+사유 공백). 신규 없음.
+- **영향 설계서**: T1-3, T1-5, T3-1, T3-2, T3-3, CR_변경_이력(6종). **T1-4/T1-6 무변경**.
+- **테스트(예정)**: WorkItemServiceTest FSM-3/4/5(막힘 상태전이) 삭제·FSM-11을 toggleFlag로 재작성 + `PATCH /flag` 컨트롤러 슬라이스 + BulkRequest.blockReason 제거 정합. FE board 훅 BLOCKED moveCard 케이스 삭제 + tsc/vite 빌드 + [[workmap-tailwind-lnb-trap]] LNB 확인.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-07-05, "A방식(Jira Flag)", "상태 전이 제거", "중규모", "prev_status_id DROP", "즉시 해제") | **적용 버전**: v2.3
+- **변경 일자**: 2026-07-05
+
+---
+
 ### CR-039 — 병렬 스프린트 + 보드 스프린트별 아코디언 (SPR-1 폐기)
 
 - **대상 기능 ID**: WMP-AGL-003(시작, 완화)·WMP-AGL-005(보드, 응답구조 변경)
@@ -828,6 +858,28 @@
 - **테스트(예정)**: Epic 그룹핑 순수 함수 + epicId→색 해시 순수 함수 단위테스트. tsc -b + vite build.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-07-04, "중규모", "우선순위순↔Epic별 토글", "접기/펼치기", "선택 토글로 보완", "Jira식 뚜렷한 색") | **적용 버전**: v2.3
 - **변경 일자**: 2026-07-04
+
+### CR-040 — 백로그에 완료 스프린트 보기 토글 (기본 제외 → 옵션 복원)
+
+- **대상 기능 ID**: WMP-AGL-001(확장)
+- **변경 타입**: 신규(BE 파라미터 + FE 토글) + 설계보정 | **영향도**: Low(백로그 화면 한정, 신규 테이블·에러코드 0)
+- **상태**: **설계 캐스케이드 완료(2026-07-05). 구현 진행.**
+- **배경**: 백로그 화면이 완료(COMPLETED) 스프린트를 응답에서 아예 제외(`SprintService.backlog` line 129-131 `continue`)해, "지난 스프린트에서 뭘 했나"를 백로그에서 볼 수 없었다. 현재 동작(기본 제외)은 의도대로이나, Jira는 지난 스프린트를 **접힌 채로라도** 백로그에서 보여준다 → **선택 옵션**으로 복원. (실측: BLOCKED UI 재설계·병렬 스프린트 아코디언(CR-039)은 다른 세션, 진행률 공식은 논의만 — 본 CR은 "완료 스프린트 보기"만.)
+- **핵심 설계 결정(사용자 합의 2026-07-05)**:
+  - **표시 방식 = 토글 켤 때만 로드**: 기본 off(기존 동작 유지). on이면 `GET /projects/{id}/backlog?includeCompleted=true`로 재조회. 항상 포함(응답 무거워짐)이 아니라 옵션.
+  - **위치 = 맨 위, 오래된 순**: 완료(Sprint1,2…) → 진행/예정 → 백로그. `sort_order ASC`(=생성/시간 순)로 위에서 아래로 흐름(Jira 백로그 배치).
+  - **완료 구역 = 읽기전용·기본 접힘**: 드래그 드롭 타깃 아님·인라인 생성 없음·시작/완료/삭제 액션 없음(…메뉴는 편집만). 지난 내역 참고용이라 기본 접힌 채.
+- **변경 내용**:
+  - **BE**: `SprintController.backlog`에 `@RequestParam(defaultValue="false") boolean includeCompleted` + `SprintService.backlog(projectId, includeCompleted)`. includeCompleted=true면 완료 스프린트를 스킵하지 않고 **완료 구역 리스트를 맨 앞에** 배치(진행/예정 앞). `findByProject`는 이미 `sort_order ASC, id ASC`라 오래된 순 자연 정렬 — 완료만 앞으로 분리 배치.
+  - **T1-1**: WMP-AGL-001에 includeCompleted 입력·완료 구역 읽기전용 제약 추가.
+  - **T3-2**: `GET /projects/{id}/backlog`에 `?includeCompleted=true` 파라미터 명시.
+  - **T3-3**: §6.1 백로그에 "완료 스프린트 보기 토글" 항목 추가.
+  - **FE**: 백로그 상단 완료 스프린트 보기 토글(ds-ui) + `useBacklog(projectId, includeCompleted)` 파라미터화 + `BacklogView`에서 완료 스프린트 섹션 읽기전용(SprintHeader의 시작/완료/삭제 숨김·드래그 비활성)·기본 접힘.
+- **BE 무변경 부분**: 스키마·에러코드·마이그레이션·이벤트·FSM 전부 그대로. work_item 단일 테이블(BIZ-014) 무변경. `findByProject` 쿼리 재사용(신규 매퍼 없음).
+- **영향 설계서**: T1-1, T3-2, T3-3, CR_변경_이력(4종). **T1-3/T1-4/T1-5/T1-6/T3-1 무변경**.
+- **테스트**: SprintServiceTest — includeCompleted=false면 완료 제외(기존), true면 완료 구역 포함·맨 앞 배치 검증. FE tsc -b + vite build.
+- **요청자**: 사용자 | **승인자**: 사용자(2026-07-05, "여기서 진행", "토글 켤 때만 로드", "맨 위·오래된 순") | **적용 버전**: v2.4
+- **변경 일자**: 2026-07-05
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
