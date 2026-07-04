@@ -30,7 +30,9 @@ export function WorkItemTable({
   const someSelected = items.some((i) => selectedIds.has(i.id));
 
   return (
-    <div className="rounded-lg border border-border">
+    // sticky-table 마커: main.css가 ds-ui table-wrapper(overflow-auto)를 visible로 덮어
+    // thead의 sticky top-0이 바깥 스크롤 컨테이너(PageShell 본문) 기준으로 동작하게 한다.
+    <div className="sticky-table rounded-lg border border-border">
     <Table>
       {/* 표 헤더 행은 스크롤 시 상단 고정(스크롤 컨테이너=PageShell 본문 기준). bg-card로 행이 비치지 않게. */}
       <TableHeader className="sticky top-0 z-10 bg-card">
