@@ -6,7 +6,7 @@ import { type WorkItemResponse } from '@/types/domain';
 import { useActivities } from '../hooks';
 
 // 활동 action 코드 → 사람용 라벨(BE ActivityLog.action). 미상은 코드 그대로.
-const ACTION_LABEL: Record<string, string> = {
+export const ACTION_LABEL: Record<string, string> = {
   CREATE: '생성',
   STATUS_CHANGE: '상태 변경',
   ASSIGNEE_CHANGE: '담당자 변경',

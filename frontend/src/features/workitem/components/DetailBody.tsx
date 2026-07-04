@@ -1,14 +1,16 @@
 // 업무 상세 본문(§9.3 유형별 분기) — 설명(공통) + 유형별 섹션.
 // Epic: 하위 묶음 진행률 집계 / Story: 인수조건 / Task: 체크리스트·공수 / Bug: 재현절차·기대vs실제·환경·심각도 / Sub-task: 부모 링크.
-// 인라인 편집: 설명·인수조건·체크리스트·재현절차 등은 Textarea blur commit. 색 절제(중립 톤).
+// 편집 UX(Jira 정합): 설명·인수조건·체크리스트·재현절차 등은 평소 읽기 렌더 → [편집] 클릭 시에만 입력기 노출 → 저장/취소.
 import { useEffect, useState } from 'react';
-import { Textarea } from '@therecommerce/ds-ui';
+import { Button, Textarea } from '@therecommerce/ds-ui';
+import { Pencil } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useNavigate } from 'react-router-dom';
 import { type WorkItemResponse, STATUS_CATEGORY } from '@/types/domain';
 import { useUpdateWorkItem, useProjectItems } from '../hooks';
 import { StatusBadge, TypeBadge } from '@/components/badges';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
+import { htmlToPlainText } from '@/lib/html-text';
 
 interface Props {
   item: WorkItemResponse;
@@ -19,14 +21,12 @@ export function DetailBody({ item }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* 설명(공통) — CR-024 리치 에디터(HTML 저장, 이미지=URL 삽입). blur commit. */}
+      {/* 설명(공통) — CR-024 리치 에디터(HTML 저장). 읽기→[편집]→저장/취소(Jira 정합). */}
       <Section title="설명">
-        <RichTextEditor
+        <RichEditBlock
           value={item.description ?? ''}
           placeholder="설명을 입력하세요."
-          onBlur={(html) => {
-            if (html !== (item.description ?? '')) update.mutate({ description: html });
-          }}
+          onCommit={(html) => update.mutate({ description: html })}
         />
       </Section>
 
@@ -34,7 +34,7 @@ export function DetailBody({ item }: Props) {
 
       {item.issueType === 'STORY' && (
         <Section title="인수조건">
-          <ListBlock
+          <ListEditBlock
             value={item.acceptanceCriteria ?? []}
             placeholder="인수조건을 한 줄에 하나씩 입력하세요."
             onCommit={(lines) => update.mutate({ acceptanceCriteria: lines })}
@@ -45,7 +45,7 @@ export function DetailBody({ item }: Props) {
       {item.issueType === 'TASK' && (
         <>
           <Section title="작업 체크리스트">
-            <TextBlock
+            <TextEditBlock
               value={item.checklist ?? ''}
               placeholder="- [ ] 할 일 형태로 입력"
               onCommit={(v) => update.mutate({ checklist: v })}
@@ -58,7 +58,7 @@ export function DetailBody({ item }: Props) {
       {item.issueType === 'BUG' && (
         <>
           <Section title="재현 절차">
-            <ListBlock
+            <ListEditBlock
               value={item.stepsToReproduce ?? []}
               placeholder="재현 절차를 한 줄에 하나씩 입력하세요."
               onCommit={(lines) => update.mutate({ stepsToReproduce: lines })}
@@ -66,18 +66,18 @@ export function DetailBody({ item }: Props) {
           </Section>
           <div className="grid gap-4 sm:grid-cols-2">
             <Section title="기대 결과">
-              <TextBlock value={item.expectedResult ?? ''} placeholder="기대한 동작" onCommit={(v) => update.mutate({ expectedResult: v })} />
+              <TextEditBlock value={item.expectedResult ?? ''} placeholder="기대한 동작" onCommit={(v) => update.mutate({ expectedResult: v })} />
             </Section>
             <Section title="실제 결과">
-              <TextBlock value={item.actualResult ?? ''} placeholder="실제 동작" onCommit={(v) => update.mutate({ actualResult: v })} />
+              <TextEditBlock value={item.actualResult ?? ''} placeholder="실제 동작" onCommit={(v) => update.mutate({ actualResult: v })} />
             </Section>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Section title="환경">
-              <TextBlock value={item.environment ?? ''} placeholder="OS/브라우저/버전 등" onCommit={(v) => update.mutate({ environment: v })} singleLine />
+              <TextEditBlock value={item.environment ?? ''} placeholder="OS/브라우저/버전 등" onCommit={(v) => update.mutate({ environment: v })} singleLine />
             </Section>
             <Section title="심각도">
-              <TextBlock value={item.severity ?? ''} placeholder="예: Critical / Major / Minor" onCommit={(v) => update.mutate({ severity: v })} singleLine />
+              <TextEditBlock value={item.severity ?? ''} placeholder="예: Critical / Major / Minor" onCommit={(v) => update.mutate({ severity: v })} singleLine />
             </Section>
           </div>
         </>
@@ -101,43 +101,127 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// 멀티라인/단일라인 텍스트 인라인 편집 — blur 시 commit.
-function TextBlock({ value, placeholder, onCommit, singleLine }: {
-  value: string; placeholder?: string; onCommit: (v: string) => void; singleLine?: boolean;
+// 읽기 상태에서 클릭 유도용 공통 래퍼 — 비어있으면 placeholder, 있으면 children, 우측 [편집] 버튼.
+function ReadShell({ empty, placeholder, onEdit, children }: {
+  empty: boolean; placeholder?: string; onEdit: () => void; children: React.ReactNode;
 }) {
-  const [draft, setDraft] = useState(value);
-  useEffect(() => { setDraft(value); }, [value]);
-  function commit() { if (draft !== value) onCommit(draft); }
   return (
-    <Textarea
-      rows={singleLine ? 1 : 3}
-      className="resize-y"
-      placeholder={placeholder}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-    />
+    <div className="group relative rounded-md border border-transparent px-2 py-1.5 -mx-2 hover:border-border hover:bg-muted/30">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="absolute right-1.5 top-1.5 hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground group-hover:inline-flex hover:text-foreground"
+        title="편집"
+      >
+        <Pencil className="h-3 w-3" /> 편집
+      </button>
+      {empty ? (
+        <button type="button" onClick={onEdit} className="text-sm text-muted-foreground hover:text-foreground">
+          {placeholder ?? '입력하세요.'}
+        </button>
+      ) : (
+        <div onClick={onEdit} className="cursor-text">{children}</div>
+      )}
+    </div>
   );
 }
 
-// 줄 목록 편집(인수조건/재현절차) — 개행 분리, 빈 줄 제거 후 commit.
-function ListBlock({ value, placeholder, onCommit }: {
-  value: string[]; placeholder?: string; onCommit: (lines: string[]) => void;
+// 편집 액션 바(저장/취소) 공통.
+function EditActions({ onSave, onCancel, saving }: { onSave: () => void; onCancel: () => void; saving?: boolean }) {
+  return (
+    <div className="mt-2 flex gap-2">
+      <Button variant="primary" size="sm" onClick={onSave} disabled={saving}>저장</Button>
+      <Button variant="ghost" size="sm" onClick={onCancel}>취소</Button>
+    </div>
+  );
+}
+
+// 리치 텍스트(설명) — 읽기 HTML 렌더 → [편집] → 에디터 + 저장/취소.
+function RichEditBlock({ value, placeholder, onCommit }: {
+  value: string; placeholder?: string; onCommit: (html: string) => void;
 }) {
-  const [draft, setDraft] = useState(value.join('\n'));
-  useEffect(() => { setDraft(value.join('\n')); }, [value]);
-  function commit() {
-    const lines = draft.split('\n').map((l) => l.trim()).filter(Boolean);
-    if (lines.join('\n') !== value.join('\n')) onCommit(lines);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+
+  if (!editing) {
+    const empty = htmlToPlainText(value).trim().length === 0;
+    return (
+      <ReadShell empty={empty} placeholder={placeholder} onEdit={() => { setDraft(value); setEditing(true); }}>
+        <RichTextEditor value={value} editable={false} />
+      </ReadShell>
+    );
   }
   return (
-    <div className="space-y-1.5">
-      {value.length > 0 && (
+    <div>
+      <RichTextEditor value={draft} placeholder={placeholder} onChange={setDraft} />
+      <EditActions
+        onSave={() => { if (draft !== value) onCommit(draft); setEditing(false); }}
+        onCancel={() => { setDraft(value); setEditing(false); }}
+      />
+    </div>
+  );
+}
+
+// 멀티라인/단일라인 텍스트 — 읽기 → [편집] → Textarea + 저장/취소.
+function TextEditBlock({ value, placeholder, onCommit, singleLine }: {
+  value: string; placeholder?: string; onCommit: (v: string) => void; singleLine?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+
+  if (!editing) {
+    return (
+      <ReadShell empty={value.trim().length === 0} placeholder={placeholder} onEdit={() => { setDraft(value); setEditing(true); }}>
+        <p className="whitespace-pre-wrap text-sm text-foreground">{value}</p>
+      </ReadShell>
+    );
+  }
+  return (
+    <div>
+      <Textarea
+        rows={singleLine ? 1 : 3}
+        className="resize-y"
+        placeholder={placeholder}
+        value={draft}
+        autoFocus
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <EditActions
+        onSave={() => { if (draft !== value) onCommit(draft); setEditing(false); }}
+        onCancel={() => { setDraft(value); setEditing(false); }}
+      />
+    </div>
+  );
+}
+
+// 줄 목록(인수조건/재현절차) — 읽기 불릿 → [편집] → Textarea + 저장/취소.
+function ListEditBlock({ value, placeholder, onCommit }: {
+  value: string[]; placeholder?: string; onCommit: (lines: string[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value.join('\n'));
+  useEffect(() => { if (!editing) setDraft(value.join('\n')); }, [value, editing]);
+
+  if (!editing) {
+    return (
+      <ReadShell empty={value.length === 0} placeholder={placeholder} onEdit={() => { setDraft(value.join('\n')); setEditing(true); }}>
         <ul className="list-disc space-y-0.5 pl-5 text-sm text-foreground">
           {value.map((l, i) => <li key={i}>{l}</li>)}
         </ul>
-      )}
-      <Textarea rows={3} placeholder={placeholder} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit} />
+      </ReadShell>
+    );
+  }
+  function save() {
+    const lines = draft.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.join('\n') !== value.join('\n')) onCommit(lines);
+    setEditing(false);
+  }
+  return (
+    <div>
+      <Textarea rows={4} placeholder={placeholder} value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} />
+      <EditActions onSave={save} onCancel={() => { setDraft(value.join('\n')); setEditing(false); }} />
     </div>
   );
 }

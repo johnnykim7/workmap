@@ -8,8 +8,7 @@ import { DetailSidePanel } from './DetailSidePanel';
 import { SubtaskList } from './SubtaskList';
 import { LinkedItems } from './LinkedItems';
 import { Attachments } from './Attachments';
-import { CommentThread } from './CommentThread';
-import { ActivityFeed } from './ActivityFeed';
+import { ActivityTabs } from './ActivityTabs';
 import { ApprovalBanner } from './ApprovalBanner';
 import { FieldVerifications } from '@/features/ops/components/FieldVerifications';
 import { PromoteToBacklog } from '@/features/ops/components/PromoteToBacklog';
@@ -35,13 +34,13 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
     <div className="min-w-0 flex-1 space-y-6">
       <ApprovalBanner item={item} />
       <DetailBody item={item} />
+      {/* 순서(Jira 정합): 설명 → 첨부 → 하위작업 → 연결된업무. */}
+      <Attachments item={item} addRef={addAttachmentRef} />
       {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
       <LinkedItems item={item} addRef={addLinkRef} />
-      <Attachments item={item} addRef={addAttachmentRef} />
       {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
       {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
-      <CommentThread item={item} />
-      <ActivityFeed item={item} />
+      <ActivityTabs item={item} />
     </div>
   );
 
