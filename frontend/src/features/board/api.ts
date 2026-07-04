@@ -32,7 +32,7 @@ export interface BoardResponse {
 
 export const boardApi = {
   board: (projectId: number) => api.get<BoardResponse>(`/projects/${projectId}/board`),
-  // 상태 전이(WMP-WI-007). FSM 가드 경유(BIZ-010). BLOCKED 전이 시 blockReason 필수(BIZ-005).
-  changeStatus: (workItemId: number, toStatusId: number, blockReason?: string) =>
-    api.patch<WorkItemResponse>(`/work-items/${workItemId}/status`, { toStatusId, blockReason }),
+  // 상태 전이(WMP-WI-007). FSM 가드 경유(BIZ-010). 막힘은 상태 전이가 아님(CR-040) — flag 토글로 분리.
+  changeStatus: (workItemId: number, toStatusId: number) =>
+    api.patch<WorkItemResponse>(`/work-items/${workItemId}/status`, { toStatusId }),
 };

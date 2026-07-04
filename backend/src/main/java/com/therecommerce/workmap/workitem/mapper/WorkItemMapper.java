@@ -28,8 +28,11 @@ public interface WorkItemMapper {
     /** 항목 기본 필드 수정(제목/설명/우선순위/기한/라벨/유형 고유 필드 등). */
     void updateFields(WorkItem item);
 
-    /** 상태 전이 반영(status_id/common_status/prev_status_id/block_reason/completed_at/status_changed_at). */
+    /** 상태 전이 반영(status_id/common_status/completed_at/start_date/status_changed_at). */
     void updateStatus(WorkItem item);
+
+    /** 막힘 깃발 토글 반영(flagged/block_reason; CR-040). 상태는 건드리지 않는다. */
+    void updateFlag(WorkItem item);
 
     /** 담당자/보고자 변경. */
     void updateAssignee(@Param("id") Long id,

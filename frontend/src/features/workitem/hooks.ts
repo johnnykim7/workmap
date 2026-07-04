@@ -109,10 +109,24 @@ export function useChangeEpic(projectId?: number) {
 export function useChangeStatus(id: number, key?: string) {
   const invalidate = useInvalidateDetail(id, key);
   return useMutation({
-    mutationFn: ({ toStatusId, blockReason }: { toStatusId: number; blockReason?: string }) =>
-      workItemApi.changeStatus(id, toStatusId, blockReason),
+    mutationFn: ({ toStatusId }: { toStatusId: number }) =>
+      workItemApi.changeStatus(id, toStatusId),
     onSuccess: () => invalidate(),
     onError: (e) => toast.error(errMsg(e, '상태 변경에 실패했습니다.')),
+  });
+}
+
+// 막힘 깃발 토글(CR-040 — Jira Flag 방식, 상태 불변).
+export function useToggleFlag(id: number, key?: string) {
+  const invalidate = useInvalidateDetail(id, key);
+  return useMutation({
+    mutationFn: ({ flagged, reason }: { flagged: boolean; reason?: string }) =>
+      workItemApi.toggleFlag(id, flagged, reason),
+    onSuccess: (_data, vars) => {
+      invalidate();
+      toast.success(vars.flagged ? '막힘으로 표시했습니다.' : '막힘을 해제했습니다.');
+    },
+    onError: (e) => toast.error(errMsg(e, '막힘 표시 변경에 실패했습니다.')),
   });
 }
 

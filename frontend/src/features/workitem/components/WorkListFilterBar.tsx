@@ -14,8 +14,9 @@ import type { WorkItemListParams } from '../list-api';
 const ALL = 'ALL'; // Radix Select 빈 value 불가 → 전체 센티넬
 
 // 표시할 상태 옵션(공통상태 전체 — 워크플로별 상위집합). 과밀 방지 위해 주요만.
+// 막힘(BLOCKED)은 상태가 아니라 flagged 깃발이므로 상태 필터에서 제외(CR-040 — 막힘은 퀵필터/검색으로).
 const STATUS_OPTIONS: WorkStatus[] = [
-  'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE',
+  'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE',
   'RECEIVED', 'PROCESSING', 'HOLD', 'OPS_APPLIED',
 ];
 

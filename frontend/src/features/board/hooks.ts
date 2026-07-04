@@ -21,12 +21,12 @@ export function useBoard(projectId?: number) {
 export function useChangeStatus(projectId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ workItemId, toStatusId, blockReason }: { workItemId: number; toStatusId: number; blockReason?: string }) =>
-      boardApi.changeStatus(workItemId, toStatusId, blockReason),
-    onMutate: async ({ workItemId, toStatusId, blockReason }) => {
+    mutationFn: ({ workItemId, toStatusId }: { workItemId: number; toStatusId: number }) =>
+      boardApi.changeStatus(workItemId, toStatusId),
+    onMutate: async ({ workItemId, toStatusId }) => {
       await qc.cancelQueries({ queryKey: boardKey(projectId) });
       const prev = qc.getQueryData<BoardResponse>(boardKey(projectId));
-      if (prev) qc.setQueryData(boardKey(projectId), moveCard(prev, workItemId, toStatusId, blockReason));
+      if (prev) qc.setQueryData(boardKey(projectId), moveCard(prev, workItemId, toStatusId));
       return { prev };
     },
     onError: (err, _vars, ctx) => {
@@ -38,11 +38,12 @@ export function useChangeStatus(projectId: number) {
 }
 
 // 보드 응답에서 카드 1개를 toStatusId 컬럼으로 옮긴 새 응답을 만든다(불변).
-// statusId/commonStatus/blockReason을 도착 컬럼 기준으로 갱신. 카드를 못 찾으면 원본 반환.
+// statusId/commonStatus를 도착 컬럼 기준으로 갱신. 막힘(flagged/blockReason)은 상태와 독립이라 그대로 유지(CR-040).
+// 카드를 못 찾으면 원본 반환.
 type Col = BoardResponse['groups'][number]['columns'][number];
 type Card = Col['cards'][number];
 
-export function moveCard(data: BoardResponse, workItemId: number, toStatusId: number, blockReason?: string): BoardResponse {
+export function moveCard(data: BoardResponse, workItemId: number, toStatusId: number): BoardResponse {
   // CR-039: groups[]가 여러 개고 같은 워크플로라 statusId가 그룹 간 동일하므로,
   // 카드가 실제 속한 그룹만 골라 그 그룹 columns 안에서만 이동한다(다른 스프린트 섹션 오염 방지).
   return {
@@ -65,7 +66,6 @@ export function moveCard(data: BoardResponse, workItemId: number, toStatusId: nu
         ...card,
         statusId: toStatusId,
         commonStatus: target.commonStatus,
-        blockReason: target.commonStatus === 'BLOCKED' ? (blockReason ?? card.blockReason) : null,
       };
       return {
         ...group,

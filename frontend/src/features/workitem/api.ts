@@ -103,8 +103,11 @@ export const workItemApi = {
   get: (id: number) => api.get<WorkItemResponse>(`/work-items/${id}`),
   update: (id: number, body: UpdateWorkItemRequest) =>
     api.patch<WorkItemResponse>(`/work-items/${id}`, body),
-  changeStatus: (id: number, toStatusId: number, blockReason?: string) =>
-    api.patch<WorkItemResponse>(`/work-items/${id}/status`, { toStatusId, blockReason }),
+  changeStatus: (id: number, toStatusId: number) =>
+    api.patch<WorkItemResponse>(`/work-items/${id}/status`, { toStatusId }),
+  // 막힘 깃발 토글(CR-040 — 상태 불변). flagged=true 시 reason 필수.
+  toggleFlag: (id: number, flagged: boolean, reason?: string) =>
+    api.patch<WorkItemResponse>(`/work-items/${id}/flag`, { flagged, reason }),
   changeAssignee: (id: number, assigneeId: number | null, reporterId?: number | null) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/assignee`, { assigneeId, reporterId }),
   updateMeasure: (id: number, body: { measureUnitId?: number | null; targetValue?: number | null; currentValue?: number | null }) =>

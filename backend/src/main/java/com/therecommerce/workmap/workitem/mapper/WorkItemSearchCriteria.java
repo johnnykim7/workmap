@@ -26,6 +26,7 @@ public class WorkItemSearchCriteria {
     private Long sprintId;           // 스프린트 필터(선택)
     private Long epicId;             // Epic 필터(선택)
     private String label;            // 라벨 필터(선택) — labels JSONB 배열에 포함되면 매칭
+    private Boolean flagged;         // 막힘 깃발 필터(선택, CR-040) — true면 flagged=true만
     private String keyword;          // title/key LIKE(선택)
 
     /** 정렬 컬럼(화이트리스트 변환 후 주입). 기본 created_at. */

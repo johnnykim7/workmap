@@ -41,16 +41,16 @@ function visibleTo(p: Project, userId: number): boolean {
 // ── 회사홈(§9.2) dev 미러용 mock work_items. 실 BE엔 work_items 테이블, 여기선 화면 확인용 최소 시드. ──
 // 막힘 2 · 지연 2 · 미배정 2 가 보이도록 구성. dueDate는 과거(지연)/오늘/이번주로 혼합.
 const dashItems = [
-  { id: 901, key: 'WMP-101', projectId: 1, issueType: 'BUG', title: '결제 콜백 500 — 외부 PG 응답 지연', commonStatus: 'BLOCKED', priority: 'HIGHEST', assigneeId: 1, dueDate: '2026-06-20', progress: 30, blockReason: 'PG사 점검 응답 대기' },
-  { id: 902, key: 'WMP-102', projectId: 1, issueType: 'TASK', title: '배송 라벨 출력 정렬 깨짐', commonStatus: 'BLOCKED', priority: 'HIGH', assigneeId: 2, dueDate: '2026-06-26', progress: 50, blockReason: '디자인 확정 대기' },
-  { id: 903, key: 'WMP-103', projectId: 1, issueType: 'STORY', title: '재고 동기화 배치 누락 건 보정', commonStatus: 'IN_PROGRESS', priority: 'HIGH', assigneeId: 1, dueDate: '2026-06-22', progress: 60, blockReason: null },
-  { id: 904, key: 'WMP-104', projectId: 1, issueType: 'TASK', title: '월말 정산 리포트 양식 변경', commonStatus: 'TODO', priority: 'MEDIUM', assigneeId: 3, dueDate: '2026-06-24', progress: 0, blockReason: null },
-  { id: 905, key: 'WMP-105', projectId: 1, issueType: 'BUG', title: '알림 중복 발송 — 멱등키 미적용', commonStatus: 'TODO', priority: 'HIGH', assigneeId: null, dueDate: '2026-06-27', progress: 0, blockReason: null },
-  { id: 906, key: 'WMP-106', projectId: 1, issueType: 'STORY', title: '고객사 SSO 연동 1차', commonStatus: 'TODO', priority: 'MEDIUM', assigneeId: null, dueDate: null, progress: 0, blockReason: null },
+  { id: 901, key: 'WMP-101', projectId: 1, issueType: 'BUG', title: '결제 콜백 500 — 외부 PG 응답 지연', commonStatus: 'IN_PROGRESS', flagged: true, priority: 'HIGHEST', assigneeId: 1, dueDate: '2026-06-20', progress: 30, blockReason: 'PG사 점검 응답 대기' },
+  { id: 902, key: 'WMP-102', projectId: 1, issueType: 'TASK', title: '배송 라벨 출력 정렬 깨짐', commonStatus: 'IN_PROGRESS', flagged: true, priority: 'HIGH', assigneeId: 2, dueDate: '2026-06-26', progress: 50, blockReason: '디자인 확정 대기' },
+  { id: 903, key: 'WMP-103', projectId: 1, issueType: 'STORY', title: '재고 동기화 배치 누락 건 보정', commonStatus: 'IN_PROGRESS', flagged: false, priority: 'HIGH', assigneeId: 1, dueDate: '2026-06-22', progress: 60, blockReason: null },
+  { id: 904, key: 'WMP-104', projectId: 1, issueType: 'TASK', title: '월말 정산 리포트 양식 변경', commonStatus: 'TODO', flagged: false, priority: 'MEDIUM', assigneeId: 3, dueDate: '2026-06-24', progress: 0, blockReason: null },
+  { id: 905, key: 'WMP-105', projectId: 1, issueType: 'BUG', title: '알림 중복 발송 — 멱등키 미적용', commonStatus: 'TODO', flagged: false, priority: 'HIGH', assigneeId: null, dueDate: '2026-06-27', progress: 0, blockReason: null },
+  { id: 906, key: 'WMP-106', projectId: 1, issueType: 'STORY', title: '고객사 SSO 연동 1차', commonStatus: 'TODO', flagged: false, priority: 'MEDIUM', assigneeId: null, dueDate: null, progress: 0, blockReason: null },
 ];
 const pickDash = (kind: 'blocked' | 'delayed' | 'unassigned') => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (kind === 'blocked') return dashItems.filter((w) => w.commonStatus === 'BLOCKED' || w.blockReason);
+  if (kind === 'blocked') return dashItems.filter((w) => w.flagged);
   if (kind === 'unassigned') return dashItems.filter((w) => w.assigneeId == null);
   return dashItems.filter((w) => w.dueDate && new Date(w.dueDate) < today && w.commonStatus !== 'DONE');
 };

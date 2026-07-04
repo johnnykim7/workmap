@@ -14,7 +14,7 @@ import java.util.List;
  * issue_type + parent_id/epic_id 로 표현. 유형 고유 필드는 같은 테이블에 두고 화면 표시만 차등(BIZ-102).
  *
  * <p>상태는 workflow_status 참조(POL-001). common_status는 집계용 비정규화이며 상태 변경 시 동기화한다.
- * prev_status_id는 BLOCKED 진입 직전 상태(해제 시 복귀, T1-5). 측정 추상화(measure_unit/target/current)로
+ * flagged는 Jira식 막힘 깃발(상태와 독립, block_reason=사유; CR-040). 측정 추상화(measure_unit/target/current)로
  * progress 자동 계산(BIZ-105).
  */
 @Getter
@@ -43,8 +43,8 @@ public class WorkItem {
     private LocalDate startDate;
     private LocalDate dueDate;
     private int progress;
+    private boolean flagged;
     private String blockReason;
-    private Long prevStatusId;
     private Long measureUnitId;
     private BigDecimal targetValue;
     private BigDecimal currentValue;

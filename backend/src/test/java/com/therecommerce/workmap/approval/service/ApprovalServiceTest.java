@@ -104,7 +104,7 @@ class ApprovalServiceTest {
 
         verify(approvalMapper).updateDecision(eq(1L), eq("REJECTED"), eq("보완 필요"), eq(7L), any());
         verify(workItemService).changeStatus(eq(100L),
-                argThat(r -> r.toStatusId().equals(40L) && "보완 필요".equals(r.blockReason())),
+                argThat(r -> r.toStatusId().equals(40L)),
                 eq(7L), eq(true));
     }
 

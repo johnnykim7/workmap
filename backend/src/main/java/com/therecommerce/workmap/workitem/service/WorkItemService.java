@@ -232,39 +232,16 @@ public class WorkItemService {
         // 승인 게이트(BIZ-110): 현재 상태가 승인 게이트이고 PENDING 승인이 남아있으면 다음 상태 전이 차단(APR-2)
         approvalGate.assertCanLeave(from, w.getId(), bypassApproval);
 
-        boolean toBlocked = CommonStatus.BLOCKED.name().equals(to.getCommonStatus());
-        boolean fromBlocked = from != null && CommonStatus.BLOCKED.name().equals(from.getCommonStatus());
-
-        if (toBlocked) {
-            // BLOCKED는 횡단 전이 — 화이트리스트 불요, 단 사유 필수(FSM-3/4, BIZ-005)
-            if (req.blockReason() == null || req.blockReason().isBlank()) {
-                throw new BusinessException(WmpErrorCode.BLOCK_REASON_REQUIRED);
-            }
-        } else if (fromBlocked) {
-            // BLOCKED 해제 — prev_status로만 복귀(FSM-5, 화이트리스트)
-            if (w.getPrevStatusId() == null || !w.getPrevStatusId().equals(to.getId())) {
-                throw new BusinessException(WmpErrorCode.TRANSITION_NOT_ALLOWED, "차단 해제는 직전 상태로만 복귀할 수 있습니다.");
-            }
-        } else {
-            // 일반 전이 — 워크플로 화이트리스트 검증(FSM-1/2/9, BIZ-010)
-            boolean allowed = workflowMapper.transitionExists(w.getWorkflowId(), w.getStatusId(), to.getId());
-            if (!allowed) {
-                throw new BusinessException(WmpErrorCode.TRANSITION_NOT_ALLOWED,
-                        "허용되지 않은 전이입니다: " + (from == null ? "?" : from.getCode()) + " → " + to.getCode());
-            }
+        // 워크플로 화이트리스트 검증(FSM-1/2/9, BIZ-010). 막힘은 상태 전이가 아니므로(CR-040)
+        // 여기서 다루지 않는다 — 막힘은 toggleFlag로만 켜고 끈다.
+        boolean allowed = workflowMapper.transitionExists(w.getWorkflowId(), w.getStatusId(), to.getId());
+        if (!allowed) {
+            throw new BusinessException(WmpErrorCode.TRANSITION_NOT_ALLOWED,
+                    "허용되지 않은 전이입니다: " + (from == null ? "?" : from.getCode()) + " → " + to.getCode());
         }
 
         String fromCode = from == null ? null : from.getCode();
         OffsetDateTime now = OffsetDateTime.now(clock);
-
-        // prev_status: BLOCKED 진입 시 직전 상태 저장, 해제/일반 전이 시 클리어
-        if (toBlocked) {
-            w.setPrevStatusId(w.getStatusId());
-            w.setBlockReason(req.blockReason());
-        } else {
-            w.setPrevStatusId(null);
-            w.setBlockReason(null);
-        }
 
         // 완료 자동(BIZ-006): DONE 계열 진입 시 completed_at, 재오픈 시 null(FSM-6/7/8)
         if (to.isDone()) {
@@ -289,17 +266,47 @@ public class WorkItemService {
         // 이벤트 발행(FSM-10/11)
         events.publishEvent(new WorkItemEvents.WorkItemStatusChanged(
                 w.getId(), w.getIssueType(), fromCode, to.getCode(), actorId, now));
-        if (toBlocked) {
-            events.publishEvent(new WorkItemEvents.WorkItemBlocked(
-                    w.getId(), w.getIssueType(), req.blockReason(), actorId, now,
-                    w.getAssigneeId(), List.of()));
-        }
 
         // 승인 게이트 진입(APR-1/7): is_approval 상태에 도달하면 PENDING 승인 행 생성 + ApprovalRequested 발행
         approvalGate.onEnterGate(to, w.getId(), actorId, now);
 
         // 상위 Epic 진행률 재집계(AGG-1) — 동일 트랜잭션(파생값 정합)
         recomputeEpicProgress(w.getEpicId());
+
+        return WorkItemDtos.Response.from(getEntity(id));
+    }
+
+    /**
+     * 막힘 깃발 토글(WMP-WI-007, CR-040 — Jira Flag 방식). 상태(status_id/common_status) 불변.
+     * flagged=true면 reason 필수(BIZ-005), false면 즉시 해제(사유 제거). 켤 때만 WorkItemBlocked 발행.
+     */
+    @Transactional
+    public WorkItemDtos.Response toggleFlag(Long id, WorkItemDtos.FlagRequest req, Long actorId) {
+        WorkItem w = getEntity(id);
+        boolean on = Boolean.TRUE.equals(req.flagged());
+        OffsetDateTime now = OffsetDateTime.now(clock);
+
+        if (on) {
+            if (req.reason() == null || req.reason().isBlank()) {
+                throw new BusinessException(WmpErrorCode.BLOCK_REASON_REQUIRED);
+            }
+            w.setFlagged(true);
+            w.setBlockReason(req.reason());
+        } else {
+            w.setFlagged(false);
+            w.setBlockReason(null);
+        }
+        workItemMapper.updateFlag(w);
+
+        // 활동로그(FSM-12) — 동일 트랜잭션
+        log(id, actorId, on ? ActivityLog.FLAG_ON : ActivityLog.FLAG_OFF, null, req.reason());
+
+        // 막힘 표시(ON) 시에만 알림 이벤트 발행 — 담당자/멘션 대상(CR-040: 상태 전이 대신 flag에서 발행)
+        if (on) {
+            events.publishEvent(new WorkItemEvents.WorkItemBlocked(
+                    w.getId(), w.getIssueType(), req.reason(), actorId, now,
+                    w.getAssigneeId(), List.of()));
+        }
 
         return WorkItemDtos.Response.from(getEntity(id));
     }

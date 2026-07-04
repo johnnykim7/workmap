@@ -95,7 +95,7 @@ public class ApprovalService {
             // 반려 전이(APR-5): rejectStatusId가 있으면 그 상태로(사유=comment)
             if (req.rejectStatusId() != null) {
                 workItemService.changeStatus(approval.getWorkItemId(),
-                        new WorkItemDtos.ChangeStatusRequest(req.rejectStatusId(), req.comment()),
+                        new WorkItemDtos.ChangeStatusRequest(req.rejectStatusId()),
                         actorId, true);   // bypassApproval: 게이트의 PENDING 차단 우회(이미 결정됨)
             }
         } else {
@@ -106,7 +106,7 @@ public class ApprovalService {
                     .allMatch(a -> Decision.APPROVED.name().equals(a.getDecision()));
             if (allApproved && req.nextStatusId() != null) {
                 workItemService.changeStatus(approval.getWorkItemId(),
-                        new WorkItemDtos.ChangeStatusRequest(req.nextStatusId(), null),
+                        new WorkItemDtos.ChangeStatusRequest(req.nextStatusId()),
                         actorId, true);   // bypassApproval: 게이트 통과(APR-4)
             }
         }

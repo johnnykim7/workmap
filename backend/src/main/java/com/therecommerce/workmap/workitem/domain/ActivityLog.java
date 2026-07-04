@@ -21,6 +21,8 @@ public class ActivityLog {
     public static final String FIELD_UPDATE = "FIELD_UPDATE";
     public static final String TYPE_CONVERT = "TYPE_CONVERT";
     public static final String LINK = "LINK";
+    public static final String FLAG_ON = "FLAG_ON";    // 막힘 표시(CR-040)
+    public static final String FLAG_OFF = "FLAG_OFF";  // 막힘 해제(CR-040)
 
     private Long id;
     private Long workItemId;

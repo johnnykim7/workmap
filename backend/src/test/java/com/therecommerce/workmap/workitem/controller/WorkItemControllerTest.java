@@ -102,7 +102,7 @@ class WorkItemControllerTest {
     private WorkItemDtos.Response sample() {
         return new WorkItemDtos.Response(
                 1L, "ZGOH-5", 5L, "TASK", null, null, "제목", null, 10L, 100L, "TODO", "NORMAL",
-                null, null, null, null, null, null, null, 0, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, 0, false, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, 99L, OffsetDateTime.now());
     }
 
@@ -158,7 +158,7 @@ class WorkItemControllerTest {
     @Test
     @DisplayName("AUTHZ-2: VIEWER가 상태 변경 시도 → 403")
     void VIEWER_상태변경_거부() throws Exception {
-        WorkItemDtos.ChangeStatusRequest req = new WorkItemDtos.ChangeStatusRequest(10L, null);
+        WorkItemDtos.ChangeStatusRequest req = new WorkItemDtos.ChangeStatusRequest(10L);
 
         mockMvc.perform(patch("/api/v1/work-items/1/status").with(csrf()).with(WmpAuth.user(99L, "VIEWER"))
                         .contentType("application/json")
@@ -174,5 +174,29 @@ class WorkItemControllerTest {
         mockMvc.perform(get("/api/v1/work-items/1").with(WmpAuth.user(99L, "VIEWER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("FLAG-C1: MEMBER 막힘 토글(PATCH /flag) → 200, 서비스 위임(CR-040)")
+    void 막힘토글_성공() throws Exception {
+        when(workItemService.toggleFlag(eq(1L), any(), eq(99L))).thenReturn(sample());
+        WorkItemDtos.FlagRequest req = new WorkItemDtos.FlagRequest(true, "외부 승인 대기");
+
+        mockMvc.perform(patch("/api/v1/work-items/1/flag").with(csrf()).with(WmpAuth.user(99L, "MEMBER"))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("FLAG-C2: VIEWER가 막힘 토글 시도 → 403(WRITER 가드, CR-040)")
+    void 막힘토글_VIEWER_거부() throws Exception {
+        WorkItemDtos.FlagRequest req = new WorkItemDtos.FlagRequest(true, "사유");
+
+        mockMvc.perform(patch("/api/v1/work-items/1/flag").with(csrf()).with(WmpAuth.user(99L, "VIEWER"))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
     }
 }

@@ -7,7 +7,7 @@
       막힘/지연/미배정 목록 (WMP-HOME-001·002).
       가시성(BIZ-108): visibleProjectIds 안에 든 항목만. 빈 목록이면 결과 0건.
       mode 필터:
-        BLOCKED    = common_status = 'BLOCKED'
+        BLOCKED    = flagged = true  (CR-040: 막힘은 상태가 아니라 깃발)
         DELAYED    = due_date < CURRENT_DATE AND common_status NOT IN ('DONE','HOLD')  (POL-002)
         UNASSIGNED = assignee_id IS NULL AND common_status <> 'DONE'
       목록 항목은 WorkItem 도메인으로 매핑(WorkItemMapper.workItemMap 재사용).
@@ -30,7 +30,7 @@
         </if>
         <choose>
             <when test="mode == 'BLOCKED'">
-                AND wi.common_status = 'BLOCKED'
+                AND wi.flagged = true
             </when>
             <when test="mode == 'DELAYED'">
                 AND wi.due_date &lt; CURRENT_DATE

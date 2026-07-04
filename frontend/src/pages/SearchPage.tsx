@@ -31,7 +31,7 @@ const ALL = 'ALL';
 const PAGE_SIZE = 20;
 
 const STATUS_OPTIONS: WorkStatus[] = [
-  'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE', 'RECEIVED', 'PROCESSING', 'HOLD', 'OPS_APPLIED',
+  'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'RECEIVED', 'PROCESSING', 'HOLD', 'OPS_APPLIED',
 ];
 
 // 퀵필터(§13.9): 내 항목 / 최근 업데이트 / 막힌 것 / 미배정. params 변형으로 적용.
@@ -79,7 +79,7 @@ export function SearchPage() {
       page,
       size: PAGE_SIZE,
     };
-    if (quick.has('blocked')) p.commonStatus = 'BLOCKED';
+    if (quick.has('blocked')) p.flagged = true; // CR-040: 막힘은 상태 아님 → flagged 필터
     if (quick.has('mine') && me) p.assigneeId = me.id;
     if (quick.has('recent')) { p.sort = 'updatedAt' as WorkItemSortKey; p.direction = 'DESC'; }
     return p;

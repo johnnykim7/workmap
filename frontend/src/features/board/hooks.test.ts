@@ -16,7 +16,6 @@ function cols(todoCards: WorkItemResponse[]): BoardColumn[] {
   return [
     { statusId: 100, code: 'TODO', label: '할 일', commonStatus: 'TODO', isDone: false, isApproval: false, cards: todoCards },
     { statusId: 200, code: 'INP', label: '진행', commonStatus: 'IN_PROGRESS', isDone: false, isApproval: false, cards: [] },
-    { statusId: 900, code: 'BLK', label: '막힘', commonStatus: 'BLOCKED', isDone: false, isApproval: false, cards: [] },
   ];
 }
 
@@ -47,19 +46,16 @@ describe('moveCard (보드 낙관적 이동)', () => {
     expect(moved.commonStatus).toBe('IN_PROGRESS');
   });
 
-  it('BLOCKED컬럼이동시_blockReason반영', () => {
-    const next = moveCard(board(), 1, 900, '외부 승인 대기');
-    const moved = g0(next).flatMap((c) => c.cards).find((c) => c.id === 1)!;
-    expect(moved.commonStatus).toBe('BLOCKED');
-    expect(moved.blockReason).toBe('외부 승인 대기');
-  });
-
-  it('비BLOCKED컬럼이동시_blockReason은_null로해제', () => {
+  // CR-040: 막힘은 상태와 독립(flagged 깃발). 상태 전이(컬럼 이동)해도 flagged/blockReason은 그대로 유지.
+  it('막힘카드_컬럼이동해도_flagged와blockReason유지', () => {
     const start = board();
-    start.groups[0].columns[0].cards[0] = card(1, 100, { commonStatus: 'BLOCKED', blockReason: '이전 막힘' });
+    start.groups[0].columns[0].cards[0] = card(1, 100, { flagged: true, blockReason: '외부 승인 대기' });
     const next = moveCard(start, 1, 200);
     const moved = g0(next).flatMap((c) => c.cards).find((c) => c.id === 1)!;
-    expect(moved.blockReason).toBeNull();
+    expect(moved.statusId).toBe(200);
+    expect(moved.commonStatus).toBe('IN_PROGRESS');
+    expect(moved.flagged).toBe(true);
+    expect(moved.blockReason).toBe('외부 승인 대기');
   });
 
   it('없는카드_내용변화없음', () => {

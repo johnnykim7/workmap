@@ -1,6 +1,5 @@
 // 벌크편집 바(§9.5, WMP-WI-015) — 선택 N건 일괄 변경. 액션 하나씩 적용(항목별 FSM 검증·실패 분리 보고).
-// 상태=워크플로 컬럼 Select(BLOCKED 선택 시 사유 모달), 담당자/스프린트/우선순위 Select.
-import { useState } from 'react';
+// 상태=워크플로 컬럼 Select(순수 상태 전이 — 막힘은 상태 아님, CR-040), 담당자/스프린트/우선순위 Select.
 import {
   Button, Spinner,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -9,7 +8,6 @@ import { X } from 'lucide-react';
 import { PRIORITY_LABEL, type Priority, type ProjectMember, type Sprint } from '@/types/domain';
 import { useBoard } from '@/features/board/hooks';
 import { useBulkUpdate } from '../list-hooks';
-import { BlockReasonDialog } from '@/features/board/components/BlockReasonDialog';
 
 const NONE = '__none__';
 
@@ -26,7 +24,6 @@ export function BulkEditBar({ projectId, selectedIds, members, sprints, onClear 
   // CR-039: 보드가 groups[]로 바뀜. 상태 컬럼 목록은 첫 그룹(같은 워크플로라 그룹 간 컬럼 집합 동일).
   const columns = board?.groups?.[0]?.columns ?? [];
   const bulk = useBulkUpdate(projectId);
-  const [pendingBlockStatusId, setPendingBlockStatusId] = useState<number | null>(null);
 
   const ids = selectedIds;
   const busy = bulk.isPending;
@@ -36,10 +33,7 @@ export function BulkEditBar({ projectId, selectedIds, members, sprints, onClear 
   }
 
   function onStatus(v: string) {
-    const toStatusId = Number(v);
-    const target = columns.find((c) => c.statusId === toStatusId);
-    if (target?.commonStatus === 'BLOCKED') { setPendingBlockStatusId(toStatusId); return; }
-    run({ ids, toStatusId });
+    run({ ids, toStatusId: Number(v) });
   }
 
   return (
@@ -86,16 +80,6 @@ export function BulkEditBar({ projectId, selectedIds, members, sprints, onClear 
       <Button variant="ghost" size="sm" className="ml-auto gap-1" onClick={onClear} disabled={busy}>
         <X className="size-4" /> 선택 해제
       </Button>
-
-      <BlockReasonDialog
-        open={pendingBlockStatusId != null}
-        busy={busy}
-        onCancel={() => setPendingBlockStatusId(null)}
-        onConfirm={(reason) => {
-          if (pendingBlockStatusId == null) return;
-          run({ ids, toStatusId: pendingBlockStatusId, blockReason: reason }, () => setPendingBlockStatusId(null));
-        }}
-      />
     </div>
   );
 }

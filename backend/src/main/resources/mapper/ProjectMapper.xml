@@ -116,7 +116,7 @@
             count(*) FILTER (WHERE wi.common_status = 'DONE')                                  AS done,
             count(*) FILTER (WHERE wi.due_date &lt; CURRENT_DATE
                               AND wi.common_status NOT IN ('DONE', 'HOLD'))                    AS delayed,
-            count(*) FILTER (WHERE wi.common_status = 'BLOCKED')                               AS blocked
+            count(*) FILTER (WHERE wi.flagged)                                                 AS blocked
         FROM work_items wi
         WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL
     </select>

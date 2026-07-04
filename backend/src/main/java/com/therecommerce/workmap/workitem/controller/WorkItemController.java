@@ -97,6 +97,16 @@ public class WorkItemController {
         return ResponseDto.success(workItemService.changeStatus(id, req, userId));
     }
 
+    /** 막힘 깃발 토글(WMP-WI-007, CR-040 — Jira Flag 방식). 상태 불변. */
+    @PreAuthorize(WmpAuthz.WRITER)
+    @PatchMapping("/{id}/flag")
+    public ResponseDto<WorkItemDtos.Response> toggleFlag(
+            @PathVariable Long id,
+            @Valid @RequestBody WorkItemDtos.FlagRequest req,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(workItemService.toggleFlag(id, req, userId));
+    }
+
     @PreAuthorize(WmpAuthz.WRITER)
     @PatchMapping("/{id}/assignee")
     public ResponseDto<WorkItemDtos.Response> changeAssignee(

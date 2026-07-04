@@ -1,5 +1,5 @@
 // 칸반 보드 — 컬럼 가로 스크롤 + DnD 오케스트레이션.
-// 드롭 시: 같은 컬럼이면 무시, BLOCKED 컬럼이면 사유 모달 먼저(BIZ-005), 그 외엔 즉시 상태 전이.
+// 드롭 시: 같은 컬럼이면 무시, 그 외엔 즉시 상태 전이. 막힘은 드래그로 만들어지지 않는다(CR-040 — 상태 아님).
 // 전이는 useChangeStatus(낙관적+롤백)에 위임. 클릭과 구분 위해 8px 이동 후 드래그 활성.
 import { useMemo, useState } from 'react';
 import {
@@ -10,7 +10,6 @@ import type { BoardColumn } from '../api';
 import { useChangeStatus } from '../hooks';
 import { KanbanColumn } from './KanbanColumn';
 import { WorkItemCard } from './WorkItemCard';
-import { BlockReasonDialog } from './BlockReasonDialog';
 import type { WorkItemResponse } from '@/types/domain';
 
 // CR-039: 병렬 스프린트에서 그룹(스프린트 섹션)마다 이 컴포넌트를 렌더한다.
@@ -22,17 +21,10 @@ interface Props {
   onCardClick?: (workItemId: number) => void;
 }
 
-interface PendingBlock {
-  workItemId: number;
-  toStatusId: number;
-  item: WorkItemResponse;
-}
-
 export function KanbanBoard({ projectId, columns, assigneeName, onCardClick }: Props) {
   const changeStatus = useChangeStatus(projectId);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [activeCard, setActiveCard] = useState<WorkItemResponse | null>(null);
-  const [pendingBlock, setPendingBlock] = useState<PendingBlock | null>(null);
 
   const cardById = useMemo(() => {
     const m = new Map<number, WorkItemResponse>();
@@ -54,12 +46,6 @@ export function KanbanBoard({ projectId, columns, assigneeName, onCardClick }: P
     const item = cardById.get(workItemId);
     if (!item || item.statusId === toStatusId) return; // 같은 컬럼 드롭 무시
 
-    const target = columns.find((c) => c.statusId === toStatusId);
-    if (target?.commonStatus === 'BLOCKED') {
-      // BIZ-005: 막힘 전이는 사유 입력 먼저
-      setPendingBlock({ workItemId, toStatusId, item });
-      return;
-    }
     changeStatus.mutate({ workItemId, toStatusId });
   }
 
@@ -91,20 +77,6 @@ export function KanbanBoard({ projectId, columns, assigneeName, onCardClick }: P
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      <BlockReasonDialog
-        open={!!pendingBlock}
-        itemTitle={pendingBlock?.item.title}
-        busy={changeStatus.isPending}
-        onCancel={() => setPendingBlock(null)}
-        onConfirm={(reason) => {
-          if (!pendingBlock) return;
-          changeStatus.mutate(
-            { workItemId: pendingBlock.workItemId, toStatusId: pendingBlock.toStatusId, blockReason: reason },
-            { onSettled: () => setPendingBlock(null) },
-          );
-        }}
-      />
     </div>
   );
 }

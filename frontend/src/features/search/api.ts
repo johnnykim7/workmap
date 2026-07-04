@@ -13,6 +13,7 @@ export interface SearchParams {
   priority?: Priority;
   assigneeId?: number;
   label?: string; // 라벨 필터 — labels JSONB 배열 포함 매칭
+  flagged?: boolean; // CR-040: 막힘 깃발 필터(막힌 것 퀵필터)
   sort?: WorkItemSortKey;
   direction?: SortDirection;
   page?: number;
@@ -28,6 +29,7 @@ function toQuery(p: SearchParams): string {
   if (p.priority) sp.set('priority', p.priority);
   if (p.assigneeId != null) sp.set('assigneeId', String(p.assigneeId));
   if (p.label?.trim()) sp.set('label', p.label.trim());
+  if (p.flagged) sp.set('flagged', 'true');
   if (p.sort) sp.set('sort', p.sort);
   if (p.direction) sp.set('direction', p.direction);
   sp.set('page', String(p.page ?? 0));

@@ -32,7 +32,7 @@ class WorkItemBulkServiceTest {
     }
 
     private WorkItemDtos.BulkRequest req(List<Long> ids) {
-        return new WorkItemDtos.BulkRequest(ids, 2L, null, null, null, null, null, null, null);
+        return new WorkItemDtos.BulkRequest(ids, 2L, null, null, null, null, null, null);
     }
 
     @Test

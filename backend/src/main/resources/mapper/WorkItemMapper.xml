@@ -25,8 +25,8 @@
         <result property="startDate"         column="start_date"/>
         <result property="dueDate"           column="due_date"/>
         <result property="progress"          column="progress"/>
+        <result property="flagged"           column="flagged"/>
         <result property="blockReason"       column="block_reason"/>
-        <result property="prevStatusId"      column="prev_status_id"/>
         <result property="measureUnitId"     column="measure_unit_id"/>
         <result property="targetValue"       column="target_value"/>
         <result property="currentValue"      column="current_value"/>
@@ -116,16 +116,23 @@
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
 
-    <!-- 상태 전이 반영(FSM 가드 경유만). common_status 동기화 + prev_status/block_reason/completed_at. -->
+    <!-- 상태 전이 반영(FSM 가드 경유만). common_status 동기화 + completed_at/start_date. 막힘은 flag로 분리(CR-040). -->
     <update id="updateStatus" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
         UPDATE work_items SET
             status_id = #{statusId},
             common_status = #{commonStatus},
-            prev_status_id = #{prevStatusId},
-            block_reason = #{blockReason},
             completed_at = #{completedAt},
             start_date = #{startDate},
             status_changed_at = #{statusChangedAt},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- 막힘 깃발 토글 반영(CR-040). 상태는 건드리지 않는다. -->
+    <update id="updateFlag" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            flagged = #{flagged},
+            block_reason = #{blockReason},
             updated_at = now()
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
@@ -256,6 +263,10 @@
         <!-- 라벨 필터: labels(JSONB 배열)에 해당 라벨이 포함되면 매칭(@> 포함 연산). -->
         <if test="c.label != null and c.label != ''">
             AND labels @> jsonb_build_array(#{c.label})
+        </if>
+        <!-- 막힘 깃발 필터(CR-040): flagged=true면 막힌 것만. -->
+        <if test="c.flagged != null and c.flagged">
+            AND flagged = true
         </if>
         <!-- 전체 텍스트 검색(§13.9): 제목·key·설명 + 댓글(content) EXISTS. -->
         <if test="c.keyword != null and c.keyword != ''">

@@ -71,6 +71,7 @@ public class WorkItemQueryService {
                 .sprintId(params.sprintId())
                 .epicId(params.epicId())
                 .label(params.label())
+                .flagged(params.flagged())
                 .keyword(params.keyword())
                 .sortColumn(sortColumn)
                 .sortDirection(sortDirection)

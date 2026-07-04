@@ -321,7 +321,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(103L)).thenReturn(status(103, "IN_REVIEW", "IN_REVIEW", false, false));
         when(workflowMapper.transitionExists(10L, 102L, 103L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
         verify(workItemMapper).updateStatus(c.capture());
@@ -339,60 +339,55 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(104L)).thenReturn(status(104, "DONE", "DONE", false, true));
         when(workflowMapper.transitionExists(10L, 100L, 104L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L, null), 99L))
+        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.TRANSITION_NOT_ALLOWED);
         verify(workItemMapper, never()).updateStatus(any());
     }
 
     @Test
-    @DisplayName("FSM-3: BLOCKED전이_사유없음_거부(BIZ-005)")
-    void 차단전이_사유없음_거부() {
+    @DisplayName("FLAG-1: 막힘표시_사유없음_거부(BIZ-005, CR-040)")
+    void 막힘표시_사유없음_거부() {
         WorkItem w = item(1L, 102L, "IN_PROGRESS");
         when(workItemMapper.findById(1L)).thenReturn(w);
-        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
-        when(workflowMapper.findStatusById(199L)).thenReturn(status(199, "BLOCKED", "BLOCKED", false, false));
 
-        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(199L, null), 99L))
+        assertThatThrownBy(() -> service.toggleFlag(1L, new WorkItemDtos.FlagRequest(true, "  "), 99L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.BLOCK_REASON_REQUIRED);
     }
 
     @Test
-    @DisplayName("FSM-4: BLOCKED전이_사유있음_성공_prev저장")
-    void 차단전이_사유있음_prev저장() {
+    @DisplayName("FLAG-2: 막힘표시_성공_상태불변_flagged와사유저장(CR-040)")
+    void 막힘표시_성공_상태불변() {
         WorkItem w = item(1L, 102L, "IN_PROGRESS");
         when(workItemMapper.findById(1L)).thenReturn(w);
-        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
-        when(workflowMapper.findStatusById(199L)).thenReturn(status(199, "BLOCKED", "BLOCKED", false, false));
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(199L, "API 막힘"), 99L);
+        service.toggleFlag(1L, new WorkItemDtos.FlagRequest(true, "API 막힘"), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
-        verify(workItemMapper).updateStatus(c.capture());
-        assertThat(c.getValue().getPrevStatusId()).isEqualTo(102L);  // 직전 상태 보관
+        verify(workItemMapper).updateFlag(c.capture());
+        assertThat(c.getValue().isFlagged()).isTrue();
         assertThat(c.getValue().getBlockReason()).isEqualTo("API 막힘");
-        assertThat(c.getValue().getCommonStatus()).isEqualTo("BLOCKED");
+        assertThat(c.getValue().getCommonStatus()).isEqualTo("IN_PROGRESS"); // 상태 불변
+        verify(workItemMapper, never()).updateStatus(any());
     }
 
     @Test
-    @DisplayName("FSM-5: BLOCKED해제_직전상태복귀(임의 상태 거부)")
-    void 차단해제_직전상태복귀() {
-        WorkItem w = item(1L, 199L, "BLOCKED");
-        w.setPrevStatusId(102L);
+    @DisplayName("FLAG-3: 막힘해제_즉시_flagged와사유제거_이벤트미발행(CR-040)")
+    void 막힘해제_즉시() {
+        WorkItem w = item(1L, 102L, "IN_PROGRESS");
+        w.setFlagged(true);
+        w.setBlockReason("이전 막힘");
         when(workItemMapper.findById(1L)).thenReturn(w);
-        when(workflowMapper.findStatusById(199L)).thenReturn(status(199, "BLOCKED", "BLOCKED", false, false));
-        // 임의 상태(103)로 복귀 시도 → 거부
-        when(workflowMapper.findStatusById(103L)).thenReturn(status(103, "IN_REVIEW", "IN_REVIEW", false, false));
 
-        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L, null), 99L))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(WmpErrorCode.TRANSITION_NOT_ALLOWED);
+        service.toggleFlag(1L, new WorkItemDtos.FlagRequest(false, null), 99L);
 
-        // 직전 상태(102)로 복귀 시도 → 성공
-        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
-        verify(workItemMapper).updateStatus(any());
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+        verify(workItemMapper).updateFlag(c.capture());
+        assertThat(c.getValue().isFlagged()).isFalse();
+        assertThat(c.getValue().getBlockReason()).isNull();
+        // 해제 시엔 WorkItemBlocked 미발행
+        verify(events, never()).publishEvent(any(WorkItemEvents.WorkItemBlocked.class));
     }
 
     @Test
@@ -404,7 +399,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(104L)).thenReturn(status(104, "DONE", "DONE", false, true));
         when(workflowMapper.transitionExists(10L, 103L, 104L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
         verify(workItemMapper).updateStatus(c.capture());
@@ -422,7 +417,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
         when(workflowMapper.transitionExists(10L, 104L, 102L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
         verify(workItemMapper).updateStatus(c.capture());
@@ -438,7 +433,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(205L)).thenReturn(status(205, "DONE", "DONE", false, true));
         when(workflowMapper.transitionExists(10L, 200L, 205L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(205L, null), 99L))
+        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(205L), 99L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.TRANSITION_NOT_ALLOWED);
     }
@@ -452,7 +447,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(103L)).thenReturn(status(103, "IN_REVIEW", "IN_REVIEW", false, false));
         when(workflowMapper.transitionExists(10L, 102L, 103L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L), 99L);
 
         ArgumentCaptor<Object> ev = ArgumentCaptor.forClass(Object.class);
         verify(events).publishEvent(ev.capture());
@@ -464,18 +459,16 @@ class WorkItemServiceTest {
     }
 
     @Test
-    @DisplayName("FSM-11: BLOCKED전이_WorkItemBlocked발행")
-    void 차단전이_이벤트발행() {
+    @DisplayName("FLAG-4: 막힘표시_WorkItemBlocked발행_담당자전파(CR-040)")
+    void 막힘표시_이벤트발행() {
         WorkItem w = item(1L, 102L, "IN_PROGRESS");
         w.setAssigneeId(42L);
         when(workItemMapper.findById(1L)).thenReturn(w);
-        when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
-        when(workflowMapper.findStatusById(199L)).thenReturn(status(199, "BLOCKED", "BLOCKED", false, false));
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(199L, "막힘 사유"), 99L);
+        service.toggleFlag(1L, new WorkItemDtos.FlagRequest(true, "막힘 사유"), 99L);
 
         ArgumentCaptor<Object> ev = ArgumentCaptor.forClass(Object.class);
-        verify(events, times(2)).publishEvent(ev.capture());  // StatusChanged + Blocked
+        verify(events).publishEvent(ev.capture());  // WorkItemBlocked 1건(상태 전이 없음)
         WorkItemEvents.WorkItemBlocked blocked = ev.getAllValues().stream()
                 .filter(o -> o instanceof WorkItemEvents.WorkItemBlocked)
                 .map(o -> (WorkItemEvents.WorkItemBlocked) o).findFirst().orElseThrow();
@@ -493,7 +486,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(103L)).thenReturn(status(103, "IN_REVIEW", "IN_REVIEW", false, false));
         when(workflowMapper.transitionExists(10L, 102L, 103L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(103L), 99L);
 
         ArgumentCaptor<ActivityLog> c = ArgumentCaptor.forClass(ActivityLog.class);
         verify(activityLogMapper).insert(c.capture());
@@ -610,7 +603,7 @@ class WorkItemServiceTest {
                 item(11L, 104L, "DONE"), item(12L, 104L, "DONE"),
                 item(13L, 102L, "IN_PROGRESS"), item(14L, 100L, "TODO")));
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L);
 
         verify(workItemMapper).updateProgress(7L, 50);
     }
@@ -628,7 +621,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
         when(workflowMapper.transitionExists(10L, 100L, 102L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
         verify(workItemMapper).updateStatus(c.capture());
@@ -646,7 +639,7 @@ class WorkItemServiceTest {
         when(workflowMapper.findStatusById(102L)).thenReturn(status(102, "IN_PROGRESS", "IN_PROGRESS", false, false));
         when(workflowMapper.transitionExists(10L, 100L, 102L)).thenReturn(true);
 
-        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L, null), 99L);
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(102L), 99L);
 
         ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
         verify(workItemMapper).updateStatus(c.capture());

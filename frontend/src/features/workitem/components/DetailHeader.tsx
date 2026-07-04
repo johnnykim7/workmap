@@ -8,13 +8,13 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, toast,
 } from '@therecommerce/ds-ui';
 import {
-  ChevronUp, ChevronDown, ArrowLeft, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace, Trash2,
+  ChevronUp, ChevronDown, ArrowLeft, Share2, Plus, Settings, GitBranch, Link2, Paperclip, Replace, Trash2, Flag,
 } from 'lucide-react';
 import { TypeBadge } from '@/components/badges';
 import { ROUTES } from '@/lib/route-paths';
 import { useBoard } from '@/features/board/hooks';
 import { type WorkItemResponse } from '@/types/domain';
-import { useUpdateWorkItem, useChangeStatus, useDeleteWorkItem } from '../hooks';
+import { useUpdateWorkItem, useChangeStatus, useDeleteWorkItem, useToggleFlag } from '../hooks';
 import { BlockReasonDialog } from '@/features/board/components/BlockReasonDialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ConvertDialog } from './ConvertDialog';
@@ -32,6 +32,7 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   const navigate = useNavigate();
   const update = useUpdateWorkItem(item.id, item.key);
   const changeStatus = useChangeStatus(item.id, item.key);
+  const toggleFlag = useToggleFlag(item.id, item.key);
   const deleteItem = useDeleteWorkItem(item.id);
   // 워크플로 상태 목록 = 보드 컬럼(같은 프로젝트). 상태 전이 옵션·라벨 출처.
   // CR-039: 보드가 groups[]로 바뀜 — 상태 컬럼 정의는 첫 그룹(그룹 간 컬럼 집합 동일), 카드 순서는 전 그룹 평탄화.
@@ -41,7 +42,7 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
-  const [pendingBlockStatusId, setPendingBlockStatusId] = useState<number | null>(null);
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   useEffect(() => { setTitle(item.title); }, [item.title]);
@@ -64,12 +65,16 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   function onStatusChange(v: string) {
     const toStatusId = Number(v);
     if (toStatusId === item.statusId) return;
-    const target = columns.find((c) => c.statusId === toStatusId);
-    if (target?.commonStatus === 'BLOCKED') {
-      setPendingBlockStatusId(toStatusId); // BIZ-005: 사유 먼저
-      return;
-    }
     changeStatus.mutate({ toStatusId });
+  }
+
+  // 막힘 표시/해제(CR-040 — Jira Flag 방식, 상태 불변). 켤 땐 사유 다이얼로그, 끌 땐 즉시.
+  function onToggleFlag() {
+    if (item.flagged) {
+      toggleFlag.mutate({ flagged: false });
+    } else {
+      setFlagDialogOpen(true);
+    }
   }
 
   return (
@@ -124,6 +129,10 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onAddAttachment}>
                   <Paperclip className="size-4" /> 첨부
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onToggleFlag}>
+                  <Flag className={`size-4 ${item.flagged ? 'text-destructive' : ''}`} />
+                  {item.flagged ? '막힘 해제' : '막힘 표시'}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setConvertOpen(true)}>
                   <Replace className="size-4" /> 유형 전환
@@ -196,15 +205,14 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
       />
 
       <BlockReasonDialog
-        open={pendingBlockStatusId != null}
+        open={flagDialogOpen}
         itemTitle={item.title}
-        busy={changeStatus.isPending}
-        onCancel={() => setPendingBlockStatusId(null)}
+        busy={toggleFlag.isPending}
+        onCancel={() => setFlagDialogOpen(false)}
         onConfirm={(reason) => {
-          if (pendingBlockStatusId == null) return;
-          changeStatus.mutate(
-            { toStatusId: pendingBlockStatusId, blockReason: reason },
-            { onSettled: () => setPendingBlockStatusId(null) },
+          toggleFlag.mutate(
+            { flagged: true, reason },
+            { onSettled: () => setFlagDialogOpen(false) },
           );
         }}
       />

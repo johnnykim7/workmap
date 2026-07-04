@@ -25,7 +25,6 @@ export interface WorkItemListParams {
 export interface BulkRequest {
   ids: number[];
   toStatusId?: number;
-  blockReason?: string;       // toStatus가 BLOCKED면 필수
   changeAssignee?: boolean;   // true면 assigneeId 적용(null=미배정)
   assigneeId?: number | null;
   changeSprint?: boolean;     // true면 sprintId 적용(null=백로그)

@@ -31,7 +31,7 @@ public class WorkItemBulkProcessor {
         // 상태 전이(FSM 가드 경유, BLK-1) — 화이트리스트 위반 시 BusinessException
         if (req.toStatusId() != null) {
             workItemService.changeStatus(id,
-                    new WorkItemDtos.ChangeStatusRequest(req.toStatusId(), req.blockReason()), actorId);
+                    new WorkItemDtos.ChangeStatusRequest(req.toStatusId()), actorId);
         }
         // 담당자 일괄 변경(멤버 검증 포함)
         if (Boolean.TRUE.equals(req.changeAssignee())) {

@@ -79,10 +79,18 @@ public final class WorkItemDtos {
             List<String> relatedSolutions
     ) {}
 
-    /** 상태 전이(WMP-WI-007). toStatusId 필수, BLOCKED 전이 시 blockReason 필수(BIZ-005). */
+    /** 상태 전이(WMP-WI-007). toStatusId 필수. 막힘은 상태 전이가 아님(CR-040) — flag 토글로 분리. */
     public record ChangeStatusRequest(
-            @NotNull Long toStatusId,
-            String blockReason
+            @NotNull Long toStatusId
+    ) {}
+
+    /**
+     * 막힘 깃발 토글(WMP-WI-007, CR-040 — Jira Flag 방식). 상태(status_id/common_status) 불변.
+     * flagged=true면 reason(=block_reason) 필수(BIZ-005), false면 즉시 해제(사유도 제거).
+     */
+    public record FlagRequest(
+            @NotNull Boolean flagged,
+            String reason
     ) {}
 
     /** 담당자/보고자 지정·변경(WMP-WI-006). null=미배정(BIZ-002). */
@@ -117,7 +125,6 @@ public final class WorkItemDtos {
     public record BulkRequest(
             @NotNull List<Long> ids,
             Long toStatusId,         // 상태 일괄 변경(FSM 검증)
-            String blockReason,      // toStatus가 BLOCKED일 때 필수
             Boolean changeAssignee,  // true면 assigneeId 적용(null=미배정)
             Long assigneeId,
             Long sprintId,           // 스프린트 일괄 변경
@@ -151,6 +158,7 @@ public final class WorkItemDtos {
             Long sprintId,
             Long epicId,
             String label,
+            Boolean flagged,    // CR-040: 막힘 깃발 필터(막힌 것 퀵필터). true면 flagged=true만
             String keyword,
             String sort,
             String direction
@@ -177,6 +185,7 @@ public final class WorkItemDtos {
             LocalDate startDate,
             LocalDate dueDate,
             int progress,
+            boolean flagged,
             String blockReason,
             Long measureUnitId,
             BigDecimal targetValue,
@@ -200,7 +209,7 @@ public final class WorkItemDtos {
                     w.getEpicId(), w.getTitle(), w.getDescription(), w.getWorkflowId(), w.getStatusId(),
                     w.getCommonStatus(), w.getPriority(), w.getAssigneeId(), w.getReporterId(),
                     w.getSprintId(), w.getStoryPoints(), w.getEstimateHours(), w.getStartDate(),
-                    w.getDueDate(), w.getProgress(), w.getBlockReason(), w.getMeasureUnitId(),
+                    w.getDueDate(), w.getProgress(), w.isFlagged(), w.getBlockReason(), w.getMeasureUnitId(),
                     w.getTargetValue(), w.getCurrentValue(), w.getAcceptanceCriteria(),
                     w.getStepsToReproduce(), w.getExpectedResult(), w.getActualResult(),
                     w.getEnvironment(), w.getSeverity(), w.getChecklist(), w.getLabels(),

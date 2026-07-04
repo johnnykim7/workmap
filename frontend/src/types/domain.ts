@@ -246,6 +246,7 @@ export interface WorkItemResponse {
   startDate?: string | null;
   dueDate?: string | null;
   progress: number;
+  flagged?: boolean;
   blockReason?: string | null;
   measureUnitId?: number | null;
   targetValue?: number | null;

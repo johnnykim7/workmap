@@ -3,7 +3,7 @@
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
 import { TypeBadge, PriorityBadge, Avatar2 } from '@/components/badges';
-import { Ban, CalendarClock } from 'lucide-react';
+import { Flag, CalendarClock } from 'lucide-react';
 
 interface Props {
   item: WorkItemResponse;
@@ -21,7 +21,7 @@ function dueLabel(due?: string | null): string | null {
 
 export function WorkItemCard({ item, assigneeName, dragHandleProps, onClick }: Props) {
   const delayed = isWorkItemDelayed(item);
-  const blocked = item.commonStatus === 'BLOCKED' || !!item.blockReason;
+  const blocked = !!item.flagged; // CR-040: 막힘은 상태가 아니라 깃발
   const due = dueLabel(item.dueDate);
 
   return (
@@ -41,7 +41,7 @@ export function WorkItemCard({ item, assigneeName, dragHandleProps, onClick }: P
 
       {blocked && (
         <div className="mb-1.5 flex items-center gap-1 text-[11px] text-red-600">
-          <Ban className="size-3" />
+          <Flag className="size-3" />
           <span className="line-clamp-1">{item.blockReason ?? '막힘'}</span>
         </div>
       )}
