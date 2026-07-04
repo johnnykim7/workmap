@@ -23,7 +23,8 @@ interface Props {
 
 export function BulkEditBar({ projectId, selectedIds, members, sprints, onClear }: Props) {
   const { data: board } = useBoard(projectId);
-  const columns = board?.columns ?? [];
+  // CR-039: 보드가 groups[]로 바뀜. 상태 컬럼 목록은 첫 그룹(같은 워크플로라 그룹 간 컬럼 집합 동일).
+  const columns = board?.groups?.[0]?.columns ?? [];
   const bulk = useBulkUpdate(projectId);
   const [pendingBlockStatusId, setPendingBlockStatusId] = useState<number | null>(null);
 

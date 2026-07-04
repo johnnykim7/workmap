@@ -1,9 +1,11 @@
-// 보드 탭 — 스크럼(현재 스프린트)/운영(칸반 전체). 드래그로 상태 전이(T1-5 UI FSM: 낙관적+롤백).
-// BLOCKED 드롭 시 차단 사유 모달 먼저(BIZ-005). 데이터=실 BE GET /projects/{id}/board.
+// 보드 탭 — 병렬 스프린트(CR-039): ACTIVE 스프린트별 아코디언 섹션 세로 나열.
+// 드래그로 상태 전이(T1-5 UI FSM: 낙관적+롤백). BLOCKED 드롭 시 차단 사유 모달 먼저(BIZ-005).
+// 데이터=실 BE GET /projects/{id}/board → { groups: [{ sprintId, sprintName, columns[] }] }.
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useBoard } from '@/features/board/hooks';
 import { KanbanBoard } from '@/features/board/components/KanbanBoard';
+import { BoardAccordionSection } from '@/features/board/components/BoardAccordionSection';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BoardSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
@@ -32,7 +34,9 @@ export function BoardView() {
     );
   }
 
-  if (!board || board.columns.length === 0) {
+  const groups = board?.groups ?? [];
+  const hasColumns = groups.some((g) => g.columns.length > 0);
+  if (!board || !hasColumns) {
     return (
       <EmptyState
         icon={<LayoutGrid className="size-6" />}
@@ -42,28 +46,52 @@ export function BoardView() {
     );
   }
 
-  const cardTotal = board.columns.reduce((n, c) => n + c.cards.length, 0);
+  const cardTotal = groups.reduce((n, g) => n + g.columns.reduce((m, c) => m + c.cards.length, 0), 0);
   if (cardTotal === 0) {
+    const scrum = groups.some((g) => g.sprintId != null);
     return (
       <EmptyState
         icon={<LayoutGrid className="size-6" />}
         title="보드에 표시할 항목이 없습니다"
-        description={board.sprintId ? '현재 스프린트에 항목이 없습니다.' : '아직 등록된 업무가 없습니다.'}
+        description={scrum ? '현재 스프린트에 항목이 없습니다.' : '아직 등록된 업무가 없습니다.'}
       />
     );
   }
 
-  // 칸반은 자체 스크롤(컬럼 세로+보드 가로)이라 bodyOwnsScroll — PageShell은 높이만 채워준다(Jira식).
+  const onCardClick = (id: number) => {
+    const card = groups.flatMap((g) => g.columns).flatMap((c) => c.cards).find((c) => c.id === id);
+    if (card) navigate(ROUTES.workItem(card.key));
+  };
+
+  // 단일 그룹(운영형/스크럼 미시작/ACTIVE 1개) = 기존 UX: 칸반이 화면 전체를 채우고 자체 스크롤(bodyOwnsScroll).
+  // sprintId가 있는 단일 스프린트도 헤더 없이 전체 화면 칸반(섹션 1개면 접기 UI가 불필요).
+  if (groups.length === 1) {
+    return (
+      <PageShell bodyOwnsScroll>
+        <KanbanBoard
+          projectId={board.projectId}
+          columns={groups[0].columns}
+          assigneeName={assigneeName}
+          onCardClick={onCardClick}
+        />
+      </PageShell>
+    );
+  }
+
+  // 병렬 ACTIVE(그룹 2개 이상): 스프린트별 아코디언 섹션을 세로로 쌓는다(페이지 세로 스크롤).
   return (
-    <PageShell bodyOwnsScroll>
-      <KanbanBoard
-        board={board}
-        assigneeName={assigneeName}
-        onCardClick={(id) => {
-          const card = board.columns.flatMap((c) => c.cards).find((c) => c.id === id);
-          if (card) navigate(ROUTES.workItem(card.key));
-        }}
-      />
+    <PageShell>
+      <div className="flex flex-col gap-4">
+        {groups.map((group) => (
+          <BoardAccordionSection
+            key={group.sprintId}
+            projectId={board.projectId}
+            group={group}
+            assigneeName={assigneeName}
+            onCardClick={onCardClick}
+          />
+        ))}
+      </div>
     </PageShell>
   );
 }

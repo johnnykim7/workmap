@@ -148,18 +148,14 @@ public class SprintService {
     // FSM: 시작 / 완료
     // ===================================================================
 
-    /** 스프린트 시작(SPR-1/2). 앞 ACTIVE 존재 시 거부, 기간 고정, SprintStarted 발행. */
+    /** 스프린트 시작(SPR-2). CR-039: 병렬 스프린트 허용 — 앞 ACTIVE 존재해도 시작 가능(SPR-1 폐기). 기간 고정, SprintStarted 발행. */
     @Transactional
     public SprintDtos.Response start(Long sprintId, SprintDtos.StartRequest req, Long actorId) {
         Sprint s = getEntity(sprintId);
         if (!SprintStatus.FUTURE.name().equals(s.getStatus())) {
             throw new BusinessException(WmpErrorCode.SPRINT_NOT_FUTURE);  // SPR-4(COMPLETED→ACTIVE 포함)
         }
-        // SPR-1: 프로젝트당 동시 ACTIVE 1개
-        Sprint active = sprintMapper.findActiveByProject(s.getProjectId());
-        if (active != null) {
-            throw new BusinessException(WmpErrorCode.ACTIVE_SPRINT_EXISTS);
-        }
+        // CR-039: 병렬 스프린트 허용 — SPR-1(동시 ACTIVE 1개) 폐기. 앞 ACTIVE 존재 검사 삭제.
 
         OffsetDateTime now = OffsetDateTime.now(clock);
         LocalDate startDate = req != null && req.startDate() != null ? req.startDate()

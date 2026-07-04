@@ -39,28 +39,40 @@ export function useChangeStatus(projectId: number) {
 
 // 보드 응답에서 카드 1개를 toStatusId 컬럼으로 옮긴 새 응답을 만든다(불변).
 // statusId/commonStatus/blockReason을 도착 컬럼 기준으로 갱신. 카드를 못 찾으면 원본 반환.
+type Col = BoardResponse['groups'][number]['columns'][number];
+type Card = Col['cards'][number];
+
 export function moveCard(data: BoardResponse, workItemId: number, toStatusId: number, blockReason?: string): BoardResponse {
-  const target = data.columns.find((c) => c.statusId === toStatusId);
-  if (!target) return data;
-  let card: BoardResponse['columns'][number]['cards'][number] | undefined;
-  const stripped = data.columns.map((col) => ({
-    ...col,
-    cards: col.cards.filter((c) => {
-      if (c.id === workItemId) { card = c; return false; }
-      return true;
-    }),
-  }));
-  if (!card) return data;
-  const placed = {
-    ...card,
-    statusId: toStatusId,
-    commonStatus: target.commonStatus,
-    blockReason: target.commonStatus === 'BLOCKED' ? (blockReason ?? card.blockReason) : null,
-  };
+  // CR-039: groups[]가 여러 개고 같은 워크플로라 statusId가 그룹 간 동일하므로,
+  // 카드가 실제 속한 그룹만 골라 그 그룹 columns 안에서만 이동한다(다른 스프린트 섹션 오염 방지).
   return {
     ...data,
-    columns: stripped.map((col) =>
-      col.statusId === toStatusId ? { ...col, cards: [...col.cards, placed] } : col,
-    ),
+    groups: data.groups.map((group) => {
+      const hasCard = group.columns.some((c) => c.cards.some((card) => card.id === workItemId));
+      const target = group.columns.find((c) => c.statusId === toStatusId);
+      if (!hasCard || !target) return group; // 카드 없는 그룹은 그대로
+
+      let card: Card | undefined;
+      const stripped = group.columns.map((col) => ({
+        ...col,
+        cards: col.cards.filter((c) => {
+          if (c.id === workItemId) { card = c; return false; }
+          return true;
+        }),
+      }));
+      if (!card) return group;
+      const placed: Card = {
+        ...card,
+        statusId: toStatusId,
+        commonStatus: target.commonStatus,
+        blockReason: target.commonStatus === 'BLOCKED' ? (blockReason ?? card.blockReason) : null,
+      };
+      return {
+        ...group,
+        columns: stripped.map((col) =>
+          col.statusId === toStatusId ? { ...col, cards: [...col.cards, placed] } : col,
+        ),
+      };
+    }),
   };
 }

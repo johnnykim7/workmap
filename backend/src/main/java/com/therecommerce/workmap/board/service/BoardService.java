@@ -50,22 +50,29 @@ public class BoardService {
             throw new BusinessException(WmpErrorCode.INVALID_REQUEST, "프로젝트에 워크플로가 설정되어 있지 않습니다.");
         }
 
-        // 카드 소스 결정
-        Sprint active = sprintMapper.findActiveByProject(projectId);
-        List<WorkItem> items;
-        Long sprintId;
-        if (active != null) {
-            sprintId = active.getId();
-            items = workItemMapper.findBySprint(sprintId);
+        List<WorkflowStatus> statuses = workflowMapper.findStatuses(project.getWorkflowId());
+
+        // CR-039: ACTIVE 스프린트마다 그룹 1개(아코디언 섹션). 없으면 운영형 단일 그룹(sprintId=null).
+        List<Sprint> actives = sprintMapper.findAllActiveByProject(projectId);
+        List<BoardDtos.SprintGroup> groups = new ArrayList<>();
+        if (actives.isEmpty()) {
+            // 운영형/스크럼 미시작: 백로그(sprint_id=null) 제외 전체가 보드 카드
+            List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, null, true);
+            groups.add(new BoardDtos.SprintGroup(null, null, null, null, columnsOf(statuses, items)));
         } else {
-            sprintId = null;
-            // 백로그(sprint_id=null) 제외한 전체 — 운영형: 모두 백로그 null일 수 있으므로 전체 포함
-            items = workItemMapper.findByProjectAndSprint(projectId, null, true);
-            // 운영형(스프린트 미사용)에서는 백로그=전체 항목이 곧 보드 카드
+            for (Sprint s : actives) {
+                List<WorkItem> items = workItemMapper.findBySprint(s.getId());
+                groups.add(new BoardDtos.SprintGroup(
+                        s.getId(), s.getName(), s.getStartDate(), s.getEndDate(),
+                        columnsOf(statuses, items)));
+            }
         }
 
-        // 상태별 카드 버킷(컬럼 순서 보존)
-        List<WorkflowStatus> statuses = workflowMapper.findStatuses(project.getWorkflowId());
+        return new BoardDtos.BoardResponse(projectId, project.getWorkflowId(), groups);
+    }
+
+    /** 항목을 워크플로 상태(sort_order)별 컬럼으로 버킷팅(컬럼 순서 보존). */
+    private List<BoardDtos.Column> columnsOf(List<WorkflowStatus> statuses, List<WorkItem> items) {
         Map<Long, List<WorkItemDtos.Response>> byStatus = new LinkedHashMap<>();
         for (WorkflowStatus st : statuses) {
             byStatus.put(st.getId(), new ArrayList<>());
@@ -76,13 +83,10 @@ public class BoardService {
                 bucket.add(WorkItemDtos.Response.from(w));
             }
         }
-
-        List<BoardDtos.Column> columns = statuses.stream()
+        return statuses.stream()
                 .map(st -> new BoardDtos.Column(
                         st.getId(), st.getCode(), st.getLabel(), st.getCommonStatus(),
                         st.isDone(), st.isApproval(), byStatus.get(st.getId())))
                 .toList();
-
-        return new BoardDtos.BoardResponse(projectId, project.getWorkflowId(), sprintId, columns);
     }
 }

@@ -69,14 +69,17 @@ class SprintServiceTest {
     }
 
     @Test
-    @DisplayName("SPR-1: 앞 스프린트 ACTIVE 중 다음 시작 시 거부")
-    void 앞스프린트ACTIVE중_다음시작_거부() {
-        when(sprintMapper.findById(11L)).thenReturn(sprint(11L, SprintStatus.FUTURE.name()));
-        when(sprintMapper.findActiveByProject(5L)).thenReturn(sprint(10L, SprintStatus.ACTIVE.name()));
+    @DisplayName("CR-039: 앞 스프린트 ACTIVE 중이어도 다른 FUTURE 시작 허용(병렬 스프린트, SPR-1 폐기)")
+    void 앞스프린트ACTIVE중_다른FUTURE시작_허용() {
+        Sprint s = sprint(11L, SprintStatus.FUTURE.name());
+        when(sprintMapper.findById(11L)).thenReturn(s);
+        when(workItemMapper.findBySprint(11L)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.start(11L, null, 99L))
-                .isInstanceOf(BusinessException.class);
-        verify(sprintMapper, never()).updateStart(any());
+        // 앞 ACTIVE 존재 검사를 하지 않으므로 시작 성공(updateStart 호출)
+        service.start(11L, null, 99L);
+
+        verify(sprintMapper).updateStart(any());
+        verify(sprintMapper, never()).findActiveByProject(anyLong());  // SPR-1 가드 자체가 없어짐
     }
 
     @Test
@@ -84,7 +87,6 @@ class SprintServiceTest {
     void 스프린트시작_기간고정_SprintStarted발행() {
         Sprint s = sprint(11L, SprintStatus.FUTURE.name());
         when(sprintMapper.findById(11L)).thenReturn(s);
-        when(sprintMapper.findActiveByProject(5L)).thenReturn(null);
         when(workItemMapper.findBySprint(11L)).thenReturn(List.of(
                 WorkItem.builder().id(100L).build(), WorkItem.builder().id(101L).build()));
 

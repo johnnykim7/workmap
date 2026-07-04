@@ -14,12 +14,20 @@ export interface BoardColumn {
   cards: WorkItemResponse[];
 }
 
-// BE BoardDtos.BoardResponse.
+// BE BoardDtos.SprintGroup — ACTIVE 스프린트 1개 = 아코디언 섹션 1개(CR-039).
+export interface BoardGroup {
+  sprintId: number | null; // null = 운영형/스크럼 미시작(스프린트 없는 단일 섹션)
+  sprintName: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  columns: BoardColumn[];
+}
+
+// BE BoardDtos.BoardResponse — ACTIVE 스프린트별 그룹 배열(CR-039, 병렬 스프린트).
 export interface BoardResponse {
   projectId: number;
   workflowId: number | null;
-  sprintId: number | null; // 스크럼 보드면 ACTIVE 스프린트 id, 운영 칸반이면 null
-  columns: BoardColumn[];
+  groups: BoardGroup[];
 }
 
 export const boardApi = {

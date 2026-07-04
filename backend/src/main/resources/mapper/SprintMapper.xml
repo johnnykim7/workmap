@@ -43,6 +43,13 @@
         LIMIT 1
     </select>
 
+    <!-- CR-039: 병렬 스프린트 보드 그룹용 — 프로젝트의 ACTIVE 스프린트 전부(id 오름차순). -->
+    <select id="findAllActiveByProject" resultMap="sprintMap">
+        SELECT * FROM sprints
+        WHERE project_id = #{projectId} AND status = 'ACTIVE'
+        ORDER BY id ASC
+    </select>
+
     <select id="findAllActive" resultMap="sprintMap">
         SELECT * FROM sprints
         WHERE status = 'ACTIVE'

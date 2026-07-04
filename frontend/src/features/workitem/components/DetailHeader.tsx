@@ -34,8 +34,10 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   const changeStatus = useChangeStatus(item.id, item.key);
   const deleteItem = useDeleteWorkItem(item.id);
   // 워크플로 상태 목록 = 보드 컬럼(같은 프로젝트). 상태 전이 옵션·라벨 출처.
+  // CR-039: 보드가 groups[]로 바뀜 — 상태 컬럼 정의는 첫 그룹(그룹 간 컬럼 집합 동일), 카드 순서는 전 그룹 평탄화.
   const { data: board } = useBoard(item.projectId);
-  const columns = board?.columns ?? [];
+  const groups = board?.groups ?? [];
+  const columns = groups[0]?.columns ?? [];
 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
@@ -44,8 +46,8 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   const [deleteOpen, setDeleteOpen] = useState(false);
   useEffect(() => { setTitle(item.title); }, [item.title]);
 
-  // 목록 내 이전/다음 = 같은 프로젝트 카드 순서(보드 평탄화 기준). 보드 미로딩 시 비활성.
-  const ordered = columns.flatMap((c) => c.cards);
+  // 목록 내 이전/다음 = 같은 프로젝트 카드 순서(전 그룹×컬럼 평탄화 기준). 보드 미로딩 시 비활성.
+  const ordered = groups.flatMap((g) => g.columns).flatMap((c) => c.cards);
   const idx = ordered.findIndex((c) => c.id === item.id);
   const prev = idx > 0 ? ordered[idx - 1] : undefined;
   const next = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : undefined;

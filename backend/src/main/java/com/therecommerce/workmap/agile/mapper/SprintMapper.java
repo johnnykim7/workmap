@@ -17,8 +17,11 @@ public interface SprintMapper {
     /** 프로젝트의 스프린트 목록(sort_order, id 순). */
     List<Sprint> findByProject(@Param("projectId") Long projectId);
 
-    /** 프로젝트의 ACTIVE 스프린트(없으면 null) — 동시 ACTIVE 1개 보장 검증용. */
+    /** 프로젝트의 ACTIVE 스프린트(없으면 null) — 단수 조회(레거시·번다운 등). */
     Sprint findActiveByProject(@Param("projectId") Long projectId);
+
+    /** 프로젝트의 ACTIVE 스프린트 목록(id 오름차순) — 병렬 스프린트 보드 그룹용(CR-039). */
+    List<Sprint> findAllActiveByProject(@Param("projectId") Long projectId);
 
     /** 전 프로젝트의 ACTIVE 스프린트 목록 — 번다운 일별 스냅샷 배치용(CR-012). */
     List<Sprint> findAllActive();

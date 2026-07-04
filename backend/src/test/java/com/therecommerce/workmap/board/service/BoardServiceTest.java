@@ -46,11 +46,11 @@ class BoardServiceTest {
     }
 
     @Test
-    @DisplayName("BRD-1: 보드 조회 시 워크플로 상태(sort_order)별 컬럼 + 카드 목록")
+    @DisplayName("BRD-1: 보드 조회 시 ACTIVE 스프린트별 그룹 × 워크플로 상태(sort_order)별 컬럼 + 카드")
     void 보드조회_워크플로상태별컬럼() {
         when(projectMapper.findById(5L)).thenReturn(Project.builder().id(5L).workflowId(10L).build());
-        when(sprintMapper.findActiveByProject(5L)).thenReturn(
-                Sprint.builder().id(7L).status(SprintStatus.ACTIVE.name()).build());
+        when(sprintMapper.findAllActiveByProject(5L)).thenReturn(List.of(
+                Sprint.builder().id(7L).name("스프린트 1").status(SprintStatus.ACTIVE.name()).build()));
         when(workItemMapper.findBySprint(7L)).thenReturn(List.of(
                 WorkItem.builder().id(100L).statusId(1L).build(),
                 WorkItem.builder().id(101L).statusId(2L).build(),
@@ -60,26 +60,54 @@ class BoardServiceTest {
 
         BoardDtos.BoardResponse res = service.board(5L);
 
-        assertThat(res.sprintId()).isEqualTo(7L);
-        assertThat(res.columns()).hasSize(3);
-        assertThat(res.columns().get(0).code()).isEqualTo("TODO");
-        assertThat(res.columns().get(0).cards()).hasSize(1);
-        assertThat(res.columns().get(1).cards()).hasSize(2);   // statusId=2 카드 2장
-        assertThat(res.columns().get(2).cards()).isEmpty();    // DONE 컬럼 비어있음
+        assertThat(res.groups()).hasSize(1);
+        BoardDtos.SprintGroup g = res.groups().get(0);
+        assertThat(g.sprintId()).isEqualTo(7L);
+        assertThat(g.sprintName()).isEqualTo("스프린트 1");
+        assertThat(g.columns()).hasSize(3);
+        assertThat(g.columns().get(0).code()).isEqualTo("TODO");
+        assertThat(g.columns().get(0).cards()).hasSize(1);
+        assertThat(g.columns().get(1).cards()).hasSize(2);   // statusId=2 카드 2장
+        assertThat(g.columns().get(2).cards()).isEmpty();    // DONE 컬럼 비어있음
     }
 
     @Test
-    @DisplayName("BRD-1b: ACTIVE 스프린트 없으면 프로젝트 전체 항목으로 보드 구성(운영형)")
+    @DisplayName("BRD-1b: ACTIVE 스프린트 없으면 sprintId=null 단일 그룹(운영형 전체 항목)")
     void ACTIVE스프린트없음_전체항목보드() {
         when(projectMapper.findById(5L)).thenReturn(Project.builder().id(5L).workflowId(10L).build());
-        when(sprintMapper.findActiveByProject(5L)).thenReturn(null);
+        when(sprintMapper.findAllActiveByProject(5L)).thenReturn(List.of());
         when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of(
                 WorkItem.builder().id(200L).statusId(1L).build()));
         when(workflowMapper.findStatuses(10L)).thenReturn(List.of(status(1L, "RECEIVED", 0)));
 
         BoardDtos.BoardResponse res = service.board(5L);
 
-        assertThat(res.sprintId()).isNull();
-        assertThat(res.columns().get(0).cards()).hasSize(1);
+        assertThat(res.groups()).hasSize(1);
+        assertThat(res.groups().get(0).sprintId()).isNull();
+        assertThat(res.groups().get(0).sprintName()).isNull();
+        assertThat(res.groups().get(0).columns().get(0).cards()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("CR-039: ACTIVE 스프린트 2개면 그룹 2개(병렬 스프린트 아코디언)")
+    void ACTIVE_2개_그룹2개() {
+        when(projectMapper.findById(5L)).thenReturn(Project.builder().id(5L).workflowId(10L).build());
+        when(sprintMapper.findAllActiveByProject(5L)).thenReturn(List.of(
+                Sprint.builder().id(7L).name("스프린트 A").status(SprintStatus.ACTIVE.name()).build(),
+                Sprint.builder().id(8L).name("스프린트 B").status(SprintStatus.ACTIVE.name()).build()));
+        when(workItemMapper.findBySprint(7L)).thenReturn(List.of(
+                WorkItem.builder().id(100L).statusId(1L).build()));
+        when(workItemMapper.findBySprint(8L)).thenReturn(List.of(
+                WorkItem.builder().id(200L).statusId(1L).build(),
+                WorkItem.builder().id(201L).statusId(1L).build()));
+        when(workflowMapper.findStatuses(10L)).thenReturn(List.of(status(1L, "TODO", 0)));
+
+        BoardDtos.BoardResponse res = service.board(5L);
+
+        assertThat(res.groups()).hasSize(2);
+        assertThat(res.groups().get(0).sprintId()).isEqualTo(7L);
+        assertThat(res.groups().get(0).columns().get(0).cards()).hasSize(1);
+        assertThat(res.groups().get(1).sprintId()).isEqualTo(8L);
+        assertThat(res.groups().get(1).columns().get(0).cards()).hasSize(2);
     }
 }

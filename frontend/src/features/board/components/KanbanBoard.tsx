@@ -6,15 +6,18 @@ import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter,
   type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core';
-import type { BoardResponse } from '../api';
+import type { BoardColumn } from '../api';
 import { useChangeStatus } from '../hooks';
 import { KanbanColumn } from './KanbanColumn';
 import { WorkItemCard } from './WorkItemCard';
 import { BlockReasonDialog } from './BlockReasonDialog';
 import type { WorkItemResponse } from '@/types/domain';
 
+// CR-039: 병렬 스프린트에서 그룹(스프린트 섹션)마다 이 컴포넌트를 렌더한다.
+// 각 섹션은 독립 DnD 컨텍스트(같은 워크플로라 statusId가 섹션 간 동일 → 섞이면 안 됨).
 interface Props {
-  board: BoardResponse;
+  projectId: number;
+  columns: BoardColumn[];
   assigneeName: (id?: number | null) => string | undefined;
   onCardClick?: (workItemId: number) => void;
 }
@@ -25,17 +28,17 @@ interface PendingBlock {
   item: WorkItemResponse;
 }
 
-export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
-  const changeStatus = useChangeStatus(board.projectId);
+export function KanbanBoard({ projectId, columns, assigneeName, onCardClick }: Props) {
+  const changeStatus = useChangeStatus(projectId);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [activeCard, setActiveCard] = useState<WorkItemResponse | null>(null);
   const [pendingBlock, setPendingBlock] = useState<PendingBlock | null>(null);
 
   const cardById = useMemo(() => {
     const m = new Map<number, WorkItemResponse>();
-    board.columns.forEach((c) => c.cards.forEach((card) => m.set(card.id, card)));
+    columns.forEach((c) => c.cards.forEach((card) => m.set(card.id, card)));
     return m;
-  }, [board]);
+  }, [columns]);
 
   function handleDragStart(e: DragStartEvent) {
     const id = e.active.data.current?.workItemId as number | undefined;
@@ -51,7 +54,7 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
     const item = cardById.get(workItemId);
     if (!item || item.statusId === toStatusId) return; // 같은 컬럼 드롭 무시
 
-    const target = board.columns.find((c) => c.statusId === toStatusId);
+    const target = columns.find((c) => c.statusId === toStatusId);
     if (target?.commonStatus === 'BLOCKED') {
       // BIZ-005: 막힘 전이는 사유 입력 먼저
       setPendingBlock({ workItemId, toStatusId, item });
@@ -73,7 +76,7 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
         onDragCancel={() => setActiveCard(null)}
       >
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
-          {board.columns.map((col) => (
+          {columns.map((col) => (
             <KanbanColumn key={col.statusId} column={col} assigneeName={assigneeName} onCardClick={onCardClick} />
           ))}
         </div>
