@@ -208,6 +208,20 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **핵심 함정**: ① SVAR 막대 내부 커스텀 렌더 API 미확인 → 설치 후 검증(안 되면 막대 색 신호만, 뱃지는 좌측 그리드). ② 오늘선/스프린트밴드 자체 오버레이 = 무료 코어 마커 부재 대체(정합 주의). ③ `update-task`의 `inProgress` 가드 필수(드래그 중 프레임마다 PATCH 치면 과부하). ④ Tailwind v4 LNB 트랩([[workmap-tailwind-lnb-trap]]) — 배포 후 사이드바 재확인. ⑤ 링크 양방향 저장이라 timeline은 BLOCKS만(중복 화살표 방지). ⑥ 드래그 저장은 FSM 무관(날짜는 상태 아님)이나 VIEWER 가드는 CR-031로 이중 방어.
 - **에러코드·마이그레이션**: 신규 없음(응답 형태 확장만, 스키마 무변경).
 
+### CR-039 — 병렬 스프린트 + 보드 스프린트별 아코디언 (SPR-1 폐기)
+> Jira처럼 한 프로젝트에 여러 스프린트 동시 진행 + 보드를 ACTIVE 스프린트별 아코디언으로 세로 표시. T1-5(sprint 규칙)·T3-2 §G(보드 응답)·T3-3(보드 화면) 캐스케이드 기준.
+- **BE (중규모)**:
+  - `SprintService.start`: **SPR-1 가드 삭제**(`findActiveByProject` + `ACTIVE_SPRINT_EXISTS` 던지는 블록 제거). FUTURE→ACTIVE만 검사, 앞 ACTIVE 존재는 허용.
+  - `SprintMapper.findAllActiveByProject`(신규 XML): `WHERE project_id=? AND status='ACTIVE' ORDER BY id`.
+  - `BoardDtos`: `BoardResponse`를 `{projectId, workflowId, List<SprintGroup> groups}`로, `SprintGroup{Long sprintId, String sprintName, LocalDate startDate, LocalDate endDate, List<Column> columns}` 신규. 단수 `sprintId` 필드 제거.
+  - `BoardService.board`: ACTIVE 목록 순회 → 각 스프린트 항목(`findBySprint`)을 상태 컬럼으로 버킷 → 그룹 1개. ACTIVE 0개면 `findByProjectAndSprint(projectId, null, true)`(백로그 제외 전체)로 `sprintId=null·sprintName=null` 그룹 1개. **컬럼 버킷 로직은 그룹별로 반복**(기존 단일 로직을 헬퍼로 추출).
+- **FE (중규모)**:
+  - `board/api.ts` `BoardResponse`를 `groups: BoardGroup[]`로. `BoardGroup{sprintId, sprintName, startDate, endDate, columns}`.
+  - `BoardView`: `groups` 순회 → 스프린트별 `BoardAccordionSection`(ds-ui `Collapsible`/`CollapsibleTrigger`/`CollapsibleContent`, 기본 전부 펼침). 헤더 = `sprintName · 기간 · 항목수`. 운영형(그룹1·`sprintName==null`)은 헤더 없이 `KanbanBoard`만.
+  - `KanbanBoard`: 현재 `board:BoardResponse`를 받는 시그니처 → `columns:BoardColumn[] + projectId + groupKey`로 조정(그룹별 독립 DnD 컨텍스트). `cardById`/드롭 로직은 그룹 columns 기준.
+- **핵심 함정**: ① 보드 응답 구조가 바뀌므로 **BE·FE 동시 배포 필수**(단수 sprintId 참조하던 FE EmptyState 문구 등 정리). ② 각 스프린트 섹션은 **독립 DnDContext** — 하나의 DnD로 전 그룹 묶으면 섹션 간 드롭이 의미 없어지고 statusId 충돌(같은 워크플로라 statusId 동일). ③ 운영형(ACTIVE 0)에서 아코디언 헤더 노출 금지(기존 단일 보드 UX 보존). ④ Tailwind v4 LNB 트랩([[workmap-tailwind-lnb-trap]]) — Collapsible 추가 후 배포 시 사이드바 재확인.
+- **에러코드·마이그레이션**: 신규 없음(스키마 무변경, `ACTIVE_SPRINT_EXISTS` 코드는 잔존해도 미사용·무해).
+
 ---
 
 ## 5-A. Sprint 완료 게이트

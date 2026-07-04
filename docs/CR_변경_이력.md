@@ -762,6 +762,28 @@
 - **요청자**: 사용자 | **승인자**: 사용자(2026-07-04, "SVAR 코어+크리티컬패스 자체계산", "이 정공법으로 설계 진행", 대규모) | **적용 버전**: v2.3
 - **변경 일자**: 2026-07-04
 
+### CR-039 — 병렬 스프린트 + 보드 스프린트별 아코디언 (SPR-1 폐기)
+
+- **대상 기능 ID**: WMP-AGL-003(시작, 완화)·WMP-AGL-005(보드, 응답구조 변경)
+- **변경 타입**: 규칙 개정 + 응답구조 변경(BE+FE) | **영향도**: High(sprint FSM 규칙 개정 + 보드 응답 구조 + 보드 화면 재구성)
+- **상태**: **설계 캐스케이드 완료(2026-07-05). 구현 착수.**
+- **배경**: 사용자 요구 — Jira처럼 한 프로젝트에서 여러 스프린트를 동시에 진행(병렬 스프린트)하고, 보드에서 스프린트별로 아코디언(접기/펼치기) 섹션으로 세로로 쌓아 보고 싶음(Jira 보드 캡처 근거). 실측 결과 ① `SprintService.start`에 SPR-1 가드(동시 ACTIVE 1개, `ACTIVE_SPRINT_EXISTS`)가 병렬을 막고 있었고 ② `BoardService`가 `findActiveByProject`(LIMIT 1)로 단일 스프린트만 잡아 그 카드를 상태 컬럼으로만 뿌려 스프린트별 그룹(아코디언) 구조가 전무했음. 앞선 논의에서 "팀 도입/owner_id 필요"는 실측으로 부정 — 스프린트에 팀/인원을 붙이지 않는 것이 오히려 Jira 정합(스프린트는 그대로, SPR-1만 완화, 구분은 보드 그룹으로).
+- **핵심 설계 결정(사용자 합의 2026-07-05)**:
+  - **SPR-1 폐기**: 프로젝트당 동시 ACTIVE 스프린트 여러 개 허용. `start`에서 앞 ACTIVE 존재 검사 삭제. 스프린트 스키마 무변경(team_id/owner_id 불필요).
+  - **그룹 기준 = 스프린트별**(에픽별 아님). 병렬 스프린트의 본질이 스프린트 구분이므로 보드는 ACTIVE 스프린트마다 아코디언 섹션 1개.
+  - **표시 범위 = ACTIVE 전부만**. 백로그/FUTURE/COMPLETED는 보드에서 제외(기존 동작 유지). ACTIVE 0개면 스프린트 없는 단일 섹션(백로그 제외 전체 = 운영형 칸반, 기존 동작 보존).
+  - **드래그**: 각 스프린트 섹션은 독립 DnD 컨텍스트. 드래그는 같은 섹션 내 상태 전이만(섹션 간 이동 없음 — 스프린트 변경이 아니라 상태만 바꾸는 화면).
+- **변경 내용**:
+  - **T1-1**: WMP-AGL-005 보드 설명 = "ACTIVE 스프린트별 그룹 × 상태 컬럼"으로 정정 + 병렬 스프린트 명시.
+  - **T1-5**: sprint 규칙 "동시 ACTIVE 1개"→"여러 개 허용(CR-039)", FUTURE 비고의 시작 차단 조건 삭제, 불변식 7번 개정.
+  - **T3-2**: `/board` 설명 = 스프린트별 그룹 + `/start` 설명 = 동시 ACTIVE 여러 개 + §G에 보드 응답 구조 상세(`groups[]`) 추가.
+  - **T3-3**: 보드 화면에 병렬 스프린트 아코디언 섹션(Collapsible·독립 DnD·운영형 단일 섹션) 규약 추가.
+  - **BE 구현**: `BoardDtos` = `BoardResponse{projectId, workflowId, List<SprintGroup> groups}` + `SprintGroup{sprintId, sprintName, startDate, endDate, columns[]}` (단수 `sprintId` 제거). `BoardService.board` = ACTIVE 스프린트 목록 순회하며 그룹 생성(0개면 null 그룹 1개). `SprintMapper.findAllActiveByProject`(신규, id 오름차순) + `SprintService.start`에서 SPR-1 가드 삭제.
+  - **FE 구현**: `board/api.ts` `BoardResponse` 그룹 구조 반영. `BoardView`가 `groups`를 순회하며 스프린트별 `BoardAccordionSection`(ds-ui Collapsible 헤더 + `KanbanBoard`). 운영형(그룹1·sprintName null)은 헤더 없이 바로. `KanbanBoard`는 그룹 단위(컬럼셋)로 렌더하도록 board→columns 시그니처 조정.
+- **스키마 무변경**: sprints/work_items 그대로. 신규 마이그레이션·에러코드 없음(`ACTIVE_SPRINT_EXISTS` 미사용 처리 — 코드 잔존해도 무해).
+- **영향 설계서**: T1-1, T1-5, T3-2, T3-3, CR_변경_이력(5종). **T1-3/T1-4/T1-6/T3-1 무변경**.
+- **테스트(예정)**: SprintServiceTest(앞 ACTIVE 있어도 다른 FUTURE 시작 성공 — 기존 "거부" 테스트 정정) + BoardServiceTest(ACTIVE 2개 → groups 2개, ACTIVE 0개 → null 그룹 1개). FE tsc -b + vite build + board 훅/렌더.
+
 ### CR-038 — 스프린트 편집·삭제 (Jira식 편집 폼 + …메뉴 편집/삭제)
 
 - **대상 기능 ID**: WMP-AGL-007(편집, 신규), WMP-AGL-008(삭제, 신규)

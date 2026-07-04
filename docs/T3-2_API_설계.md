@@ -190,14 +190,24 @@
 | POST | /projects/{id}/sprints | 스프린트 생성 | 🔒 | P1 | WMP-AGL-001 |
 | PATCH | /sprints/{id} | 스프린트 편집(name·goal·startDate·endDate, status 무변경) | 🔒 | P2 | WMP-AGL-007 |
 | DELETE | /sprints/{id} | 스프린트 삭제(FUTURE만, 담긴 항목 백로그 복귀) | 🔒 | P2 | WMP-AGL-008 |
-| POST | /sprints/{id}/start | 스프린트 시작(기간 고정, 동시 ACTIVE 1개) | 🔒 | P1 | WMP-AGL-003 |
+| POST | /sprints/{id}/start | 스프린트 시작(기간 고정, **동시 ACTIVE 여러 개 허용 — CR-039**) | 🔒 | P1 | WMP-AGL-003 |
 | POST | /sprints/{id}/complete | 스프린트 완료(미완료 이월) | 🔒 | P1 | WMP-AGL-004 |
 | PATCH | /work-items/{id}/sprint | 스프린트 담기/빼기(백로그↔스프린트 이동) | 🔒 | P1 | WMP-AGL-002 |
-| GET | /projects/{id}/board | 보드(스크럼/칸반 컬럼별 카드) | 🔒 | P1 | WMP-AGL-005·OPS-001 |
+| GET | /projects/{id}/board | 보드(**ACTIVE 스프린트별 그룹** × 상태 컬럼별 카드 — CR-039) | 🔒 | P1 | WMP-AGL-005·OPS-001 |
 | GET | /sprints/{id}/burndown | 번다운/번업(일자별 잔여/누적완료/기준선) | 🔒 | P2 | WMP-AGL-006 |
 | GET | /projects/{id}/velocity | 벨로시티(완료 스프린트별 완료포인트 + 평균) | 🔒 | P2 | WMP-AGL-006 |
 
 > **번다운(CR-012)**: `burndown_snapshots`(T3-1) 시계열 조회. 스냅샷은 `SprintStarted`(START 기준선)·일별 스케줄러(DAILY)·`SprintCompleted`(COMPLETE) 이벤트/배치가 적재 — 조회 API는 적재하지 않는다(읽기 전용). 벨로시티 = 해당 프로젝트 COMPLETE 스냅샷들의 `completed_points` 목록 + 평균.
+
+> **보드 응답 구조(CR-039, 병렬 스프린트)**: `GET /projects/{id}/board` →
+> ```
+> { projectId, workflowId,
+>   groups: [ { sprintId, sprintName, startDate, endDate, columns: Column[] } ] }
+> Column = { statusId, code, label, commonStatus, isDone, isApproval, cards: WorkItem[] }
+> ```
+> - `groups`는 **ACTIVE 스프린트마다 1개**(id 오름차순). 각 그룹의 `columns`는 프로젝트 워크플로 상태(sort_order)별 컬럼 + 해당 스프린트 소속 카드.
+> - **ACTIVE 스프린트가 0개**(운영형 칸반 / 스크럼 미시작): `groups` 길이 1, 그 그룹의 `sprintId=null·sprintName=null`, 카드 = 백로그(sprint_id=NULL) 제외 프로젝트 전체(기존 단일 보드 동작 보존).
+> - 카드 status 변경은 보드가 직접 하지 않고 `PATCH /work-items/{id}/status`(FSM 가드, WMP-WI-007) 경유(직접 UPDATE 금지, BIZ-010).
 
 ## H. 운영 실행 (Operations)
 
