@@ -17,23 +17,30 @@ import { criticalPath, type DepLink } from '../timeline-util';
 import { toGanttTasks, toGanttLinks, toDatePatch } from '../gantt-adapter';
 import { useMoveTimelineDates } from '../hooks';
 
-// SVAR 시간축 스케일(줌 4단위). 우리 기존 4단위 토글(오늘/주/개월/분기)과 대응.
+// SVAR 시간축 스케일(줌 4단위). format은 함수로 준다 — 문자열 토큰('yyyy' 등)은 SVAR가 리터럴로
+// 그대로 출력함(운영 화면 실측). date-fns는 SVAR 중첩 의존이라 직접 import 불가 → 자체 포맷(한국어).
+const fmtYear = (d: Date) => `${d.getFullYear()}년`;
+const fmtYearMonth = (d: Date) => `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+const fmtMonth = (d: Date) => `${d.getMonth() + 1}월`;
+const fmtDay = (d: Date) => `${d.getDate()}`;
+const fmtQuarter = (d: Date) => `${Math.floor(d.getMonth() / 3) + 1}분기`;
+const fmtWeek = (d: Date) => `${Math.ceil((d.getDate() + 6 - d.getDay()) / 7)}주`;
 const SCALES = {
   today: [
-    { unit: 'month', step: 1, format: 'yyyy MMM' },
-    { unit: 'day', step: 1, format: 'd' },
+    { unit: 'month', step: 1, format: fmtYearMonth },
+    { unit: 'day', step: 1, format: fmtDay },
   ],
   week: [
-    { unit: 'month', step: 1, format: 'yyyy MMM' },
-    { unit: 'week', step: 1, format: 'w' },
+    { unit: 'month', step: 1, format: fmtYearMonth },
+    { unit: 'week', step: 1, format: fmtWeek },
   ],
   month: [
-    { unit: 'year', step: 1, format: 'yyyy' },
-    { unit: 'month', step: 1, format: 'MMM' },
+    { unit: 'year', step: 1, format: fmtYear },
+    { unit: 'month', step: 1, format: fmtMonth },
   ],
   quarter: [
-    { unit: 'year', step: 1, format: 'yyyy' },
-    { unit: 'quarter', step: 1, format: 'QQQ' },
+    { unit: 'year', step: 1, format: fmtYear },
+    { unit: 'quarter', step: 1, format: fmtQuarter },
   ],
 } as const;
 

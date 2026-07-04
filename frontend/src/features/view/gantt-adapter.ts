@@ -57,13 +57,16 @@ export function toGanttTasks(
   }
 
   // 자식 행.
+  const DAY = 86_400_000;
   for (const it of children) {
     const r = itemRange(it)!;
+    // start==end(한쪽 날짜만 있음)면 SVAR가 폭 0 막대를 못 그리므로 최소 1일 폭 보장.
+    const endMs = r.end > r.start ? r.end : r.start + DAY;
     tasks.push({
       id: it.id,
       text: it.title,
       start: new Date(r.start),
-      end: new Date(r.end),
+      end: new Date(endMs),
       progress: clampProgress(it.progress),
       type: 'task',
       parent: it.epicId ?? EPICLESS_ID,
@@ -85,6 +88,7 @@ function makeEpicRow(epicId: number, title: string): GanttTask {
     progress: 0,
     type: 'summary',
     parent: 0,
+    open: true,   // 기본 펼침(하위 항목 막대 노출)
     wmpKey: '',
     issueType: 'EPIC',
     commonStatus: '',
