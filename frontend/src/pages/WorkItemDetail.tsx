@@ -26,7 +26,9 @@ export function WorkItemDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    // w-full 필수: 이 div는 AppShell의 flex-col 자식이라 max-w가 걸리면 stretch가 무효화돼
+    // 콘텐츠 폭(min-content)으로 줄어든다 → 콘텐츠 적은 항목이 왼쪽으로 쏠린다. w-full로 항상 최대폭.
+    <div className="mx-auto w-full max-w-6xl">
       <WorkItemDetailPanel item={item} sprints={sprints} />
     </div>
   );
