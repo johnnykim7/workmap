@@ -43,7 +43,11 @@ export interface CompleteResult {
 }
 
 export const agileApi = {
-  backlog: (projectId: number) => api.get<BacklogResponse>(`/projects/${projectId}/backlog`),
+  // includeCompleted=true면 완료 스프린트 구역을 맨 앞·오래된 순으로 포함(CR-041).
+  backlog: (projectId: number, includeCompleted = false) =>
+    api.get<BacklogResponse>(
+      `/projects/${projectId}/backlog${includeCompleted ? '?includeCompleted=true' : ''}`,
+    ),
   listSprints: (projectId: number) => api.get<Sprint[]>(`/projects/${projectId}/sprints`),
   createSprint: (projectId: number, body: CreateSprintRequest) =>
     api.post<Sprint>(`/projects/${projectId}/sprints`, body),

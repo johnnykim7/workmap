@@ -28,18 +28,21 @@ interface Props {
   // 드롭 영역 id 오버라이드(CR-036) — Epic별 그룹처럼 백로그 구역이 여러 개일 때 유일 id 필요.
   // 지정해도 이동 대상 sprintId는 백로그(null) 그대로라 드롭 동작은 동일.
   dropIdOverride?: string;
+  // 읽기전용(CR-041) — 완료 스프린트 구역: 드롭 타깃 비활성 + 인라인 생성 숨김(참고용).
+  readOnly?: boolean;
 }
 
 export function SprintSection({
   section, collapsed, assigneeName, onItemClick, emptyHint, header, epicName,
   epicOptions, onChangeEpic, onInlineCreate, inlineBusy, dropIdOverride,
-  sprintOptions, onMoveToSprint,
+  sprintOptions, onMoveToSprint, readOnly = false,
 }: Props) {
   // 드롭 id: 스프린트면 sp-{id}, 백로그면 sp-backlog(그룹별 유일 id는 dropIdOverride).
-  // data.sprintId=null이면 백로그로 이동.
+  // data.sprintId=null이면 백로그로 이동. readOnly면 disabled로 드롭 불가(완료 스프린트).
   const dropId = dropIdOverride ?? (section.sprint ? `sp-${section.sprint.id}` : 'sp-backlog');
   const { setNodeRef, isOver } = useDroppable({
     id: dropId,
+    disabled: readOnly,
     data: { sprintId: section.sprint ? section.sprint.id : null },
   });
 
@@ -75,7 +78,7 @@ export function SprintSection({
               />
             ))
           )}
-          {onInlineCreate && (
+          {onInlineCreate && !readOnly && (
             <InlineCreateRow onCreate={onInlineCreate} busy={inlineBusy} />
           )}
         </div>

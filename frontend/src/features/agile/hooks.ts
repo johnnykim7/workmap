@@ -4,13 +4,17 @@ import { toast } from '@therecommerce/ds-ui';
 import { agileApi, type BacklogResponse, type CreateSprintRequest, type UpdateSprintRequest } from './api';
 import { ApiError } from '@/lib/api-client';
 
-export const backlogKey = (projectId?: number) => ['backlog', projectId] as const;
+// includeCompleted가 캐시 키에 포함돼야 토글 on/off가 서로 다른 응답으로 캐시됨(CR-041).
+export const backlogKey = (projectId?: number, includeCompleted = false) =>
+  ['backlog', projectId, includeCompleted] as const;
+// 무효화/낙관적 갱신은 두 변형(false/true) 모두 대상 — prefix 매칭.
+export const backlogPrefix = (projectId?: number) => ['backlog', projectId] as const;
 export const sprintsKey = (projectId?: number) => ['sprints', projectId] as const;
 
-export function useBacklog(projectId?: number) {
+export function useBacklog(projectId?: number, includeCompleted = false) {
   return useQuery({
-    queryKey: backlogKey(projectId),
-    queryFn: () => agileApi.backlog(projectId!),
+    queryKey: backlogKey(projectId, includeCompleted),
+    queryFn: () => agileApi.backlog(projectId!, includeCompleted),
     enabled: !!projectId,
   });
 }
@@ -29,7 +33,7 @@ export function useCreateSprint(projectId: number) {
   return useMutation({
     mutationFn: (body: CreateSprintRequest) => agileApi.createSprint(projectId, body),
     onSuccess: (s) => {
-      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: backlogPrefix(projectId) });
       toast.success(`스프린트 "${s.name}"가 생성되었습니다.`);
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : '스프린트 생성에 실패했습니다.'),
@@ -43,7 +47,7 @@ export function useUpdateSprint(projectId: number) {
     mutationFn: ({ sprintId, body }: { sprintId: number; body: UpdateSprintRequest }) =>
       agileApi.updateSprint(sprintId, body),
     onSuccess: (s) => {
-      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: backlogPrefix(projectId) });
       qc.invalidateQueries({ queryKey: sprintsKey(projectId) });
       toast.success(`스프린트 "${s.name}"를 수정했습니다.`);
     },
@@ -57,7 +61,7 @@ export function useDeleteSprint(projectId: number) {
   return useMutation({
     mutationFn: (sprintId: number) => agileApi.deleteSprint(sprintId),
     onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: backlogPrefix(projectId) });
       qc.invalidateQueries({ queryKey: sprintsKey(projectId) });
       toast.success(
         r.returnedToBacklog > 0
@@ -75,7 +79,7 @@ export function useStartSprint(projectId: number) {
     mutationFn: ({ sprintId, body }: { sprintId: number; body?: { startDate?: string; endDate?: string } }) =>
       agileApi.startSprint(sprintId, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: backlogPrefix(projectId) });
       qc.invalidateQueries({ queryKey: ['board', projectId] });
       toast.success('스프린트를 시작했습니다.');
     },
@@ -89,7 +93,7 @@ export function useCompleteSprint(projectId: number) {
     mutationFn: ({ sprintId, carryToSprintId }: { sprintId: number; carryToSprintId?: number }) =>
       agileApi.completeSprint(sprintId, carryToSprintId ? { carryToSprintId } : undefined),
     onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: backlogPrefix(projectId) });
       qc.invalidateQueries({ queryKey: ['board', projectId] });
       toast.success(`스프린트 완료 — 완료 ${r.doneCount}건, 이월 ${r.carriedOverCount}건.`);
     },
@@ -107,16 +111,19 @@ export function useChangeItemSprint(projectId: number) {
     mutationFn: ({ workItemId, sprintId }: { workItemId: number; sprintId: number | null }) =>
       agileApi.changeItemSprint(workItemId, sprintId),
     onMutate: async ({ workItemId, sprintId }) => {
-      await qc.cancelQueries({ queryKey: backlogKey(projectId) });
-      const prev = qc.getQueryData<BacklogResponse>(backlogKey(projectId));
-      if (prev) qc.setQueryData(backlogKey(projectId), moveItem(prev, workItemId, sprintId));
+      // 토글 on/off 두 변형(false/true) 캐시 모두 낙관적 갱신·스냅샷(prefix 매칭, CR-041).
+      await qc.cancelQueries({ queryKey: backlogPrefix(projectId) });
+      const prev = qc.getQueriesData<BacklogResponse>({ queryKey: backlogPrefix(projectId) });
+      prev.forEach(([key, data]) => {
+        if (data) qc.setQueryData(key, moveItem(data, workItemId, sprintId));
+      });
       return { prev };
     },
     onError: (err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(backlogKey(projectId), ctx.prev);
+      ctx?.prev?.forEach(([key, data]) => qc.setQueryData(key, data));
       toast.error(err instanceof ApiError ? err.message : '항목 이동에 실패했습니다.');
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: backlogKey(projectId) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: backlogPrefix(projectId) }),
   });
 }
 

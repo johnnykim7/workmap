@@ -24,8 +24,10 @@ public class SprintController {
     private final SprintService sprintService;
 
     @GetMapping("/api/v1/projects/{projectId}/backlog")
-    public ResponseDto<SprintDtos.BacklogResponse> backlog(@PathVariable Long projectId) {
-        return ResponseDto.success(sprintService.backlog(projectId));
+    public ResponseDto<SprintDtos.BacklogResponse> backlog(
+            @PathVariable Long projectId,
+            @RequestParam(defaultValue = "false") boolean includeCompleted) {
+        return ResponseDto.success(sprintService.backlog(projectId, includeCompleted));
     }
 
     @GetMapping("/api/v1/projects/{projectId}/sprints")

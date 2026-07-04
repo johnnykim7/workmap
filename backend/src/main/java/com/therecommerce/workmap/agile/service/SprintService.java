@@ -118,20 +118,36 @@ public class SprintService {
         return s;
     }
 
-    /** 백로그 화면(WMP-AGL-001): FUTURE/ACTIVE 스프린트 구역들 + 백로그 구역. */
+    /** 백로그 화면(WMP-AGL-001): FUTURE/ACTIVE 스프린트 구역들 + 백로그 구역(기본). */
     @Transactional(readOnly = true)
     public SprintDtos.BacklogResponse backlog(Long projectId) {
+        return backlog(projectId, false);
+    }
+
+    /**
+     * 백로그 화면(WMP-AGL-001, CR-041). FUTURE/ACTIVE 스프린트 구역들 + 백로그 구역.
+     * <p>includeCompleted=true면 완료(COMPLETED) 스프린트 구역을 <b>맨 앞·오래된 순</b>에 함께 포함
+     * (Jira처럼 지난 스프린트를 백로그에서 접힌 채 조망). 기본(false)은 완료 제외(기존 동작).
+     * {@code findByProject}가 이미 sort_order ASC, id ASC라 완료도 오래된 순 자연 정렬.
+     */
+    @Transactional(readOnly = true)
+    public SprintDtos.BacklogResponse backlog(Long projectId, boolean includeCompleted) {
         if (projectMapper.findById(projectId) == null) {
             throw new BusinessException(WmpErrorCode.PROJECT_NOT_FOUND);
         }
-        List<SprintDtos.BacklogSection> sprintSections = new ArrayList<>();
+        List<SprintDtos.BacklogSection> completedSections = new ArrayList<>();  // 맨 앞에 배치할 완료 구역
+        List<SprintDtos.BacklogSection> activeSections = new ArrayList<>();     // 진행/예정 구역
         for (Sprint s : sprintMapper.findByProject(projectId)) {
-            if (SprintStatus.COMPLETED.name().equals(s.getStatus())) {
-                continue;  // 완료 스프린트는 백로그 화면에서 제외
+            boolean completed = SprintStatus.COMPLETED.name().equals(s.getStatus());
+            if (completed && !includeCompleted) {
+                continue;  // 완료 스프린트는 기본 제외(토글 off)
             }
             List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, s.getId(), false);
-            sprintSections.add(section(s, items));
+            (completed ? completedSections : activeSections).add(section(s, items));
         }
+        // 완료(오래된 순) → 진행/예정 순으로 배치.
+        List<SprintDtos.BacklogSection> sprintSections = new ArrayList<>(completedSections);
+        sprintSections.addAll(activeSections);
         List<WorkItem> backlogItems = workItemMapper.findByProjectAndSprint(projectId, null, true);
         return new SprintDtos.BacklogResponse(projectId, sprintSections, section(null, backlogItems));
     }

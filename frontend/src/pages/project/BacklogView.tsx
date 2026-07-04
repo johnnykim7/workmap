@@ -5,8 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   DndContext, PointerSensor, useSensor, useSensors, pointerWithin, type DragEndEvent,
 } from '@dnd-kit/core';
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@therecommerce/ds-ui';
-import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers } from 'lucide-react';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from '@therecommerce/ds-ui';
+import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers, History } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
@@ -36,7 +36,9 @@ export function BacklogView() {
   const { data: project, isPending: projectPending } = useProjectByKey(key);
   const projectId = project?.id;
 
-  const { data: backlog, isPending, isError } = useBacklog(projectId);
+  // 완료 스프린트 보기(CR-041) — off(기본)면 완료 제외, on이면 ?includeCompleted=true로 재조회.
+  const [showCompleted, setShowCompleted] = useState(false);
+  const { data: backlog, isPending, isError } = useBacklog(projectId, showCompleted);
   const assigneeName = useAssigneeName(projectId);
 
   // Epic 소속 칩·필터용 — 프로젝트 항목 전체에서 EPIC만 추려 epicId→이름 맵 구성(신규 BE 없이 재사용).
@@ -181,6 +183,12 @@ export function BacklogView() {
             </button>
           </div>
         )}
+        {/* 완료 스프린트 보기 토글(CR-041) — 켜면 완료 스프린트를 맨 위·접힌 채·읽기전용으로 함께 표시. */}
+        <label className="ml-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <History className="size-3.5" />
+          완료 스프린트 보기
+          <Switch checked={showCompleted} onCheckedChange={setShowCompleted} />
+        </label>
       </div>
       <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
         <Plus className="size-4" />
@@ -194,28 +202,32 @@ export function BacklogView() {
       {/* pointerWithin: 커서 위치 기준 충돌 판정 — Epic별 그룹으로 백로그가 쪼개져도 커서가 올라간 구역에 정확히 드롭(closestCenter는 중심점 거리라 그룹 사이 여백에서 오조준). */}
       <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
         <div className="flex flex-col gap-4">
-          {/* 스프린트 구역들 */}
+          {/* 스프린트 구역들 — 완료(CR-041)는 맨 위·읽기전용·기본 접힘. */}
           {backlog.sprints.map((section) => {
             const sid = `sp-${section.sprint!.id}`;
+            const isCompleted = section.sprint!.status === 'COMPLETED';
+            // 완료 구역은 기본 접힘(사용자가 명시 토글 전엔 undefined) — 참고용. 진행/예정은 기본 펼침.
+            const isCollapsed = collapsed[sid] ?? isCompleted;
             return (
               <SprintSection
                 key={sid}
                 section={withFilter(section)}
-                collapsed={collapsed[sid]}
+                collapsed={isCollapsed}
+                readOnly={isCompleted}
                 assigneeName={assigneeName}
                 epicName={epicName}
                 epicOptions={epicOptions}
-                onChangeEpic={onChangeEpic}
+                onChangeEpic={isCompleted ? undefined : onChangeEpic}
                 sprintOptions={sprintOptions}
-                onMoveToSprint={onMoveToSprint}
+                onMoveToSprint={isCompleted ? undefined : onMoveToSprint}
                 onItemClick={(id) => openItem(section.items, id)}
-                onInlineCreate={inlineCreate(section.sprint!.id)}
+                onInlineCreate={isCompleted ? undefined : inlineCreate(section.sprint!.id)}
                 inlineBusy={createItem.isPending}
                 emptyHint="여기로 항목을 끌어와 스프린트에 담으세요"
                 header={
                   <SprintHeader
                     section={section}
-                    collapsed={!!collapsed[sid]}
+                    collapsed={isCollapsed}
                     onToggle={() => toggle(sid)}
                     startDisabled={hasActive}
                     busy={startSprint.isPending || completeSprint.isPending}

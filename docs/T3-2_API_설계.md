@@ -186,7 +186,7 @@
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
-| GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그). `?includeCompleted=true`(선택, 기본 false)면 완료 스프린트 구역을 맨 앞에 포함(CR-040) | 🔒 | P1 | WMP-AGL-001 |
+| GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그). `?includeCompleted=true`(선택, 기본 false)면 완료 스프린트 구역을 맨 앞에 포함(CR-041) | 🔒 | P1 | WMP-AGL-001 |
 | GET | /projects/{id}/sprints | 스프린트 목록 | 🔒 | P1 | WMP-AGL-001 |
 | POST | /projects/{id}/sprints | 스프린트 생성 | 🔒 | P1 | WMP-AGL-001 |
 | PATCH | /sprints/{id} | 스프린트 편집(name·goal·startDate·endDate, status 무변경) | 🔒 | P2 | WMP-AGL-007 |

@@ -213,4 +213,42 @@ class SprintServiceTest {
         verify(sprintMapper, never()).deleteById(any());
         verify(workItemMapper, never()).updateSprint(any(), any());
     }
+
+    @Test
+    @DisplayName("SPR-BL1(CR-041): includeCompleted=false면 완료 스프린트 구역 제외(기존 동작)")
+    void 백로그_기본_완료제외() {
+        when(projectMapper.findById(5L)).thenReturn(new Project());
+        // sort_order 순: 완료(1) → ACTIVE(2) → FUTURE(3)
+        when(sprintMapper.findByProject(5L)).thenReturn(List.of(
+                sprint(1L, SprintStatus.COMPLETED.name()),
+                sprint(2L, SprintStatus.ACTIVE.name()),
+                sprint(3L, SprintStatus.FUTURE.name())));
+        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false))).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of());
+
+        SprintDtos.BacklogResponse res = service.backlog(5L, false);
+
+        // 완료(1) 제외 → 진행/예정 2개만
+        assertThat(res.sprints()).hasSize(2);
+        assertThat(res.sprints()).extracting(s -> s.sprint().getId()).containsExactly(2L, 3L);
+    }
+
+    @Test
+    @DisplayName("SPR-BL2(CR-041): includeCompleted=true면 완료 스프린트를 맨 앞·오래된 순으로 포함")
+    void 백로그_완료포함_맨앞배치() {
+        when(projectMapper.findById(5L)).thenReturn(new Project());
+        // sort_order 순(findByProject가 이미 정렬): 완료1(1) → 진행(2) → 완료2(4) → 예정(5)
+        when(sprintMapper.findByProject(5L)).thenReturn(List.of(
+                sprint(1L, SprintStatus.COMPLETED.name()),
+                sprint(2L, SprintStatus.ACTIVE.name()),
+                sprint(4L, SprintStatus.COMPLETED.name()),
+                sprint(5L, SprintStatus.FUTURE.name())));
+        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false))).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of());
+
+        SprintDtos.BacklogResponse res = service.backlog(5L, true);
+
+        // 완료(1,4) 맨 앞 오래된 순 → 진행/예정(2,5)
+        assertThat(res.sprints()).extracting(s -> s.sprint().getId()).containsExactly(1L, 4L, 2L, 5L);
+    }
 }
