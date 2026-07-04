@@ -57,6 +57,20 @@
    * SVAR가 링크에 커스텀 클래스를 붙이지 않으므로, 강조는 우선 오버레이/색 토큰으로 처리하고
    * 세밀 강조는 taskTemplate에서 처리(후속). */
   .wmp-gantt .wx-link.wmp-critical { --wx-gantt-link-color: var(--destructive); }
+
+  /* 오늘선 + 스프린트 밴드(CR-035) — highlightTime이 해당 날짜 셀에 클래스 부여.
+   * 색 절제: 오늘=신호색(파랑) 좌측 라인, 스프린트=옅은 중립 배경 밴드. */
+  .wmp-gantt .wmp-today {
+    box-shadow: inset 2px 0 0 var(--primary);   /* 오늘 셀 좌측 세로선 느낌 */
+    background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  }
+  .wmp-gantt .wmp-sprint {
+    background-color: color-mix(in srgb, var(--muted-foreground) 18%, transparent);
+  }
+  /* 오늘이 스프린트 안이면 오늘선 우선(둘 다 붙으면). */
+  .wmp-gantt .wmp-today.wmp-sprint {
+    box-shadow: inset 2px 0 0 var(--primary);
+  }
 }
 
 /* sticky 표 헤더 동작 보장 — ds-ui <Table>은 자체 `data-slot="table-wrapper"`(relative w-full

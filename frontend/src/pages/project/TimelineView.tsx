@@ -6,6 +6,7 @@ import { CalendarRange } from 'lucide-react';
 import { useMemo } from 'react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useTimeline, useProjectEpics } from '@/features/view/hooks';
+import { useSprints } from '@/features/agile/hooks';
 import { TimelineChart } from '@/features/view/components/TimelineChart';
 import { EmptyState } from '@/components/common/empty-state';
 import { PageShell } from '@/components/common/page-shell';
@@ -20,6 +21,8 @@ export function TimelineView() {
     () => new Map((epics ?? []).map((e) => [e.id, e.title] as const)),
     [epics],
   );
+  // 스프린트 오버레이 밴드용(CR-035) — 기간(startDate~endDate) 있는 스프린트만 사용.
+  const { data: sprints } = useSprints(project?.id);
 
   if (isPending || !data) {
     return (
@@ -45,12 +48,14 @@ export function TimelineView() {
   }
 
   return (
-    <PageShell>
+    // bodyOwnsScroll: 본문 높이 계약을 간트에 넘겨 간트가 자체 스크롤(가로 폭 폭발을 자기 안에 가둠).
+    <PageShell bodyOwnsScroll>
       <TimelineChart
         items={data.items}
         links={data.links}
         projectId={project!.id}
         epicNames={epicNames}
+        sprints={sprints ?? []}
       />
     </PageShell>
   );
