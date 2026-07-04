@@ -147,12 +147,14 @@ export function Avatar2({ name }: { name?: string }) {
 }
 
 // 페이지 헤더
-export function PageHead({ title, desc, actions }: { title: string; desc?: string; actions?: React.ReactNode }) {
+// title은 GNB 헤더가 이미 화면명을 표시하므로 본문 h1로 중복 렌더하지 않는다(desc/actions만).
+// prop은 호출부 호환을 위해 유지하되 렌더하지 않는다.
+export function PageHead({ desc, actions }: { title?: string; desc?: string; actions?: React.ReactNode }) {
+  if (!desc && !actions) return null;
   return (
     <div className="mb-5 flex items-start justify-between">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-        {desc && <p className="mt-1 text-sm text-slate-500">{desc}</p>}
+        {desc && <p className="text-sm text-muted-foreground">{desc}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

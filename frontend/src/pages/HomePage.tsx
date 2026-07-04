@@ -12,7 +12,7 @@ export function HomePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHead title="회사 홈" desc="막힘·지연·미배정 중심 대시보드" />
+      <PageHead title="대시보드" desc="막힘·지연·미배정 중심 대시보드" />
 
       {/* 지표 카드(WMP-HOME-001) */}
       {isPending || !m ? (

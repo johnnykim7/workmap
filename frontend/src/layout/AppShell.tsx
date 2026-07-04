@@ -54,6 +54,16 @@ const FIXED_MENU = [
   { path: ROUTES.search, label: '검색', icon: <Search className="size-4" /> },
 ];
 
+// 헤더 화면명의 단일 소스 = LNB 메뉴 라벨. 여기에 항목만 추가하면 LNB·헤더가 함께 반영된다.
+// (children이 동적인 워크룸/프로젝트도 그룹 라벨은 고정이라 여기서 관리.)
+const HEADER_MENU = [
+  ...FIXED_MENU,
+  { path: ROUTES.chat, label: '워크룸' },
+  { path: ROUTES.projects, label: '프로젝트' },
+  { path: '/admin', label: '설정' },
+  { path: '/workspaces', label: '워크스페이스' },
+];
+
 /** LNB 최상단 WS 스위처 (CR-018). 내가 속한 WS만(BIZ-112). 잘 안 바꿈 → 조용히 고정. */
 function WorkspaceSwitcher({ currentName }: { currentName: string }) {
   const navigate = useNavigate();
@@ -121,23 +131,13 @@ function HeaderTitle() {
     );
   }
 
-  // 그 외 화면: 경로 → 화면명(LNB 메뉴 라벨과 동일 톤).
-  const label =
-    pathname === ROUTES.home
-      ? '회사 홈'
-      : pathname.startsWith(ROUTES.inbox)
-        ? '받은함'
-        : pathname.startsWith(ROUTES.chat)
-          ? '메시지'
-          : pathname.startsWith(ROUTES.search)
-            ? '검색'
-          : pathname.startsWith(ROUTES.projects)
-            ? '프로젝트'
-            : pathname.startsWith('/admin')
-              ? '설정'
-              : pathname.startsWith('/workspaces')
-                ? '워크스페이스'
-                : '';
+  // 그 외 화면: 경로 → 화면명. LNB 메뉴 라벨(HEADER_MENU)을 그대로 재사용해
+  // LNB와 헤더 네이밍이 한 소스에서 항상 일치하도록 한다(하드코딩 중복 제거).
+  // 홈은 정확히 일치, 나머지는 prefix 매칭. 더 긴 경로가 먼저 잡히도록 길이 내림차순.
+  const matched = [...HEADER_MENU]
+    .sort((a, b) => b.path.length - a.path.length)
+    .find((m) => (m.path === ROUTES.home ? pathname === ROUTES.home : pathname.startsWith(m.path)));
+  const label = matched?.label ?? '';
   return <span className="truncate text-base font-semibold text-foreground">{label}</span>;
 }
 
