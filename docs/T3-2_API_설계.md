@@ -162,7 +162,10 @@
 | POST | /work-items/{id}/comments | 댓글 작성(@멘션) | 🔒 | P1 | WMP-WI-009 |
 | GET | /work-items/{id}/attachments | 첨부 목록 | 🔒 | P1 | WMP-WI-012 |
 | POST | /work-items/{id}/attachments | 파일 첨부 | 🔒 | P1 | WMP-WI-012 |
+| DELETE | /work-items/{id}/attachments/{attachmentId} | 첨부 삭제(메타+디스크 파일) | 🔒 | P1 | WMP-WI-012 |
 | GET | /work-items/{id}/activities | 활동/변경 이력 | 🔒 | P1 | WMP-WI-011 |
+
+- **첨부 삭제(CR-037)**: DELETE는 첨부 메타(attachments 행) + 서버 디스크의 실제 파일을 함께 제거. work_item 소속 검증(다른 항목 첨부 삭제 차단). 없는 첨부는 `ATTACHMENT_NOT_FOUND`(WMP-7846). 쓰기 가드(`WmpAuthz.WRITER`, VIEWER 차단). 디스크 파일 삭제 실패는 로그만 남기고 메타 삭제는 진행(best-effort — 이미 지워진 파일 등).
 
 ### F3. 파일 업로드 (리치 에디터 인라인 이미지 — CR-024)
 
@@ -223,7 +226,7 @@
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | GET | /work-items | 목록 뷰(표/분할, 검색·필터·퀵필터) — F 모듈 공유 | 🔒 | P1 | WMP-VIEW-001·004 |
-| GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) + **의존성 링크 병기(CR-035)** | 🔒 | P2 | WMP-VIEW-002·005·006 |
+| GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) + **의존성 링크 병기(CR-037)** | 🔒 | P2 | WMP-VIEW-002·005·006 |
 | GET | /projects/{id}/calendar | 캘린더(기한 기준 월별) | 🔒 | P2 | WMP-VIEW-003 |
 | GET | /saved-filters | 저장 필터 목록(내 것 + 공유된 것) | 🔒 | P2 | WMP-VIEW-004 |
 | POST | /saved-filters | 저장 필터 생성(name, query, isShared) | 🔒 | P2 | WMP-VIEW-004 |
@@ -232,7 +235,7 @@
 
 > **저장 필터(WMP-VIEW-004, CR-012)**: `saved_filters`(T3-1) CRUD. `query`(JSONB)는 목록 필터 조건(유형·상태·담당자·우선순위·라벨·스프린트·Epic·기한·막힘·검색어)을 그대로 저장. `is_shared=true`면 전 사용자 목록에 노출, false면 owner만. 수정·삭제는 **소유자만**(owner_id 일치 검증). Phase 1의 기본/전문/퀵필터(WMP-VIEW-001·004)는 이미 `/work-items`에서 제공 — 저장/공유 부분만 여기서 추가.
 
-> **타임라인 간트 고도화(WMP-VIEW-005·006, CR-035)**: `GET /projects/{id}/timeline` 응답을 `{ projectId, items[] }` → `{ projectId, items[], links[] }`로 확장(신규 엔드포인트 없음, 응답 형태만 추가). `links[]` = 프로젝트 내 work_item_links 중 **의존성 방향(BLOCKS/BLOCKED_BY)** 링크를 조인한 목록.
+> **타임라인 간트 고도화(WMP-VIEW-005·006, CR-037)**: `GET /projects/{id}/timeline` 응답을 `{ projectId, items[] }` → `{ projectId, items[], links[] }`로 확장(신규 엔드포인트 없음, 응답 형태만 추가). `links[]` = 프로젝트 내 work_item_links 중 **의존성 방향(BLOCKS/BLOCKED_BY)** 링크를 조인한 목록.
 > - **응답 형태(신규 `TimelineLink`)**:
 >   ```
 >   TimelineResponse { projectId, items: TimelineItem[], links: TimelineLink[] }
