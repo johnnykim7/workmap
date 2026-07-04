@@ -131,8 +131,14 @@ export function ListView() {
     </>
   );
 
+  // 페이저는 하단 고정(footer 슬롯) — 표 행만 스크롤. 결과 있을 때만 노출.
+  const footer =
+    items.length > 0 ? (
+      <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
+    ) : undefined;
+
   return (
-    <PageShell header={header}>
+    <PageShell header={header} footer={footer}>
       {items.length === 0 ? (
         <EmptyState
           icon={<ListX className="size-6" />}
@@ -161,7 +167,6 @@ export function ListView() {
               onSelect={setSplitSelected}
             />
           )}
-          <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
     </PageShell>

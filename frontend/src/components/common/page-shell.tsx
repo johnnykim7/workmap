@@ -11,13 +11,15 @@ interface Props {
   header?: ReactNode;
   /** 스크롤되는 데이터 영역. */
   children: ReactNode;
+  /** 하단 고정 영역(페이지네이션 등). 스크롤 본문 밖에서 항상 보인다. */
+  footer?: ReactNode;
   /** 본문 스크롤 컨테이너에 추가 클래스(예: 자체 overflow를 가진 칸반은 overflow 해제). */
   bodyClassName?: string;
   /** true면 본문 자체 overflow를 끄고(자식이 스스로 스크롤 관리) 높이만 채운다 — 칸반/타임라인용. */
   bodyOwnsScroll?: boolean;
 }
 
-export function PageShell({ header, children, bodyClassName = '', bodyOwnsScroll = false }: Props) {
+export function PageShell({ header, children, footer, bodyClassName = '', bodyOwnsScroll = false }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {header != null && <div className="shrink-0">{header}</div>}
@@ -26,6 +28,7 @@ export function PageShell({ header, children, bodyClassName = '', bodyOwnsScroll
       >
         {children}
       </div>
+      {footer != null && <div className="shrink-0">{footer}</div>}
     </div>
   );
 }

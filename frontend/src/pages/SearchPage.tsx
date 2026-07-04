@@ -197,8 +197,14 @@ export function SearchPage() {
     </>
   );
 
+  // 페이저는 하단 고정(footer 슬롯) — 표 행만 스크롤. 결과 있을 때만 노출.
+  const footer =
+    !isPending && !isError && items.length > 0 ? (
+      <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
+    ) : undefined;
+
   return (
-    <PageShell header={header}>
+    <PageShell header={header} footer={footer}>
       {isPending ? (
         <WorkListTableSkeleton />
       ) : isError ? (
@@ -225,7 +231,6 @@ export function SearchPage() {
             onSort={noop}
             onRowClick={(it) => navigate(ROUTES.workItem(it.key))}
           />
-          <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
     </PageShell>
