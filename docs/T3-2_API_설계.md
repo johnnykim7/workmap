@@ -223,7 +223,7 @@
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | GET | /work-items | 목록 뷰(표/분할, 검색·필터·퀵필터) — F 모듈 공유 | 🔒 | P1 | WMP-VIEW-001·004 |
-| GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) | 🔒 | P2 | WMP-VIEW-002 |
+| GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) + **의존성 링크 병기(CR-035)** | 🔒 | P2 | WMP-VIEW-002·005·006 |
 | GET | /projects/{id}/calendar | 캘린더(기한 기준 월별) | 🔒 | P2 | WMP-VIEW-003 |
 | GET | /saved-filters | 저장 필터 목록(내 것 + 공유된 것) | 🔒 | P2 | WMP-VIEW-004 |
 | POST | /saved-filters | 저장 필터 생성(name, query, isShared) | 🔒 | P2 | WMP-VIEW-004 |
@@ -231,6 +231,18 @@
 | DELETE | /saved-filters/{id} | 저장 필터 삭제(소유자만) | 🔒 | P2 | WMP-VIEW-004 |
 
 > **저장 필터(WMP-VIEW-004, CR-012)**: `saved_filters`(T3-1) CRUD. `query`(JSONB)는 목록 필터 조건(유형·상태·담당자·우선순위·라벨·스프린트·Epic·기한·막힘·검색어)을 그대로 저장. `is_shared=true`면 전 사용자 목록에 노출, false면 owner만. 수정·삭제는 **소유자만**(owner_id 일치 검증). Phase 1의 기본/전문/퀵필터(WMP-VIEW-001·004)는 이미 `/work-items`에서 제공 — 저장/공유 부분만 여기서 추가.
+
+> **타임라인 간트 고도화(WMP-VIEW-005·006, CR-035)**: `GET /projects/{id}/timeline` 응답을 `{ projectId, items[] }` → `{ projectId, items[], links[] }`로 확장(신규 엔드포인트 없음, 응답 형태만 추가). `links[]` = 프로젝트 내 work_item_links 중 **의존성 방향(BLOCKS/BLOCKED_BY)** 링크를 조인한 목록.
+> - **응답 형태(신규 `TimelineLink`)**:
+>   ```
+>   TimelineResponse { projectId, items: TimelineItem[], links: TimelineLink[] }
+>   TimelineLink { sourceId, targetId, linkType }   // linkType ∈ BLOCKS | BLOCKED_BY (의존성만)
+>   ```
+> - **중복 제거**: 링크는 양방향 저장(BIZ-109)이라 BLOCKS/BLOCKED_BY 짝이 둘 다 있음. timeline은 **BLOCKS 방향(source=선행, target=후행)만** 반환해 간트 화살표 1개로 그린다(BLOCKED_BY는 그 역이므로 생략). RELATES_TO/DUPLICATES는 의존성이 아니므로 제외.
+> - **매퍼**: `ViewMapper.timelineLinks(projectId)` 신규 — `work_item_links l JOIN work_items s ON l.source_id=s.id JOIN work_items t ON l.target_id=t.id WHERE s.project_id=#{id} AND l.link_type='BLOCKS' AND s.deleted_at IS NULL AND t.deleted_at IS NULL`. items와 동일 프로젝트/가시성 범위.
+> - **막대 드래그 저장**: start/due 변경은 **기존 `PATCH /work-items/{id}`**(startDate/dueDate) 재사용 — 신규 엔드포인트 없음. VIEWER는 CR-031 가드로 이미 403(쓰기 차단), FE는 SVAR `readonly`로 UI 비활성.
+> - **크리티컬 패스**: BE 미계산. FE가 items+links로 **순수함수(위상정렬+최장경로)** 파생 — 드래그 시 즉시 재계산. BE 응답 무변경(계산 결과를 싣지 않음).
+> - **에러코드·스키마 무변경**: work_item_links 기존 테이블 재사용. 신규 마이그레이션 없음.
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|

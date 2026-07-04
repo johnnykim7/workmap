@@ -185,6 +185,31 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 
 ---
 
+### CR-035 — 타임라인 간트 고도화 (SVAR React Gantt: 드래그·의존성선·크리티컬패스)
+> 자체 div 타임라인(`features/view/TimelineChart.tsx`)을 **SVAR React Gantt(MIT)** 기반으로 교체해 Jira 로드맵 수준으로 고도화. T1(WMP-VIEW-005/006) 캐스케이드 기준. **정공법 2결정**: ① 크리티컬패스=FE 순수함수 자체계산 ② 의존성 링크=timeline 응답 links[] 병기. **스키마·에러코드·마이그레이션 0**(work_item_links 기존 재사용).
+- **사전 확인(실측 완료 2026-07-04)**:
+  - 링크 데이터 존재: `work_item_links`(link_type BLOCKS/BLOCKED_BY/RELATES_TO/DUPLICATES, `WorkItemLinkService` 양방향 저장 BIZ-109). BLOCKS/BLOCKED_BY가 크리티컬패스 방향성 엣지.
+  - 막대 드래그 저장 = **기존 `PATCH /work-items/{id}`(startDate/dueDate) 재사용** — 신규 엔드포인트 0. VIEWER는 CR-031 가드로 이미 쓰기 403.
+  - 현 `timeline-util.ts`는 순수함수+단위테스트 패턴 → `criticalPath()` 얹기 자연스러움.
+  - SVAR 실측 데이터 모델(2.7.x): task=`{id,text,start:Date,end:Date,progress(0~100),parent,type:'summary'|'task'}`, link=`{source,target,type:'e2s'|'s2s'|'e2e'|'s2e'}`, 드래그 이벤트=`api.on("update-task",({id,task,inProgress})=>…)`, 읽기전용=`readonly` prop, CSS=`import "@svar-ui/react-gantt/all.css"` + `<Willow>`/`<WillowDark>` + `--wx-gantt-*` 변수. **마커(오늘선)·크리티컬패스·스프린트밴드는 PRO 유료** → 자체 오버레이/FE계산으로 대체.
+- **BE (소규모 — 응답 확장만)**:
+  1. `ViewDtos`에 `TimelineLink(Long sourceId, Long targetId, String linkType)` record + `TimelineResponse`에 `List<TimelineLink> links` 필드 추가.
+  2. `ViewMapper.timelineLinks(projectId)` 신규 select — `work_item_links l JOIN work_items s ON l.source_id=s.id JOIN work_items t ON l.target_id=t.id WHERE s.project_id=#{id} AND l.link_type='BLOCKS' AND s.deleted_at IS NULL AND t.deleted_at IS NULL`. (BLOCKS만=중복 제거, 화살표 1개).
+  3. `ViewService.timeline`이 items + timelineLinks 조합해 반환. 가시성 가드(BIZ-108) 기존 로직 유지.
+  4. 단위테스트: `ViewServiceTest`에 링크 병기·BLOCKS만 반환 검증. Mapper 통합테스트는 선택.
+- **FE (대규모 — 화면 전면 교체)**:
+  1. **의존성 추가**(frontend): `@svar-ui/react-gantt`(2.7.x). ⚠️ 추가 후 **Tailwind v4 LNB 재확인**([[workmap-tailwind-lnb-trap]]) — 빌드+배포 후 데스크탑 사이드바 확인 필수.
+  2. `features/view/api.ts`: `TimelineLink` 타입 + `TimelineResponse.links` 추가.
+  3. `timeline-util.ts`: `criticalPath(items, links)` 순수함수 신규 — 위상정렬(BLOCKS 방향) + 최장경로(막대 길이 가중). 순환/빈 그래프/일정없음 방어. + work_item→SVAR task 매핑, link→SVAR link 매핑 헬퍼. **단위테스트 필수**(허용경로·순환·빈그래프·단일노드).
+  4. `TimelineChart.tsx` 교체: SVAR `<Gantt>` 래핑. `init`에서 `api.on("update-task",({id,task,inProgress})=>{ if(!inProgress) mutate PATCH })`. 낙관적 업데이트+실패 시 invalidate 롤백. VIEWER=`readonly`. 크리티컬패스 강조(막대/링크 클래스). 좌측 그리드 column `cell`에 ds-ui TypeBadge/StatusBadge.
+  5. **자체 오버레이 레이어**: 오늘 세로선 + 스프린트 기간 배경 밴드를 간트 컨테이너 위 absolute로(시간축 스케일 공유). 기존 자체 타임라인 오늘선 기능 후퇴 방지.
+  6. **테마 매핑**: `all.css` import + `--wx-gantt-*`를 ds-ui 토큰(중립·상태 신호색)으로 오버라이드(색 절제 규칙). 다크 = `<WillowDark>`.
+  7. 기존 유지: 4단위 토글·에픽 필터·에픽 WBS 트리(SVAR summary/parent로 이관).
+- **핵심 함정**: ① SVAR 막대 내부 커스텀 렌더 API 미확인 → 설치 후 검증(안 되면 막대 색 신호만, 뱃지는 좌측 그리드). ② 오늘선/스프린트밴드 자체 오버레이 = 무료 코어 마커 부재 대체(정합 주의). ③ `update-task`의 `inProgress` 가드 필수(드래그 중 프레임마다 PATCH 치면 과부하). ④ Tailwind v4 LNB 트랩([[workmap-tailwind-lnb-trap]]) — 배포 후 사이드바 재확인. ⑤ 링크 양방향 저장이라 timeline은 BLOCKS만(중복 화살표 방지). ⑥ 드래그 저장은 FSM 무관(날짜는 상태 아님)이나 VIEWER 가드는 CR-031로 이중 방어.
+- **에러코드·마이그레이션**: 신규 없음(응답 형태 확장만, 스키마 무변경).
+
+---
+
 ## 5-A. Sprint 완료 게이트
 
 | # | 항목 | 확인 |
