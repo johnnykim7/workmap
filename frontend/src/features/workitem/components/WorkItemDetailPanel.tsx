@@ -53,13 +53,16 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
 
   return (
     <div>
-      <DetailHeader
-        item={item}
-        showBack={!stacked}
-        onAddSubtask={() => addSubtaskRef.current()}
-        onAddLink={() => addLinkRef.current()}
-        onAddAttachment={() => addAttachmentRef.current()}
-      />
+      {/* 헤더도 본문(lg:pl-4)과 같은 왼쪽 시작선에 맞춤 — 제목이 본문보다 튀어나오던 것 방지. */}
+      <div className="lg:pl-4">
+        <DetailHeader
+          item={item}
+          showBack={!stacked}
+          onAddSubtask={() => addSubtaskRef.current()}
+          onAddLink={() => addLinkRef.current()}
+          onAddAttachment={() => addAttachmentRef.current()}
+        />
+      </div>
       {/* 분할뷰든 풀페이지든 동일 레이아웃: 본문(설명) 좌 + 세부사항 우.
           폭이 좁으면(분할뷰 우측) lg 미만에서 자연히 세로로 접힘(반응형). Jira 정합. */}
       <div className="flex flex-col gap-6 lg:flex-row">
