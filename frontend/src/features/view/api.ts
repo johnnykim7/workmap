@@ -19,10 +19,19 @@ export interface TimelineItem {
   progress: number; // 0~100
 }
 
-// BE ViewDtos.TimelineResponse.
+// BE ViewDtos.TimelineLink — 의존성 링크(WMP-VIEW-006, CR-035). 간트 화살표용(선행→후행).
+// BLOCKS 방향만 병기(양방향 저장이라 BLOCKED_BY 짝은 생략).
+export interface TimelineLink {
+  sourceId: number;
+  targetId: number;
+  linkType: string; // 현재 BLOCKS만
+}
+
+// BE ViewDtos.TimelineResponse. CR-035로 links[] 병기.
 export interface TimelineResponse {
   projectId: number;
   items: TimelineItem[];
+  links: TimelineLink[];
 }
 
 // BE ViewDtos.CalendarDay / CalendarResponse.

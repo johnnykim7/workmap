@@ -26,10 +26,24 @@ public final class ViewDtos {
             int progress
     ) {}
 
-    /** 타임라인/로드맵 응답(WMP-VIEW-002): 일정이 있는 항목의 막대 목록. */
+    /**
+     * 의존성 링크 한 행(WMP-VIEW-006, CR-035). 간트 화살표용 — 선행(source)→후행(target).
+     * timeline 응답에 BLOCKS 방향만 병기(양방향 저장이라 BLOCKED_BY 짝은 중복이라 생략).
+     */
+    public record TimelineLink(
+            Long sourceId,
+            Long targetId,
+            String linkType   // BLOCKS만 반환(CR-035)
+    ) {}
+
+    /**
+     * 타임라인/로드맵 응답(WMP-VIEW-002·005·006): 일정 있는 항목의 막대 목록 + 의존성 링크 목록.
+     * 간트는 전체 그래프(막대+선+크리티컬패스)가 한 번에 필요하므로 links를 병기한다(CR-035).
+     */
     public record TimelineResponse(
             Long projectId,
-            List<TimelineItem> items
+            List<TimelineItem> items,
+            List<TimelineLink> links
     ) {}
 
     /** 캘린더 한 날짜의 항목 묶음(기한 기준). */

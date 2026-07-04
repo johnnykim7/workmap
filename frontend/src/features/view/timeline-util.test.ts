@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   parseDay, itemRange, computeSpan, barMetrics, monthTicks, weekTicks, dayTicks, quarterTicks,
-  ticksFor, spanFor, todayMarker, groupByEpic, rollupMetrics, sortByStart,
+  ticksFor, spanFor, todayMarker, groupByEpic, rollupMetrics, sortByStart, criticalPath,
 } from './timeline-util';
 import type { TimelineItem } from './api';
 
@@ -239,5 +239,80 @@ describe('sortByStart', () => {
       item({ id: 2, startDate: '2026-02-01' }),
     ]);
     expect(sorted.map((i) => i.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('criticalPath (CR-035)', () => {
+  // 각 항목에 명시적 기간(막대 길이=가중치) 부여.
+  function dated(id: number, start: string, due: string): TimelineItem {
+    return item({ id, key: `WMP-${id}`, startDate: start, dueDate: due });
+  }
+
+  it('선형사슬_전체가_크리티컬', () => {
+    // 1(10일)→2(5일)→3(3일). 유일한 경로 → 전부 크리티컬.
+    const items = [
+      dated(1, '2026-07-01', '2026-07-10'),
+      dated(2, '2026-07-11', '2026-07-15'),
+      dated(3, '2026-07-16', '2026-07-18'),
+    ];
+    const links = [{ sourceId: 1, targetId: 2 }, { sourceId: 2, targetId: 3 }];
+    const r = criticalPath(items, links);
+    expect(r.nodeIds).toEqual(new Set([1, 2, 3]));
+    expect(r.edgeKeys).toEqual(new Set(['1>2', '2>3']));
+  });
+
+  it('분기_최장경로만_강조', () => {
+    // 1→2(짧은 3일)와 1→3(긴 30일). 최장 = 1→3.
+    const items = [
+      dated(1, '2026-07-01', '2026-07-05'),
+      dated(2, '2026-07-06', '2026-07-08'),   // 3일
+      dated(3, '2026-07-06', '2026-08-05'),   // 30일 (더 긺)
+    ];
+    const links = [{ sourceId: 1, targetId: 2 }, { sourceId: 1, targetId: 3 }];
+    const r = criticalPath(items, links);
+    expect(r.nodeIds.has(3)).toBe(true);
+    expect(r.edgeKeys.has('1>3')).toBe(true);
+    expect(r.edgeKeys.has('1>2')).toBe(false); // 짧은 가지는 제외
+  });
+
+  it('링크없음_빈결과', () => {
+    const items = [dated(1, '2026-07-01', '2026-07-10')];
+    const r = criticalPath(items, []);
+    expect(r.nodeIds.size).toBe(0);
+    expect(r.edgeKeys.size).toBe(0);
+  });
+
+  it('항목없음_빈결과', () => {
+    const r = criticalPath([], [{ sourceId: 1, targetId: 2 }]);
+    expect(r.nodeIds.size).toBe(0);
+  });
+
+  it('순환_무한루프없이_빈또는부분결과', () => {
+    // 1→2→1 사이클. 위상정렬에서 제외 → 무한루프 없이 종료.
+    const items = [
+      dated(1, '2026-07-01', '2026-07-05'),
+      dated(2, '2026-07-06', '2026-07-10'),
+    ];
+    const links = [{ sourceId: 1, targetId: 2 }, { sourceId: 2, targetId: 1 }];
+    const r = criticalPath(items, links);
+    // 사이클이면 강조 없음(위상순 노드 0) — 최소한 크래시/무한루프 없이 반환.
+    expect(r.nodeIds.size).toBe(0);
+  });
+
+  it('일정없는항목_그래프에서제외', () => {
+    // 2는 일정 없음 → 노드 아님. 1→2 엣지 무효 → 링크 유효 0 → 빈 결과.
+    const items = [
+      dated(1, '2026-07-01', '2026-07-10'),
+      item({ id: 2 }),
+    ];
+    const links = [{ sourceId: 1, targetId: 2 }];
+    const r = criticalPath(items, links);
+    expect(r.nodeIds.size).toBe(0);
+  });
+
+  it('자기참조링크_무시', () => {
+    const items = [dated(1, '2026-07-01', '2026-07-10')];
+    const r = criticalPath(items, [{ sourceId: 1, targetId: 1 }]);
+    expect(r.edgeKeys.size).toBe(0);
   });
 });

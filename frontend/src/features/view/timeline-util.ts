@@ -253,3 +253,118 @@ export function rollupMetrics(rollup: { start: number; end: number }, span: Time
   const width = Math.max(right - left, 1.5);
   return { left, width: Math.min(width, 100 - left) };
 }
+
+// ───────────────────────── 크리티컬 패스(CR-035, WMP-VIEW-005) ─────────────────────────
+
+/** 의존성 링크(BLOCKS 방향: source=선행 → target=후행). timeline 응답 links[] 형태. */
+export interface DepLink {
+  sourceId: number;
+  targetId: number;
+}
+
+/** 크리티컬 패스 계산 결과 — 강조 대상 노드/엣지 집합(순수 파생, 저장 상태 아님). */
+export interface CriticalPathResult {
+  /** 크리티컬 경로에 속한 work_item id 집합. */
+  nodeIds: Set<number>;
+  /** 크리티컬 경로에 속한 엣지 집합("sourceId>targetId" 키). */
+  edgeKeys: Set<string>;
+}
+
+/** 한 항목의 소요일(막대 길이, 일수). 일정 없으면 0(가중치 없음). */
+function durationDays(it: TimelineItem): number {
+  const r = itemRange(it);
+  if (!r) return 0;
+  return Math.round((r.end - r.start) / DAY) + 1;
+}
+
+/**
+ * 크리티컬 패스 = BLOCKS 의존성 DAG에서 소요일(막대 길이) 가중 **최장 경로**(CR-035).
+ * FE 순수함수 — 드래그로 날짜가 바뀌면 즉시 재계산(파생 뷰).
+ *
+ * - 그래프: 노드=일정 있는 항목, 엣지=BLOCKS(source→target). 일정 없는 항목/그 엣지는 제외.
+ * - 가중치: 노드의 소요일(durationDays). 최장 경로 = 가장 오래 걸리는 선후행 사슬.
+ * - 순환(cycle) 방어: 위상정렬 실패(사이클 포함) 시 사이클에 걸린 엣지는 완화 처리 —
+ *   Kahn 위상정렬로 진입차수 0부터 처리, 남은(사이클) 노드는 최장경로 계산에서 제외해 무한루프 없음.
+ * - 항목/링크 없거나 경로 길이 1(단일 노드)이면 강조 없음(빈 집합).
+ */
+export function criticalPath(items: TimelineItem[], links: DepLink[]): CriticalPathResult {
+  const empty: CriticalPathResult = { nodeIds: new Set(), edgeKeys: new Set() };
+  // 일정 있는 항목만 노드로.
+  const dur = new Map<number, number>();
+  for (const it of items) {
+    if (itemRange(it)) dur.set(it.id, durationDays(it));
+  }
+  if (dur.size === 0) return empty;
+
+  // 양 끝이 모두 노드인 BLOCKS 엣지만 채택(자기참조·미존재 노드 제외).
+  const edges: { s: number; t: number }[] = [];
+  const adj = new Map<number, number[]>();
+  const indeg = new Map<number, number>();
+  for (const id of dur.keys()) indeg.set(id, 0);
+  const seen = new Set<string>();
+  for (const l of links) {
+    if (l.sourceId === l.targetId) continue;
+    if (!dur.has(l.sourceId) || !dur.has(l.targetId)) continue;
+    const k = `${l.sourceId}>${l.targetId}`;
+    if (seen.has(k)) continue; // 중복 엣지 제거
+    seen.add(k);
+    edges.push({ s: l.sourceId, t: l.targetId });
+    const list = adj.get(l.sourceId);
+    if (list) list.push(l.targetId);
+    else adj.set(l.sourceId, [l.targetId]);
+    indeg.set(l.targetId, (indeg.get(l.targetId) ?? 0) + 1);
+  }
+  if (edges.length === 0) return empty; // 의존성 없으면 크리티컬 패스 없음
+
+  // Kahn 위상정렬(사이클 노드는 큐에 못 들어와 자연 제외 → 무한루프 없음).
+  const order: number[] = [];
+  const q: number[] = [];
+  const deg = new Map(indeg);
+  for (const [id, d] of deg) if (d === 0) q.push(id);
+  while (q.length) {
+    const u = q.shift()!;
+    order.push(u);
+    for (const v of adj.get(u) ?? []) {
+      deg.set(v, (deg.get(v) ?? 0) - 1);
+      if (deg.get(v) === 0) q.push(v);
+    }
+  }
+  // order에 없는 노드 = 사이클 구성원 → 최장경로 대상에서 제외(위상순만 처리).
+
+  // 위상순 DP: dist[v] = v에서 끝나는 경로의 최대 누적 소요일, prev[v] = 최적 선행.
+  const dist = new Map<number, number>();
+  const prev = new Map<number, number>();
+  for (const id of order) dist.set(id, dur.get(id) ?? 0);
+  for (const u of order) {
+    const du = dist.get(u) ?? 0;
+    for (const v of adj.get(u) ?? []) {
+      if (!dist.has(v)) continue; // v가 사이클이면 스킵
+      const cand = du + (dur.get(v) ?? 0);
+      if (cand > (dist.get(v) ?? 0)) {
+        dist.set(v, cand);
+        prev.set(v, u);
+      }
+    }
+  }
+  if (dist.size === 0) return empty; // 전부 사이클 등
+
+  // 최장 경로 종점 = dist 최대 노드.
+  let endNode = -1;
+  let best = -1;
+  for (const [id, d] of dist) {
+    if (d > best) { best = d; endNode = id; }
+  }
+  // 경로 역추적. prev 없는 단일 노드면 강조 안 함(엣지 있는 사슬만 의미).
+  const nodeIds = new Set<number>();
+  const edgeKeys = new Set<string>();
+  let cur = endNode;
+  while (cur !== -1 && cur !== undefined) {
+    nodeIds.add(cur);
+    const p = prev.get(cur);
+    if (p === undefined) break;
+    edgeKeys.add(`${p}>${cur}`);
+    cur = p;
+  }
+  if (edgeKeys.size === 0) return empty; // 엣지 없는 단일 노드 = 강조 무의미
+  return { nodeIds, edgeKeys };
+}

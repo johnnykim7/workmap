@@ -50,10 +50,31 @@ class ViewServiceTest {
     void 타임라인_성공() {
         visible(1L);
         when(viewMapper.timeline(1L)).thenReturn(List.of(item(1L, LocalDate.of(2026, 7, 10))));
+        when(viewMapper.timelineLinks(1L)).thenReturn(List.of());
 
         ViewDtos.TimelineResponse res = service.timeline(1L, 99L);
 
         assertThat(res.items()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("타임라인_의존성링크_병기됨")   // WMP-VIEW-006, CR-035
+    void 타임라인_링크병기() {
+        visible(1L);
+        when(viewMapper.timeline(1L)).thenReturn(List.of(
+                item(1L, LocalDate.of(2026, 7, 10)),
+                item(2L, LocalDate.of(2026, 7, 20))));
+        when(viewMapper.timelineLinks(1L)).thenReturn(List.of(
+                new ViewDtos.TimelineLink(1L, 2L, "BLOCKS")));
+
+        ViewDtos.TimelineResponse res = service.timeline(1L, 99L);
+
+        assertThat(res.items()).hasSize(2);
+        assertThat(res.links()).hasSize(1);
+        assertThat(res.links().get(0).sourceId()).isEqualTo(1L);
+        assertThat(res.links().get(0).targetId()).isEqualTo(2L);
+        assertThat(res.links().get(0).linkType()).isEqualTo("BLOCKS");
+        verify(viewMapper).timelineLinks(1L);
     }
 
     @Test

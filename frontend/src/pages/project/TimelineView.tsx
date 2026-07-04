@@ -46,7 +46,12 @@ export function TimelineView() {
 
   return (
     <PageShell>
-      <TimelineChart items={data.items} epicNames={epicNames} />
+      <TimelineChart
+        items={data.items}
+        links={data.links}
+        projectId={project!.id}
+        epicNames={epicNames}
+      />
     </PageShell>
   );
 }

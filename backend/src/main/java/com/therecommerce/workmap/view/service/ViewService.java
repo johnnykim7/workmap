@@ -29,11 +29,17 @@ public class ViewService {
     private final ViewMapper viewMapper;
     private final ProjectMapper projectMapper;
 
-    /** 타임라인/로드맵(WMP-VIEW-002): 일정이 있는 항목의 막대 목록. */
+    /**
+     * 타임라인/로드맵(WMP-VIEW-002·005·006): 일정 있는 항목의 막대 목록 + 의존성 링크 목록.
+     * 간트 고도화(CR-035)로 links를 병기 — BLOCKS 방향만(중복 화살표 방지). 크리티컬패스는 FE 파생.
+     */
     @Transactional(readOnly = true)
     public ViewDtos.TimelineResponse timeline(Long projectId, Long viewerId) {
         assertVisible(projectId, viewerId);
-        return new ViewDtos.TimelineResponse(projectId, viewMapper.timeline(projectId));
+        return new ViewDtos.TimelineResponse(
+                projectId,
+                viewMapper.timeline(projectId),
+                viewMapper.timelineLinks(projectId));
     }
 
     /**

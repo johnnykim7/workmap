@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@therecommerce/ds-ui';
 import { workItemApi } from '@/features/workitem/api';
 import { workListApi } from '@/features/workitem/list-api';
-import { viewApi, type CalendarResponse } from './api';
+import { viewApi, type CalendarResponse, type TimelineResponse } from './api';
 import { moveCalendarItem } from './calendar-util';
 
 export const timelineKey = (projectId?: number) => ['timeline', projectId] as const;
@@ -55,6 +55,41 @@ export function useMoveCalendarDueDate(projectId?: number, year?: number, month?
     onError: (e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
       toast.error(e instanceof Error ? e.message : '마감일 변경에 실패했습니다.');
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ['work-items'] });
+    },
+  });
+}
+
+// 타임라인 간트 막대 드래그/리사이즈 → start_date·due_date 변경(CR-035, WMP-VIEW-005).
+// PATCH /work-items/{id} {startDate, dueDate} 재사용. 낙관적 업데이트 — timeline 쿼리의 해당
+// 항목 날짜를 즉시 갱신하고 실패 시 스냅샷 롤백(서버 권위). 캘린더 dueDate 이동과 동일 패턴.
+export function useMoveTimelineDates(projectId?: number) {
+  const qc = useQueryClient();
+  const key = timelineKey(projectId);
+  return useMutation({
+    mutationFn: ({ itemId, startDate, dueDate }: { itemId: number; startDate?: string; dueDate?: string }) =>
+      workItemApi.update(itemId, { startDate, dueDate }),
+    onMutate: async ({ itemId, startDate, dueDate }) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TimelineResponse>(key);
+      if (prev) {
+        qc.setQueryData<TimelineResponse>(key, {
+          ...prev,
+          items: prev.items.map((it) =>
+            it.id === itemId
+              ? { ...it, startDate: startDate ?? it.startDate, dueDate: dueDate ?? it.dueDate }
+              : it,
+          ),
+        });
+      }
+      return { prev };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+      toast.error(e instanceof Error ? e.message : '일정 변경에 실패했습니다.');
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });

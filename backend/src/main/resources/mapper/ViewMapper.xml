@@ -28,6 +28,21 @@
         ORDER BY COALESCE(start_date, due_date) ASC, due_date ASC, id ASC
     </select>
 
+    <!-- 타임라인 의존성 링크(WMP-VIEW-006, CR-035): 프로젝트 내 BLOCKS 링크만(선행→후행).
+         양방향 저장(BIZ-109)이라 BLOCKS만 반환해 간트 화살표 중복 방지. 양 끝 항목 삭제 제외. -->
+    <select id="timelineLinks" resultType="com.therecommerce.workmap.view.dto.ViewDtos$TimelineLink">
+        SELECT l.source_id AS sourceId,
+               l.target_id AS targetId,
+               l.link_type AS linkType
+        FROM work_item_links l
+        JOIN work_items s ON l.source_id = s.id
+        JOIN work_items t ON l.target_id = t.id
+        WHERE s.project_id = #{projectId}
+          AND l.link_type = 'BLOCKS'
+          AND s.deleted_at IS NULL
+          AND t.deleted_at IS NULL
+    </select>
+
     <!-- 캘린더: 기한이 지정 월 범위[from, to]에 드는 항목 -->
     <select id="calendar" resultType="com.therecommerce.workmap.view.dto.ViewDtos$TimelineItem">
         SELECT <include refid="itemCols"/>

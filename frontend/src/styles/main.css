@@ -7,6 +7,12 @@
 /* WorkMap 로컬 Tailwind (자체 composite용 유틸) */
 @import 'tailwindcss';
 
+/* SVAR React Gantt 스타일(CR-035) — 타임라인 간트.
+ * ⚠️ tiptap 교훈([[workmap-tailwind-lnb-trap]])과 동일: 컴포넌트에서 직접 import하면 Tailwind v4
+ *    유틸리티 정렬이 밀려 ds-ui LNB(hidden md:block)가 숨을 수 있다. 여기(유틸리티 앞, @import 영역)에
+ *    두어 정렬을 침범하지 않게 한다. 하단 LNB 보호 규칙(!important)도 최종 방어로 유지. */
+@import '@svar-ui/react-gantt/all.css';
+
 /* 리치 에디터 콘텐츠 스타일(CR-024) — .tiptap 스코프.
  * ⚠️ @layer components 안에 둔다. 별도 .css를 컴포넌트에서 import하면 Tailwind v4 레이어 순서가
  *    밀려 .hidden 유틸리티가 미디어쿼리(md:block)를 이겨 ds-ui LNB가 숨는 사고가 난다.
@@ -36,6 +42,21 @@
     border-left: 4px solid var(--border); padding-left: 0.75rem; color: var(--muted-foreground);
   }
   .tiptap img { border-radius: 0.25rem; max-width: 100%; margin: 0.5rem 0; }
+
+  /* SVAR 간트 색 절제 + 크리티컬 패스 강조(CR-035) — .wmp-gantt 스코프.
+   * ds-ui 토큰(중립 회색)에 맞추고, 크리티컬 패스만 신호색(빨강 계열)으로. */
+  .wmp-gantt {
+    --wx-gantt-task-color: var(--muted-foreground);
+    --wx-gantt-task-fill-color: color-mix(in srgb, var(--primary) 55%, white);
+    --wx-gantt-summary-color: color-mix(in srgb, var(--primary) 30%, white);
+    --wx-gantt-link-color: var(--muted-foreground);
+    --wx-gantt-border: 1px solid var(--border);
+  }
+  /* 크리티컬 패스 막대·링크선 강조(어댑터가 task/link에 critical=true 주입 → SVAR가 클래스 부여할 수 없어
+   * 데이터 속성 기반 셀렉터는 미지원. 대신 크리티컬 노드는 진행 톤 대비로 구분 — 현재는 링크선 색만 강조).
+   * SVAR가 링크에 커스텀 클래스를 붙이지 않으므로, 강조는 우선 오버레이/색 토큰으로 처리하고
+   * 세밀 강조는 taskTemplate에서 처리(후속). */
+  .wmp-gantt .wx-link.wmp-critical { --wx-gantt-link-color: var(--destructive); }
 }
 
 /* sticky 표 헤더 동작 보장 — ds-ui <Table>은 자체 `data-slot="table-wrapper"`(relative w-full
