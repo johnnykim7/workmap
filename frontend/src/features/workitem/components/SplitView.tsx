@@ -17,8 +17,8 @@ export function SplitView({ items, sprints, selected, onSelect }: Props) {
   return (
     <div className="flex items-start gap-4">
       {/* 좌측 리스트 — 본문과 분리해 자기 영역대로 스크롤(sticky 고정).
-          AdminShell 헤더 h-14(56px) + AppShell 본문 p-5(20px) 아래에 붙는다. */}
-      <div className="sticky top-5 max-h-[calc(100vh-56px-40px)] w-72 shrink-0 overflow-y-auto rounded-lg border border-border">
+          AdminShell 헤더 h-14(56px) 아래에 붙는다(top-14). max-h는 뷰포트-헤더. */}
+      <div className="sticky top-14 max-h-[calc(100vh-56px-16px)] w-72 shrink-0 overflow-y-auto rounded-lg border border-border">
         <ul className="divide-y divide-border">
           {items.map((it) => (
             <li key={it.id}>
