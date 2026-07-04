@@ -131,43 +131,43 @@ export function ListView() {
     </>
   );
 
-  // 페이저는 하단 고정(footer 슬롯) — 표 행만 스크롤. 결과 있을 때만 노출.
+  // 표 모드: 페이저 하단 고정(footer) + 표 행만 스크롤. 분할 모드: 좌/우 각자 스크롤이라 페이저 없음.
   const footer =
-    items.length > 0 ? (
+    mode === 'table' && items.length > 0 ? (
       <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
     ) : undefined;
 
   return (
-    <PageShell header={header} footer={footer}>
+    // 분할 모드는 좌(목록)/우(상세)가 각자 스크롤하도록 본문 높이를 SplitView에 넘긴다(bodyOwnsScroll).
+    // 표 모드는 본문 자체 세로 스크롤(기본).
+    <PageShell header={header} footer={footer} bodyOwnsScroll={mode === 'split'}>
       {items.length === 0 ? (
         <EmptyState
           icon={<ListX className="size-6" />}
           title="표시할 업무가 없습니다"
           description="필터를 조정하거나 새 업무를 만들어 보세요."
         />
-      ) : (
+      ) : mode === 'table' ? (
         <div className={isPlaceholderData ? 'opacity-60 transition-opacity' : ''}>
-          {mode === 'table' ? (
-            <WorkItemTable
-              items={items}
-              assigneeName={assigneeName}
-              selectedIds={selectedIds}
-              onToggle={toggle}
-              onToggleAll={toggleAll}
-              sort={filter.sort}
-              direction={filter.direction ?? 'DESC'}
-              onSort={toggleSort}
-              onRowClick={(it) => navigate(ROUTES.workItem(it.key))}
-            />
-          ) : (
-            <SplitView
-              items={items}
-              sprints={sprints}
-              selected={splitSelected}
-              onSelect={setSplitSelected}
-            />
-          )}
+          <WorkItemTable
+            items={items}
+            assigneeName={assigneeName}
+            selectedIds={selectedIds}
+            onToggle={toggle}
+            onToggleAll={toggleAll}
+            sort={filter.sort}
+            direction={filter.direction ?? 'DESC'}
+            onSort={toggleSort}
+            onRowClick={(it) => navigate(ROUTES.workItem(it.key))}
+          />
         </div>
+      ) : (
+        <SplitView
+          items={items}
+          sprints={sprints}
+          selected={splitSelected}
+          onSelect={setSplitSelected}
+        />
       )}
     </PageShell>
   );

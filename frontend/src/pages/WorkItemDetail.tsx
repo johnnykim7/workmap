@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { FileQuestion } from 'lucide-react';
 import { WorkItemDetailSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { useSprints } from '@/features/agile/hooks';
 import { useWorkItemByKey } from '@/features/workitem/hooks';
 import { WorkItemDetailPanel } from '@/features/workitem/components/WorkItemDetailPanel';
@@ -26,10 +27,12 @@ export function WorkItemDetail() {
   }
 
   return (
-    // w-full 필수: 이 div는 AppShell의 flex-col 자식이라 max-w가 걸리면 stretch가 무효화돼
-    // 콘텐츠 폭(min-content)으로 줄어든다 → 콘텐츠 적은 항목이 왼쪽으로 쏠린다. w-full로 항상 최대폭.
-    <div className="mx-auto w-full max-w-6xl">
-      <WorkItemDetailPanel item={item} sprints={sprints} />
-    </div>
+    // bodyOwnsScroll: DetailPanel이 헤더 고정 + 좌/우 독립 스크롤을 자체 관리하도록 높이만 채워준다.
+    <PageShell bodyOwnsScroll>
+      {/* w-full 필수: max-w가 걸리면 stretch가 무효화돼 콘텐츠 폭으로 줄어 왼쪽 쏠림. h-full로 높이 전달. */}
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col">
+        <WorkItemDetailPanel item={item} sprints={sprints} />
+      </div>
+    </PageShell>
   );
 }

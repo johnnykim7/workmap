@@ -52,11 +52,12 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
   );
 
   return (
-    // w-full 필수 — 없으면 flex-1 본문이 콘텐츠 폭만큼만 차지해 부모(max-w-6xl)가 shrink,
-    // 콘텐츠 적은 항목은 전체가 왼쪽으로 쏠린다(들쭉날쭉의 원인). w-full로 항상 최대폭 확보.
-    <div className="w-full">
-      {/* 헤더도 본문(lg:pl-4)과 같은 왼쪽 시작선에 맞춤 — 제목이 본문보다 튀어나오던 것 방지. */}
-      <div className="lg:pl-4">
+    // 높이 계약: 부모(풀페이지=PageShell bodyOwnsScroll / 분할뷰=고정 높이 컬럼)가 준 높이를 받아
+    // 세로 flex로 쪼갠다 — 헤더 고정(shrink-0) + 본문 영역(flex-1 min-h-0, 이 안에서 스크롤).
+    // w-full 필수 — 없으면 flex-1 본문이 콘텐츠 폭만큼만 차지해 부모(max-w-6xl)가 shrink, 왼쪽 쏠림.
+    <div className="flex h-full min-h-0 w-full flex-col">
+      {/* 헤더 = 고정. 본문(lg:pl-4)과 같은 왼쪽 시작선에 맞춤(제목이 본문보다 튀어나오던 것 방지). */}
+      <div className="shrink-0 lg:pl-4">
         <DetailHeader
           item={item}
           showBack={!stacked}
@@ -65,13 +66,24 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
           onAddAttachment={() => addAttachmentRef.current()}
         />
       </div>
-      {/* 분할뷰든 풀페이지든 동일 레이아웃: 본문(설명) 좌 + 세부사항 우.
-          폭이 좁으면(분할뷰 우측) lg 미만에서 자연히 세로로 접힘(반응형). Jira 정합.
-          w-full로 세부사항을 항상 오른쪽 끝에 고정(콘텐츠 양과 무관하게 레이아웃 일정). */}
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        {body}
-        <DetailSidePanel item={item} sprints={sprints} />
-      </div>
+      {stacked ? (
+        // 분할뷰 우측: 좁아서 세로로 쌓임(반응형). 본문+세부사항 통째로 이 영역만 스크롤.
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-6">
+            {body}
+            <DetailSidePanel item={item} sprints={sprints} />
+          </div>
+        </div>
+      ) : (
+        // 풀페이지: 본문(설명) 좌 + 세부사항 우 — Jira 정합으로 좌/우 각각 독립 스크롤.
+        // 헤더는 위에서 고정됐고, 이 flex-row 영역이 남은 높이를 채워 두 컬럼이 각자 overflow-y-auto.
+        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1 overflow-y-auto">{body}</div>
+          <div className="overflow-y-auto lg:shrink-0">
+            <DetailSidePanel item={item} sprints={sprints} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,10 +15,10 @@ interface Props {
 
 export function SplitView({ items, sprints, selected, onSelect }: Props) {
   return (
-    <div className="flex items-start gap-4">
-      {/* 좌측 리스트 — 본문과 분리해 자기 영역대로 스크롤(sticky 고정).
-          스크롤 컨테이너=PageShell 본문 기준이라 top-0에 붙고 max-h는 컨테이너 높이(뷰포트 하드코딩 제거). */}
-      <div className="sticky top-0 max-h-full w-72 shrink-0 overflow-y-auto rounded-lg border border-border">
+    // PageShell bodyOwnsScroll에서 받은 높이를 꽉 채워, 좌(목록)/우(상세)가 각자 독립 스크롤(Jira 정합).
+    <div className="flex h-full min-h-0 gap-4">
+      {/* 좌측 리스트 — 컬럼 높이를 채우고 자체 세로 스크롤. */}
+      <div className="w-72 shrink-0 overflow-y-auto rounded-lg border border-border">
         <ul className="divide-y divide-border">
           {items.map((it) => (
             <li key={it.id}>
@@ -45,8 +45,8 @@ export function SplitView({ items, sprints, selected, onSelect }: Props) {
         </ul>
       </div>
 
-      {/* 우측 상세 */}
-      <div className="min-w-0 flex-1">
+      {/* 우측 상세 — 컬럼 높이를 채우고, DetailPanel(stacked)이 헤더 고정+본문 스크롤을 자체 관리. */}
+      <div className="min-h-0 min-w-0 flex-1">
         {selected ? (
           <WorkItemDetailPanel key={selected.id} item={selected} sprints={sprints} stacked />
         ) : (
