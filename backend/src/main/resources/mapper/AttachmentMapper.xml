@@ -24,4 +24,12 @@
         SELECT * FROM attachments WHERE work_item_id = #{workItemId} ORDER BY created_at, id
     </select>
 
+    <select id="findById" resultMap="attachmentMap">
+        SELECT * FROM attachments WHERE id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM attachments WHERE id = #{id}
+    </delete>
+
 </mapper>

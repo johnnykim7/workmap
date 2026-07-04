@@ -79,6 +79,29 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * 저장된 파일을 디스크에서 삭제(best-effort, CR-037 첨부 삭제).
+     * - filePath는 저장 URL(public-base + "/" + storedName) 또는 storedName 자체를 허용.
+     * - 저장 디렉터리 밖(traversal)·이미 없는 파일은 조용히 무시(로그만).
+     * - 삭제 실패가 첨부 메타 삭제를 막지 않도록 예외를 던지지 않는다.
+     */
+    public void deleteByPath(String filePathOrName) {
+        if (filePathOrName == null || filePathOrName.isBlank()) return;
+        String storedName = filePathOrName.substring(filePathOrName.lastIndexOf('/') + 1);
+        if (storedName.isBlank()) return;
+        try {
+            Path dir = Paths.get(props.getDir()).normalize();
+            Path target = dir.resolve(storedName).normalize();
+            if (!target.startsWith(dir)) {
+                log.warn("첨부 파일 삭제 경로 이탈 무시: {}", filePathOrName);
+                return;
+            }
+            Files.deleteIfExists(target);
+        } catch (Exception e) {
+            log.warn("첨부 파일 디스크 삭제 실패(메타 삭제는 진행): {}", storedName, e);
+        }
+    }
+
     /** 저장된 파일의 content-type 추정(서빙 시 헤더용). 알 수 없으면 octet-stream. */
     public String probeContentType(String storedName) {
         try {

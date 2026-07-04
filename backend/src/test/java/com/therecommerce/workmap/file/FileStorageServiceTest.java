@@ -123,6 +123,28 @@ class FileStorageServiceTest {
     }
 
     @Test
+    @DisplayName("첨부삭제_저장URL_디스크파일제거")
+    void deleteByPath_storedUrl_removesFile() {
+        MockMultipartFile file = new MockMultipartFile("file", "d.png", "image/png", "DATA".getBytes());
+        FileUploadResponse res = service.store(file);
+        String stored = res.url().substring(res.url().lastIndexOf('/') + 1);
+        assertThat(Files.exists(tempDir.resolve(stored))).isTrue();
+
+        service.deleteByPath(res.url()); // 저장 URL 전체를 넘겨도 파일명만 뽑아 삭제
+
+        assertThat(Files.exists(tempDir.resolve(stored))).isFalse();
+    }
+
+    @Test
+    @DisplayName("첨부삭제_없는파일이나traversal_조용히무시")
+    void deleteByPath_missingOrTraversal_noThrow() {
+        // 예외를 던지지 않아야 함(best-effort). 디렉터리 밖 접근도 무시.
+        assertThatCode(() -> service.deleteByPath("/api/v1/files/serve/nope.png")).doesNotThrowAnyException();
+        assertThatCode(() -> service.deleteByPath("../../etc/passwd")).doesNotThrowAnyException();
+        assertThatCode(() -> service.deleteByPath(null)).doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("경로traversal_load_거부됨")
     void load_pathTraversal_throws() {
         assertThatThrownBy(() -> service.load("../../etc/passwd"))

@@ -212,6 +212,18 @@ export function useCreateAttachment(id: number) {
     onError: (e) => toast.error(errMsg(e, '첨부 추가에 실패했습니다.')),
   });
 }
+export function useDeleteAttachment(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: number) => workItemApi.deleteAttachment(id, attachmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: wiAttachmentsKey(id) });
+      qc.invalidateQueries({ queryKey: wiActivitiesKey(id) });
+      toast.success('첨부를 삭제했습니다.');
+    },
+    onError: (e) => toast.error(errMsg(e, '첨부 삭제에 실패했습니다.')),
+  });
+}
 
 // ── 삭제 (WMP-WI-003, 소프트) ──
 export function useDeleteWorkItem(id: number) {

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Popover, PopoverContent, PopoverTrigger, cn } from '@therecommerce/ds-ui';
 import { uploadFile } from '@/lib/upload';
+import { useFileViewer } from '@/components/common/file-viewer';
 // 에디터 콘텐츠 스타일(.tiptap)은 main.css의 @layer components에 정의한다.
 // ⚠️ 여기서 별도 .css를 import하면 Tailwind v4 레이어 순서가 밀려 .hidden 등 유틸리티가
 //    미디어쿼리(md:block)를 이겨 ds-ui LNB가 숨는다(2차 사고). 반드시 @layer 경유.
@@ -37,6 +38,16 @@ export function RichTextEditor({
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const viewer = useFileViewer();
+
+  // 읽기전용 렌더의 인라인 이미지 클릭 → 공통 파일 뷰어(줌/팬). 이벤트 위임으로 처리.
+  const onContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      viewer.openOne({ url: img.currentSrc || img.src, name: img.alt || '이미지', contentType: 'image/*' });
+    }
+  }, [viewer]);
 
   const editor = useEditor({
     extensions: [
@@ -86,7 +97,14 @@ export function RichTextEditor({
   // 읽기 전용: HTML 렌더만.
   if (!editable) {
     // 읽기전용 렌더도 .tiptap 스코프 CSS를 그대로 재사용(prose 등 전역 클래스 미사용).
-    return <div className={cn('tiptap text-sm', className)} dangerouslySetInnerHTML={{ __html: value || '' }} />;
+    // 인라인 이미지는 클릭 시 공통 뷰어로 열림(커서 zoom-in은 .tiptap CSS에서).
+    return (
+      <div
+        className={cn('tiptap tiptap-readonly text-sm', className)}
+        onClick={onContentClick}
+        dangerouslySetInnerHTML={{ __html: value || '' }}
+      />
+    );
   }
 
   return (

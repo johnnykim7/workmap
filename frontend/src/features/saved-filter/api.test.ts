@@ -138,6 +138,12 @@ describe('P2 API 계약', () => {
     expect(last().body).toMatchObject({ fileName: '설계도.pdf', filePath: 'https://x/a.pdf' });
   });
 
+  it('첨부_삭제_DELETE_attachmentId중첩경로(CR-037)', async () => {
+    await workItemApi.deleteAttachment(12, 77);
+    expect(last().method).toBe('DELETE');
+    expect(last().url).toMatch(/\/work-items\/12\/attachments\/77$/);
+  });
+
   it('유형전환_PATCH_issueType바디', async () => {
     await workItemApi.convert(33, { issueType: 'STORY', epicId: 5 });
     expect(last().method).toBe('PATCH');

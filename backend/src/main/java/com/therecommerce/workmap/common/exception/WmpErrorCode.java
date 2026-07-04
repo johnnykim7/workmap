@@ -138,7 +138,10 @@ public enum WmpErrorCode implements ErrorCode {
     // 가입 요청 (7843번대, CR-032 — 셀프 신청 → 관리자 승인)
     SIGNUP_REQUEST_NOT_FOUND("WMP-7843", "가입 요청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     SIGNUP_REQUEST_ALREADY_PROCESSED("WMP-7844", "이미 처리된 가입 요청입니다.", HttpStatus.CONFLICT),
-    SIGNUP_REQUEST_PENDING_DUPLICATED("WMP-7845", "이미 접수된 가입 요청이 있습니다.", HttpStatus.CONFLICT);
+    SIGNUP_REQUEST_PENDING_DUPLICATED("WMP-7845", "이미 접수된 가입 요청이 있습니다.", HttpStatus.CONFLICT),
+
+    // 첨부 (7846번대, CR-037 — 첨부 실파일 업로드 전환 + 삭제)
+    ATTACHMENT_NOT_FOUND("WMP-7846", "첨부를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

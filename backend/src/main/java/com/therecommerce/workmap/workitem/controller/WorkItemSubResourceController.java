@@ -62,6 +62,14 @@ public class WorkItemSubResourceController {
         return ResponseDto.success(attachmentService.create(id, req, userId));
     }
 
+    @PreAuthorize(WmpAuthz.WRITER)
+    @DeleteMapping("/attachments/{attachmentId}")
+    public ResponseDto<Void> deleteAttachment(@PathVariable Long id, @PathVariable Long attachmentId,
+                                              @AuthUserInfo("userId") Long userId) {
+        attachmentService.delete(id, attachmentId, userId);
+        return ResponseDto.success(null);
+    }
+
     // ── 활동 이력 ──
     @GetMapping("/activities")
     public ResponseDto<List<SubResourceDtos.ActivityResponse>> listActivities(@PathVariable Long id) {

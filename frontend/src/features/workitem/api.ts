@@ -135,6 +135,8 @@ export const workItemApi = {
   listAttachments: (id: number) => api.get<Attachment[]>(`/work-items/${id}/attachments`),
   createAttachment: (id: number, body: CreateAttachmentRequest) =>
     api.post<Attachment>(`/work-items/${id}/attachments`, body),
+  deleteAttachment: (id: number, attachmentId: number) =>
+    api.delete<void>(`/work-items/${id}/attachments/${attachmentId}`),
 
   convert: (id: number, body: ConvertRequest) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/convert`, body),

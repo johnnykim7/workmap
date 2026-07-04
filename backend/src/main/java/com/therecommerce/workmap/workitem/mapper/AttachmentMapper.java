@@ -12,4 +12,8 @@ public interface AttachmentMapper {
     void insert(Attachment attachment);
 
     List<Attachment> findByWorkItem(@Param("workItemId") Long workItemId);
+
+    Attachment findById(@Param("id") Long id);
+
+    void deleteById(@Param("id") Long id);
 }
