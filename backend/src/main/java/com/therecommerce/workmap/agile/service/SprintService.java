@@ -76,6 +76,39 @@ public class SprintService {
                 .toList();
     }
 
+    /** 스프린트 편집(WMP-AGL-007, CR-038). status 무변경 — 어느 상태에서든 name/goal/기간 수정. */
+    @Transactional
+    public SprintDtos.Response update(Long sprintId, SprintDtos.UpdateRequest req, Long actorId) {
+        Sprint s = getEntity(sprintId);
+        if (req.startDate() != null && req.endDate() != null && req.startDate().isAfter(req.endDate())) {
+            throw new BusinessException(WmpErrorCode.INVALID_REQUEST, "시작일이 종료일보다 늦을 수 없습니다.");
+        }
+        s.setName(req.name());
+        s.setGoal(req.goal());
+        s.setStartDate(req.startDate());
+        s.setEndDate(req.endDate());
+        sprintMapper.updateEdit(s);
+        return SprintDtos.Response.from(sprintMapper.findById(sprintId));
+    }
+
+    /**
+     * 스프린트 삭제(WMP-AGL-008, CR-038). **FUTURE만** 허용(FSM 가드).
+     * 담긴 워크아이템은 백로그로 복귀(sprint_id=null) 후 스프린트 하드 삭제.
+     */
+    @Transactional
+    public SprintDtos.DeleteResult delete(Long sprintId, Long actorId) {
+        Sprint s = getEntity(sprintId);
+        if (!SprintStatus.FUTURE.name().equals(s.getStatus())) {
+            throw new BusinessException(WmpErrorCode.SPRINT_DELETE_NOT_FUTURE);
+        }
+        List<WorkItem> items = workItemMapper.findBySprint(sprintId);
+        for (WorkItem w : items) {
+            workItemMapper.updateSprint(w.getId(), null);  // 백로그 복귀
+        }
+        sprintMapper.deleteById(sprintId);
+        return new SprintDtos.DeleteResult(sprintId, items.size());
+    }
+
     @Transactional(readOnly = true)
     public Sprint getEntity(Long id) {
         Sprint s = sprintMapper.findById(id);

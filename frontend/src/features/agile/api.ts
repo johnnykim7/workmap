@@ -26,6 +26,15 @@ export interface CreateSprintRequest {
   endDate?: string;
 }
 
+// 스프린트 편집(WMP-AGL-007, CR-038) — status 무변경.
+export type UpdateSprintRequest = CreateSprintRequest;
+
+// 스프린트 삭제 결과(WMP-AGL-008, CR-038) — 백로그로 복귀한 항목 수.
+export interface DeleteSprintResult {
+  sprintId: number;
+  returnedToBacklog: number;
+}
+
 export interface CompleteResult {
   sprintId: number;
   doneCount: number;
@@ -38,6 +47,12 @@ export const agileApi = {
   listSprints: (projectId: number) => api.get<Sprint[]>(`/projects/${projectId}/sprints`),
   createSprint: (projectId: number, body: CreateSprintRequest) =>
     api.post<Sprint>(`/projects/${projectId}/sprints`, body),
+  // 편집(CR-038, WMP-AGL-007) — status 무변경.
+  updateSprint: (sprintId: number, body: UpdateSprintRequest) =>
+    api.patch<Sprint>(`/sprints/${sprintId}`, body),
+  // 삭제(CR-038, WMP-AGL-008) — FUTURE만, 담긴 항목 백로그 복귀.
+  deleteSprint: (sprintId: number) =>
+    api.delete<DeleteSprintResult>(`/sprints/${sprintId}`),
   startSprint: (sprintId: number, body?: { startDate?: string; endDate?: string }) =>
     api.post<Sprint>(`/sprints/${sprintId}/start`, body),
   completeSprint: (sprintId: number, body?: { carryToSprintId?: number }) =>

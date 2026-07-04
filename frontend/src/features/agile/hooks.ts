@@ -1,7 +1,7 @@
 // 애자일 훅 — 백로그 조회, 스프린트 생성/시작/완료, 항목 스프린트 이동(낙관적+롤백).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@therecommerce/ds-ui';
-import { agileApi, type BacklogResponse, type CreateSprintRequest } from './api';
+import { agileApi, type BacklogResponse, type CreateSprintRequest, type UpdateSprintRequest } from './api';
 import { ApiError } from '@/lib/api-client';
 
 export const backlogKey = (projectId?: number) => ['backlog', projectId] as const;
@@ -33,6 +33,39 @@ export function useCreateSprint(projectId: number) {
       toast.success(`스프린트 "${s.name}"가 생성되었습니다.`);
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : '스프린트 생성에 실패했습니다.'),
+  });
+}
+
+/** 스프린트 편집(WMP-AGL-007, CR-038). status 무변경. */
+export function useUpdateSprint(projectId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sprintId, body }: { sprintId: number; body: UpdateSprintRequest }) =>
+      agileApi.updateSprint(sprintId, body),
+    onSuccess: (s) => {
+      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: sprintsKey(projectId) });
+      toast.success(`스프린트 "${s.name}"를 수정했습니다.`);
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '스프린트 수정에 실패했습니다.'),
+  });
+}
+
+/** 스프린트 삭제(WMP-AGL-008, CR-038). FUTURE만, 담긴 항목 백로그 복귀. */
+export function useDeleteSprint(projectId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sprintId: number) => agileApi.deleteSprint(sprintId),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: backlogKey(projectId) });
+      qc.invalidateQueries({ queryKey: sprintsKey(projectId) });
+      toast.success(
+        r.returnedToBacklog > 0
+          ? `스프린트를 삭제했습니다. 항목 ${r.returnedToBacklog}건을 백로그로 되돌렸습니다.`
+          : '스프린트를 삭제했습니다.',
+      );
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : '스프린트 삭제에 실패했습니다.'),
   });
 }
 

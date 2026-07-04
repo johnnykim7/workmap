@@ -71,4 +71,20 @@
         SELECT MAX(sort_order) FROM sprints WHERE project_id = #{projectId}
     </select>
 
+    <!-- 편집(CR-038): name/goal/기간만 수정, status 무변경 -->
+    <update id="updateEdit" parameterType="com.therecommerce.workmap.agile.domain.Sprint">
+        UPDATE sprints
+        SET name       = #{name},
+            goal       = #{goal},
+            start_date = #{startDate},
+            end_date   = #{endDate},
+            updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 삭제(CR-038): FUTURE 스프린트 하드 삭제(서비스에서 상태 가드·항목 백로그 복귀 선행) -->
+    <delete id="deleteById">
+        DELETE FROM sprints WHERE id = #{id}
+    </delete>
+
 </mapper>

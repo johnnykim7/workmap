@@ -157,4 +157,58 @@ class SprintServiceTest {
                 .isInstanceOf(BusinessException.class);
         verify(sprintMapper, never()).updateComplete(any(), any());
     }
+
+    // ===== CR-038: 편집·삭제 =====
+
+    @Test
+    @DisplayName("SPR-5(CR-038): 편집 시 name/goal/기간 수정, status 무변경")
+    void 편집_필드수정_status무변경() {
+        when(sprintMapper.findById(11L)).thenReturn(sprint(11L, SprintStatus.ACTIVE.name()));
+
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 15);
+        service.update(11L, new SprintDtos.UpdateRequest("새 이름", "새 목표", start, end), 99L);
+
+        verify(sprintMapper).updateEdit(argThat(sp ->
+                sp.getName().equals("새 이름") && "새 목표".equals(sp.getGoal())
+                        && sp.getStartDate().equals(start) && sp.getEndDate().equals(end)));
+    }
+
+    @Test
+    @DisplayName("SPR-6(CR-038): 편집 시 시작일>종료일이면 거부")
+    void 편집_시작일이후종료일_거부() {
+        when(sprintMapper.findById(11L)).thenReturn(sprint(11L, SprintStatus.FUTURE.name()));
+
+        assertThatThrownBy(() -> service.update(11L,
+                new SprintDtos.UpdateRequest("이름",
+                        null, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 7, 1)), 99L))
+                .isInstanceOf(BusinessException.class);
+        verify(sprintMapper, never()).updateEdit(any());
+    }
+
+    @Test
+    @DisplayName("SPR-7(CR-038): FUTURE 삭제 시 담긴 항목 백로그 복귀 + 하드 삭제")
+    void 삭제_FUTURE_항목백로그복귀_삭제() {
+        when(sprintMapper.findById(11L)).thenReturn(sprint(11L, SprintStatus.FUTURE.name()));
+        when(workItemMapper.findBySprint(11L)).thenReturn(List.of(
+                WorkItem.builder().id(100L).build(), WorkItem.builder().id(101L).build()));
+
+        SprintDtos.DeleteResult res = service.delete(11L, 99L);
+
+        assertThat(res.returnedToBacklog()).isEqualTo(2);
+        verify(workItemMapper).updateSprint(100L, null);
+        verify(workItemMapper).updateSprint(101L, null);
+        verify(sprintMapper).deleteById(11L);
+    }
+
+    @Test
+    @DisplayName("SPR-8(CR-038): ACTIVE/COMPLETED 삭제 시도 거부")
+    void 삭제_비FUTURE_거부() {
+        when(sprintMapper.findById(10L)).thenReturn(sprint(10L, SprintStatus.ACTIVE.name()));
+
+        assertThatThrownBy(() -> service.delete(10L, 99L))
+                .isInstanceOf(BusinessException.class);
+        verify(sprintMapper, never()).deleteById(any());
+        verify(workItemMapper, never()).updateSprint(any(), any());
+    }
 }

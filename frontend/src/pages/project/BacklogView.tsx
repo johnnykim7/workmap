@@ -10,7 +10,9 @@ import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers } from 'lucide-react
 import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
+  useUpdateSprint, useDeleteSprint,
 } from '@/features/agile/hooks';
+import { useCanWrite } from '@/lib/permissions';
 import { useProjectItems, useCreateWorkItem, useChangeEpic } from '@/features/workitem/hooks';
 import { filterByEpic } from '@/features/agile/epic-filter';
 import { groupByEpic } from '@/features/agile/epic-group';
@@ -19,6 +21,7 @@ import { SprintSection } from '@/features/agile/components/SprintSection';
 import { SprintHeader } from '@/features/agile/components/SprintHeader';
 import { EpicGroupHeader } from '@/features/agile/components/EpicGroupHeader';
 import { CreateSprintDialog } from '@/features/agile/components/CreateSprintDialog';
+import { EditSprintDialog } from '@/features/agile/components/EditSprintDialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BacklogSkeleton } from '@/components/common/skeletons';
@@ -60,6 +63,9 @@ export function BacklogView() {
   const createSprint = useCreateSprint(projectId ?? 0);
   const startSprint = useStartSprint(projectId ?? 0);
   const completeSprint = useCompleteSprint(projectId ?? 0);
+  const updateSprint = useUpdateSprint(projectId ?? 0);
+  const deleteSprint = useDeleteSprint(projectId ?? 0);
+  const canWrite = useCanWrite();
   const createItem = useCreateWorkItem();
   const changeEpic = useChangeEpic(projectId);
 
@@ -83,6 +89,8 @@ export function BacklogView() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Sprint | null>(null);
+  const [editTarget, setEditTarget] = useState<Sprint | null>(null);      // CR-038 편집
+  const [deleteTarget, setDeleteTarget] = useState<Sprint | null>(null);  // CR-038 삭제
 
   // 인라인 생성 기본 유형 — 템플릿 issueTypeCodes 중 STORY>TASK>첫 항목 순. EPIC/SUBTASK는 백로그 인라인 부적합.
   const defaultIssueType = useMemo<IssueType>(() => {
@@ -213,6 +221,9 @@ export function BacklogView() {
                     busy={startSprint.isPending || completeSprint.isPending}
                     onStart={(s) => startSprint.mutate({ sprintId: s.id })}
                     onComplete={(s) => setCompleteTarget(s)}
+                    canWrite={canWrite}
+                    onEdit={(s) => setEditTarget(s)}
+                    onDelete={(s) => setDeleteTarget(s)}
                   />
                 }
               />
@@ -308,6 +319,35 @@ export function BacklogView() {
             { sprintId: completeTarget.id },
             { onSettled: () => setCompleteTarget(null) },
           );
+        }}
+      />
+
+      {/* 스프린트 편집(CR-038) — 어느 상태든. status 무변경. */}
+      <EditSprintDialog
+        open={!!editTarget}
+        onOpenChange={(o) => !o && setEditTarget(null)}
+        sprint={editTarget}
+        busy={updateSprint.isPending}
+        onSubmit={(body) => {
+          if (!editTarget) return;
+          updateSprint.mutate(
+            { sprintId: editTarget.id, body },
+            { onSuccess: () => setEditTarget(null) },
+          );
+        }}
+      />
+
+      {/* 스프린트 삭제(CR-038) — FUTURE만(…메뉴에서 이미 제한). 담긴 항목 백로그 복귀. */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="스프린트 삭제"
+        description={`"${deleteTarget?.name}"을(를) 삭제합니다. 담긴 항목은 백로그로 되돌아갑니다. 이 작업은 되돌릴 수 없습니다.`}
+        confirmLabel="삭제하기"
+        busy={deleteSprint.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteSprint.mutate(deleteTarget.id, { onSettled: () => setDeleteTarget(null) });
         }}
       />
     </PageShell>

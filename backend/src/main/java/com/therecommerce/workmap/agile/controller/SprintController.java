@@ -44,6 +44,23 @@ public class SprintController {
     }
 
     @PreAuthorize(WmpAuthz.WRITER)
+    @PatchMapping("/api/v1/sprints/{sprintId}")
+    public ResponseDto<SprintDtos.Response> update(
+            @PathVariable Long sprintId,
+            @Valid @RequestBody SprintDtos.UpdateRequest req,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(sprintService.update(sprintId, req, userId));
+    }
+
+    @PreAuthorize(WmpAuthz.WRITER)
+    @DeleteMapping("/api/v1/sprints/{sprintId}")
+    public ResponseDto<SprintDtos.DeleteResult> delete(
+            @PathVariable Long sprintId,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(sprintService.delete(sprintId, userId));
+    }
+
+    @PreAuthorize(WmpAuthz.WRITER)
     @PostMapping("/api/v1/sprints/{sprintId}/start")
     public ResponseDto<SprintDtos.Response> start(
             @PathVariable Long sprintId,

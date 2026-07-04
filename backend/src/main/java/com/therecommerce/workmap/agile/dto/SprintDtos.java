@@ -20,6 +20,20 @@ public final class SprintDtos {
             LocalDate endDate
     ) {}
 
+    /** 스프린트 편집(WMP-AGL-007, CR-038) — status 무변경. 어느 상태에서든 허용. */
+    public record UpdateRequest(
+            @NotBlank String name,
+            String goal,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {}
+
+    /** 스프린트 삭제 결과(WMP-AGL-008, CR-038) — 백로그로 되돌린 항목 수. */
+    public record DeleteResult(
+            Long sprintId,
+            int returnedToBacklog
+    ) {}
+
     /** 스프린트 시작(WMP-AGL-003) — 기간 입력 시 고정, 없으면 생성 시 기간 사용. */
     public record StartRequest(
             LocalDate startDate,

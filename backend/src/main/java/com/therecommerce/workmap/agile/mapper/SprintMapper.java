@@ -31,4 +31,10 @@ public interface SprintMapper {
 
     /** 정렬용 max sort_order(+1 채번). */
     Integer maxSortOrder(@Param("projectId") Long projectId);
+
+    /** 편집(CR-038): name/goal/기간 수정. status 무변경. */
+    void updateEdit(Sprint sprint);
+
+    /** 삭제(CR-038): FUTURE 스프린트 하드 삭제. */
+    void deleteById(@Param("id") Long id);
 }

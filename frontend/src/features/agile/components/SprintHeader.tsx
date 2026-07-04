@@ -3,8 +3,11 @@
 import type { BacklogSection } from '../api';
 import type { Sprint } from '@/types/domain';
 import { SPRINT_STATUS_LABEL, STATUS_CATEGORY } from '@/types/domain';
-import { Button, Badge } from '@therecommerce/ds-ui';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Button, Badge,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@therecommerce/ds-ui';
+import { ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 
 interface Props {
   section: BacklogSection;       // sprint != null
@@ -13,6 +16,9 @@ interface Props {
   startDisabled?: boolean;       // 앞 스프린트가 ACTIVE면 시작 비활성
   onStart: (sprint: Sprint) => void;
   onComplete: (sprint: Sprint) => void;
+  onEdit?: (sprint: Sprint) => void;    // CR-038: …메뉴 편집(어느 상태든)
+  onDelete?: (sprint: Sprint) => void;  // CR-038: …메뉴 삭제(FUTURE만 노출)
+  canWrite?: boolean;                   // VIEWER면 …메뉴 숨김
   busy?: boolean;
 }
 
@@ -22,7 +28,10 @@ function period(s: Sprint): string | null {
   return `${fmt(s.startDate)} – ${fmt(s.endDate)}`;
 }
 
-export function SprintHeader({ section, collapsed, onToggle, startDisabled, onStart, onComplete, busy }: Props) {
+export function SprintHeader({
+  section, collapsed, onToggle, startDisabled, onStart, onComplete,
+  onEdit, onDelete, canWrite = true, busy,
+}: Props) {
   const sprint = section.sprint!;
   const counts = { todo: 0, inprogress: 0, done: 0 };
   section.items.forEach((i) => {
@@ -71,6 +80,29 @@ export function SprintHeader({ section, collapsed, onToggle, startDisabled, onSt
           <Button size="sm" variant="secondary" disabled={busy} onClick={() => onComplete(sprint)}>
             스프린트 완료
           </Button>
+        )}
+
+        {/* …(더보기) 메뉴 — 편집(어느 상태든)·삭제(FUTURE만). VIEWER는 숨김. (CR-038) */}
+        {canWrite && (onEdit || onDelete) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="size-8" disabled={busy} title="스프린트 작업">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(sprint)}>
+                  <Pencil className="size-4" /> 스프린트 편집
+                </DropdownMenuItem>
+              )}
+              {onDelete && sprint.status === 'FUTURE' && (
+                <DropdownMenuItem variant="destructive" onClick={() => onDelete(sprint)}>
+                  <Trash2 className="size-4" /> 스프린트 삭제
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
