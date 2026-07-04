@@ -9,6 +9,7 @@ import {
 import { SearchX, AlertTriangle } from 'lucide-react';
 import { PageHead } from '@/components/badges';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { Pager } from '@/components/common/pager';
 import { usePageParam } from '@/lib/use-page-param';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
@@ -124,8 +125,9 @@ export function SearchPage() {
   const noop = () => {};
   const emptySet = useMemo(() => new Set<number>(), []);
 
-  return (
-    <div>
+  // 헤더부(제목·검색·필터·저장필터·퀵필터)는 고정, 표만 스크롤(PageShell 공통 규약).
+  const header = (
+    <>
       <PageHead title="검색" desc="제목·설명·댓글 전체 텍스트 검색" />
 
       {/* 검색 바 + 필터 */}
@@ -192,7 +194,11 @@ export function SearchPage() {
           </Button>
         ))}
       </div>
+    </>
+  );
 
+  return (
+    <PageShell header={header}>
       {isPending ? (
         <WorkListTableSkeleton />
       ) : isError ? (
@@ -222,6 +228,6 @@ export function SearchPage() {
           <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
