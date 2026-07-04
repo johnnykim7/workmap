@@ -108,11 +108,36 @@ html, body, #root {
   height: 100%;
 }
 
-/* 본문 바탕 = 화면 테마(themes.ts)의 --background 틴트. AdminShell content는 배경 클래스가 없어
- * 투명(흰색)이라 테마 색이 안 보였다 → content 영역에 --background를 깔아 프리셋 색이 본문에도 반영.
- * 카드(--card=흰색)와 미세 단차가 생겨 화면 전체가 은은하게 테마색을 띤다. */
+/* 본문 바탕 = 흰색(--card). 표/카드 등 콘텐츠가 투명이라 뒤 배경이 비치는데, --background 회색 틴트를
+ * 깔면 표까지 회색으로 보인다(ds-ui Table은 자체 배경 없음) → content는 흰색으로 유지.
+ * (CR-030 화면테마의 본문 틴트 효과는 접되 LNB/포인트색 테마는 그대로.) */
 [data-slot="admin-shell-content"] {
-  background: var(--background);
+  background: var(--card);
+}
+
+/* 상단 GNB(헤더) 영역 고정 — 스크롤해도 헤더가 사라지지 않게(Jira/Slack식 셸 레이아웃).
+ * ⚠️ 원인(실측): ds-ui AdminShell은 admin-shell을 `flex min-h-svh`, main(content)을 `flex-1`로만
+ *    두어 본문에 자체 overflow가 없다 → 콘텐츠가 길면 body(뷰포트)가 스크롤되고 헤더(admin-shell-header,
+ *    sticky 없음)가 함께 밀려 사라졌다. LNB(sidebar)는 이미 `fixed inset-y-0 h-svh`라 고정돼 안 밀린다.
+ * 해결: 셸 전체 틀을 뷰포트 높이로 고정(overflow-hidden)하고 스크롤 주체를 body → content로 이전.
+ *   ① admin-shell = h-svh overflow-hidden (전체 틀 고정)
+ *   ② 우측 컬럼(header+content를 감싼 div, data-slot 없음 → :has로 타겟) = 높이 100% + min-h-0
+ *   ③ header = shrink-0 (안 줄어들게), content = overflow-y-auto min-h-0 (본문만 스크롤)
+ * (LNB는 ds-ui가 이미 고정 처리하므로 건드리지 않음 — LNB 트랩 회피.) */
+[data-slot="admin-shell"] {
+  height: 100svh;
+  overflow: hidden;
+}
+[data-slot="admin-shell"] > div:has(> [data-slot="admin-shell-header"]) {
+  min-height: 0;
+  height: 100%;
+}
+[data-slot="admin-shell-header"] {
+  flex-shrink: 0;
+}
+[data-slot="admin-shell-content"] {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* LNB 메뉴 글자·아이콘 키움 — ds-ui 기본은 text-[13px]/아이콘 14px라 작다(테마 무관 전 화면 공통).
@@ -150,4 +175,17 @@ html, body, #root {
 @media (min-width: 768px) {
   .hidden.md\:block { display: block !important; }
   .hidden.md\:flex { display: flex !important; }
+  /* LNB 리사이즈 핸들(rail)은 `hidden sm:flex`인데 같은 유틸 정렬 함정으로 .hidden이
+   * sm:flex를 이겨 display:none이 된다 → 드래그 대상이 사라져 폭 조절 불가.
+   * rail만 정확히 타겟해 살린다(다른 hidden sm:flex 요소엔 영향 없음). */
+  [data-slot="sidebar-rail"].hidden { display: flex !important; }
+  /* 같은 함정으로 `-translate-x-1/2`가 밀려 transform:none이 됨 → rail이 container
+   * (overflow:hidden, 224px) 안쪽에 박혀 오른쪽 절반이 잘려 마우스가 닿지 않는다.
+   * transform 복원 → rail이 사이드바 경계에 걸쳐 hit 영역 확보(드래그 가능).
+   * 커서도 ds-ui의 `in-data-[side=*]:cursor-*` 조건부 유틸이 같은 정렬 함정으로
+   * 안 먹을 수 있어 여기서 폭 조절 커서(↔)를 명시 고정한다. */
+  [data-slot="sidebar-rail"] {
+    transform: translateX(-50%) !important;
+    cursor: col-resize !important;
+  }
 }
