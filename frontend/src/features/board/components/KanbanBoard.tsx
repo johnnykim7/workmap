@@ -78,7 +78,9 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
           ))}
         </div>
 
-        <DragOverlay>
+        {/* dropAnimation=null: 드롭 시 오버레이가 출발점으로 되돌아가는 snap-back 애니메이션 제거.
+            낙관적 업데이트로 카드는 이미 도착 컬럼에 그려지므로 잔상 없이 즉시 안착시킨다. */}
+        <DragOverlay dropAnimation={null}>
           {activeCard ? (
             <div className="w-72 rotate-1">
               <WorkItemCard item={activeCard} assigneeName={assigneeName(activeCard.assigneeId)} />
