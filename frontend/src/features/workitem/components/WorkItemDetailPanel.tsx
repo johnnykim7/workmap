@@ -7,6 +7,7 @@ import { DetailBody } from './DetailBody';
 import { DetailSidePanel } from './DetailSidePanel';
 import { SubtaskList } from './SubtaskList';
 import { LinkedItems } from './LinkedItems';
+import { ParentLink } from './ParentLink';
 import { Attachments } from './Attachments';
 import { ActivityTabs } from './ActivityTabs';
 import { ApprovalBanner } from './ApprovalBanner';
@@ -34,9 +35,15 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
     <div className="min-w-0 flex-1 space-y-6">
       <ApprovalBanner item={item} />
       <DetailBody item={item} />
-      {/* 순서(Jira 정합): 설명 → 첨부 → 하위작업 → 연결된업무. */}
+      {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
       <Attachments item={item} addRef={addAttachmentRef} />
       {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
+      {item.issueType === 'SUBTASK' && item.parentId != null && (
+        <section>
+          <h2 className="mb-1.5 text-sm font-semibold text-foreground">상위 작업</h2>
+          <ParentLink parentId={item.parentId} projectId={item.projectId} />
+        </section>
+      )}
       <LinkedItems item={item} addRef={addLinkRef} />
       {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
       {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}

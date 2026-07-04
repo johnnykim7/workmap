@@ -83,11 +83,6 @@ export function DetailBody({ item }: Props) {
         </>
       )}
 
-      {item.issueType === 'SUBTASK' && item.parentId != null && (
-        <Section title="상위 작업">
-          <ParentLink parentId={item.parentId} projectId={item.projectId} />
-        </Section>
-      )}
     </div>
   );
 }
@@ -287,21 +282,3 @@ function EpicChildren({ item }: { item: WorkItemResponse }) {
   );
 }
 
-function ParentLink({ parentId, projectId }: { parentId: number; projectId: number }) {
-  const navigate = useNavigate();
-  const { data: items = [] } = useProjectItems(projectId);
-  const parent = items.find((w) => w.id === parentId);
-  if (!parent) return <p className="text-sm text-muted-foreground">상위 작업 #{parentId}</p>;
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(ROUTES.workItem(parent.key))}
-      className="flex w-full items-center gap-2 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted/40"
-    >
-      <TypeBadge type={parent.issueType} withLabel={false} />
-      <span className="font-mono text-xs text-muted-foreground">{parent.key}</span>
-      <span className="flex-1 truncate">{parent.title}</span>
-      <StatusBadge status={parent.commonStatus} />
-    </button>
-  );
-}
