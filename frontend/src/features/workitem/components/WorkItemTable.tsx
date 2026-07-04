@@ -32,7 +32,8 @@ export function WorkItemTable({
   return (
     <div className="rounded-lg border border-border">
     <Table>
-      <TableHeader>
+      {/* 표 헤더 행은 스크롤 시 상단 고정(스크롤 컨테이너=PageShell 본문 기준). bg-card로 행이 비치지 않게. */}
+      <TableHeader className="sticky top-0 z-10 bg-card">
         <TableRow>
           <TableHead className="w-10">
             <Checkbox

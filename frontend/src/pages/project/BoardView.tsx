@@ -7,6 +7,7 @@ import { KanbanBoard } from '@/features/board/components/KanbanBoard';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BoardSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { ROUTES } from '@/lib/route-paths';
 import { LayoutGrid, AlertTriangle } from 'lucide-react';
 
@@ -52,14 +53,17 @@ export function BoardView() {
     );
   }
 
+  // 칸반은 자체 스크롤(컬럼 세로+보드 가로)이라 bodyOwnsScroll — PageShell은 높이만 채워준다(Jira식).
   return (
-    <KanbanBoard
-      board={board}
-      assigneeName={assigneeName}
-      onCardClick={(id) => {
-        const card = board.columns.flatMap((c) => c.cards).find((c) => c.id === id);
-        if (card) navigate(ROUTES.workItem(card.key));
-      }}
-    />
+    <PageShell bodyOwnsScroll>
+      <KanbanBoard
+        board={board}
+        assigneeName={assigneeName}
+        onCardClick={(id) => {
+          const card = board.columns.flatMap((c) => c.cards).find((c) => c.id === id);
+          if (card) navigate(ROUTES.workItem(card.key));
+        }}
+      />
+    </PageShell>
   );
 }

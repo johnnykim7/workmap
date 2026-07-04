@@ -7,6 +7,7 @@ import { Settings } from 'lucide-react';
 import { useProjectByKey, useProjectSummary } from '@/features/projects/hooks';
 import { ProjectSettingsDialog } from '@/features/projects/components/ProjectSettingsDialog';
 import { MembersPanel } from '@/features/members/components/MembersPanel';
+import { PageShell } from '@/components/common/page-shell';
 import { useAuthStore } from '@/store/auth-store';
 
 function Metric({ label, value, tone }: { label: string; value: number | string; tone?: 'amber' | 'red' }) {
@@ -28,7 +29,7 @@ export function SummaryView() {
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MANAGER';
 
   return (
-    <div className="flex flex-col gap-5">
+    <PageShell bodyClassName="flex flex-col gap-5">
       {canManage && project && (
         <div className="flex items-center justify-end">
           <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
@@ -70,6 +71,6 @@ export function SummaryView() {
           project={project ?? null}
         />
       )}
-    </div>
+    </PageShell>
   );
 }

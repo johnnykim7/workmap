@@ -18,6 +18,7 @@ import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { MetricCard } from '@/features/dashboard/components/MetricCard';
 import { DistributionBars } from '@/features/dashboard/components/DistributionBars';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { PageHead } from '@/components/badges';
 import { WORK_STATUS_LABEL, ISSUE_TYPE_LABEL, type WorkStatus, type IssueType } from '@/types/domain';
 
@@ -79,9 +80,10 @@ export function ReportsView() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <PageHead title="보고서" desc={`${report.projectName} · 진행률·지연·막힘·담당자 부하`} />
-
+    <PageShell
+      header={<PageHead title="보고서" desc={`${report.projectName} · 진행률·지연·막힘·담당자 부하`} />}
+      bodyClassName="flex flex-col gap-5"
+    >
       {/* 요약 지표 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MetricCard label="전체 항목" value={s.total} icon={<BarChart3 className="size-3.5" />} />
@@ -167,6 +169,6 @@ export function ReportsView() {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

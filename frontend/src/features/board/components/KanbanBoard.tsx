@@ -61,7 +61,10 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
   }
 
   return (
-    <>
+    // 부모(PageShell 본문, bodyOwnsScroll)의 높이를 꽉 채워 Jira식 칸반 동작:
+    // 컬럼 컨테이너가 뷰포트 높이만큼 차지하고, 보드는 가로 스크롤(overflow-x-auto)·
+    // 각 컬럼 내부 카드만 세로 스크롤(KanbanColumn). h-full min-h-0로 높이 계약을 잇는다.
+    <div className="flex h-full min-h-0 flex-col">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -69,7 +72,7 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveCard(null)}
       >
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
           {board.columns.map((col) => (
             <KanbanColumn key={col.statusId} column={col} assigneeName={assigneeName} onCardClick={onCardClick} />
           ))}
@@ -97,6 +100,6 @@ export function KanbanBoard({ board, assigneeName, onCardClick }: Props) {
           );
         }}
       />
-    </>
+    </div>
   );
 }

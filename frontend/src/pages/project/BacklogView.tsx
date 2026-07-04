@@ -20,6 +20,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BacklogSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { ROUTES } from '@/lib/route-paths';
 import { PROJECT_TEMPLATES, type Sprint, type IssueType } from '@/types/domain';
 
@@ -111,27 +112,29 @@ export function BacklogView() {
   const withFilter = <T extends { items: typeof projectItems }>(section: T): T =>
     ({ ...section, items: filterByEpic(section.items, epicFilter) });
 
-  return (
-    <div>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        {/* Epic 필터(§6.1) — 큰 묶음(Epic) 단위로 좁혀 보기. Epic이 없으면 숨김. */}
-        {epics.length > 0 ? (
-          <Select value={epicFilter} onValueChange={setEpicFilter}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="Epic 필터" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">모든 Epic</SelectItem>
-              {epics.map((e) => (
-                <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : <span />}
-        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          스프린트 만들기
-        </Button>
-      </div>
+  const header = (
+    <div className="mb-3 flex items-center justify-between gap-2">
+      {/* Epic 필터(§6.1) — 큰 묶음(Epic) 단위로 좁혀 보기. Epic이 없으면 숨김. */}
+      {epics.length > 0 ? (
+        <Select value={epicFilter} onValueChange={setEpicFilter}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Epic 필터" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">모든 Epic</SelectItem>
+            {epics.map((e) => (
+              <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : <span />}
+      <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+        <Plus className="size-4" />
+        스프린트 만들기
+      </Button>
+    </div>
+  );
 
+  return (
+    <PageShell header={header}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex flex-col gap-4">
           {/* 스프린트 구역들 */}
@@ -217,7 +220,7 @@ export function BacklogView() {
           );
         }}
       />
-    </div>
+    </PageShell>
   );
 
   function openItem(items: { id: number; key: string }[], id: number) {

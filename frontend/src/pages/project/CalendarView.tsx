@@ -7,6 +7,7 @@ import { Skeleton } from '@therecommerce/ds-ui';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useCalendar, useMoveCalendarDueDate } from '@/features/view/hooks';
 import { CalendarGrid } from '@/features/view/components/CalendarGrid';
+import { PageShell } from '@/components/common/page-shell';
 import { useUiStore } from '@/store/ui-store';
 
 // 로컬 기준 오늘(yyyy-MM-dd).
@@ -34,15 +35,17 @@ export function CalendarView() {
   }
 
   return (
-    <CalendarGrid
-      year={ym.year}
-      month={ym.month}
-      data={data}
-      today={t.iso}
-      onChangeMonth={(year, month) => setYm({ year, month })}
-      onToday={() => setYm({ year: t.year, month: t.month })}
-      onCreateOnDate={project ? (date) => openCreateWith({ projectId: project.id, dueDate: date }) : undefined}
-      onMoveItem={project ? (itemId, toDate) => moveDue.mutate({ itemId, dueDate: toDate }) : undefined}
-    />
+    <PageShell>
+      <CalendarGrid
+        year={ym.year}
+        month={ym.month}
+        data={data}
+        today={t.iso}
+        onChangeMonth={(year, month) => setYm({ year, month })}
+        onToday={() => setYm({ year: t.year, month: t.month })}
+        onCreateOnDate={project ? (date) => openCreateWith({ projectId: project.id, dueDate: date }) : undefined}
+        onMoveItem={project ? (itemId, toDate) => moveDue.mutate({ itemId, dueDate: toDate }) : undefined}
+      />
+    </PageShell>
   );
 }

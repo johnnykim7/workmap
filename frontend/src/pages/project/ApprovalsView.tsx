@@ -18,6 +18,7 @@ import { ROUTES } from '@/lib/route-paths';
 import { PageHead, StatusBadge, TypeBadge, Avatar2 } from '@/components/badges';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import type { Approval, ApprovalState, WorkItemResponse } from '@/types/domain';
 
 type Tab = 'pending' | 'mine' | 'all';
@@ -64,8 +65,8 @@ export function ApprovalsView() {
     );
   }
 
-  return (
-    <div>
+  const header = (
+    <>
       <PageHead
         title="승인"
         actions={
@@ -88,7 +89,11 @@ export function ApprovalsView() {
           </Button>
         ))}
       </div>
+    </>
+  );
 
+  return (
+    <PageShell header={header}>
       {rows.length === 0 ? (
         <EmptyState
           icon={<ShieldCheck className="size-6" />}
@@ -185,7 +190,7 @@ export function ApprovalsView() {
           );
         }}
       />
-    </div>
+    </PageShell>
   );
 }
 

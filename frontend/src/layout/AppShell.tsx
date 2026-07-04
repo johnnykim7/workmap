@@ -265,7 +265,11 @@ export function AppShell() {
       logoCollapsed={<Building2 className="size-5" />}
       header={<HeaderActions />}
     >
-      <div className="p-5">
+      {/* 높이 체인 시작점 — admin-shell-content(ds-ui가 overflow-y-auto)의 높이를 자식에 전달.
+       * h-full+flex-col로 PageShell을 쓰는 화면은 이 높이를 받아 "헤더 고정 + 본문만 스크롤"을
+       * 성립시키고, 안 쓰는 화면은 콘텐츠가 넘치면 admin-shell-content가 자연 스크롤한다.
+       * min-h-0 = flex 자식이 넘칠 때 스크롤이 성립하도록(기본 min-height:auto가 넘침을 막음). */}
+      <div className="flex h-full min-h-0 flex-col p-5">
         <Outlet />
       </div>
       <CreateModal />

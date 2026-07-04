@@ -16,8 +16,9 @@ export function KanbanColumn({ column, assigneeName, onCardClick }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `col-${column.statusId}`, data: { statusId: column.statusId } });
 
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-lg bg-muted/40">
-      <div className="flex items-center justify-between px-3 py-2">
+    // 컬럼은 부모(칸반) 높이를 꽉 채우고(h-full), 헤더는 고정(shrink-0)·카드 영역만 세로 스크롤(Jira식).
+    <div className="flex h-full w-72 shrink-0 flex-col rounded-lg bg-muted/40">
+      <div className="flex shrink-0 items-center justify-between px-3 py-2">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium text-foreground">{column.label}</span>
           {column.isDone && <CheckCircle2 className="size-3.5 text-green-600" />}
@@ -30,7 +31,7 @@ export function KanbanColumn({ column, assigneeName, onCardClick }: Props) {
 
       <div
         ref={setNodeRef}
-        className={`flex min-h-24 flex-1 flex-col gap-2 px-2 pb-3 transition-colors ${
+        className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-3 transition-colors ${
           isOver ? 'rounded-b-lg bg-primary/5 ring-1 ring-inset ring-primary/30' : ''
         }`}
       >

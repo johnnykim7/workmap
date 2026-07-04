@@ -26,9 +26,11 @@ export function ProjectLayout() {
   const tabs = rawTabs.filter(isKnownTab);
 
   // 브레드크럼·제목 줄 제거 — 프로젝트명은 글로벌 헤더 타이틀(HeaderTitle)로 이동(클릭=목록).
-  // 여기는 탭부터 시작한다.
+  // 높이 체인 연결: 부모(AppShell p-5, h-full)의 높이를 받아 세로 flex로 쪼갠다.
+  //   - 탭 바 = shrink-0 (항상 고정, 스크롤 안 됨)
+  //   - Outlet = flex-1 min-h-0 (각 View가 PageShell로 내부 스크롤 관리)
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       <ProjectTabs
         projectKey={key}
         tabs={tabs}
@@ -36,7 +38,9 @@ export function ProjectLayout() {
         activeTabs={project?.activeTabs}
       />
 
-      <Outlet />
+      <div className="min-h-0 flex-1">
+        <Outlet />
+      </div>
     </div>
   );
 }

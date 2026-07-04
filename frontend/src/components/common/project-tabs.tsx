@@ -106,11 +106,9 @@ export function ProjectTabs({ projectKey, tabs, projectId, activeTabs }: Props) 
   const addable = ALL_TABS.filter((t) => !new Set(tabs).has(t));
 
   return (
-    // 스크롤해도 탭 바 고정 — 스크롤 컨테이너(admin-shell-content) 상단에 붙는다.
-    // AppShell 본문 패딩(p-5=20px) 위로 스크롤되는 콘텐츠가 탭 뒤로 비치지 않게 배경(bg-card=content 배경)
-    // + 좌우를 -mx-5로 패딩만큼 넓혀 본문이 탭 옆으로 새지 않도록 덮고, 내부는 px-5로 원위치 정렬.
-    // pt-5로 상단 패딩을 탭 바가 흡수(부모 p-5 상단 여백이 탭 위 빈 틈으로 남는 것 방지).
-    <div className="sticky -top-5 z-20 -mx-5 mb-4 flex items-center gap-0.5 border-b border-border bg-card px-5 pt-5">
+    // 탭 바는 ProjectLayout의 shrink-0 자식이라 flex로 이미 고정된다(sticky 불필요).
+    // 좌우 -mx-5로 부모 p-5 패딩만큼 넓혀 하단 경계선이 화면 폭을 가로지르게(본문과 정렬은 각 View가 관리).
+    <div className="-mx-5 mb-4 flex items-center gap-0.5 border-b border-border px-5">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tabs} strategy={horizontalListSortingStrategy}>
           {tabs.map((t) => (

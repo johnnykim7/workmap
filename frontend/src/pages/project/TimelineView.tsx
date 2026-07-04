@@ -8,6 +8,7 @@ import { useProjectByKey } from '@/features/projects/hooks';
 import { useTimeline, useProjectEpics } from '@/features/view/hooks';
 import { TimelineChart } from '@/features/view/components/TimelineChart';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 
 export function TimelineView() {
   const { key = '' } = useParams();
@@ -43,5 +44,9 @@ export function TimelineView() {
     );
   }
 
-  return <TimelineChart items={data.items} epicNames={epicNames} />;
+  return (
+    <PageShell>
+      <TimelineChart items={data.items} epicNames={epicNames} />
+    </PageShell>
+  );
 }

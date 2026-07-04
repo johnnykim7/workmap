@@ -17,6 +17,7 @@ import { BulkEditBar } from '@/features/workitem/components/BulkEditBar';
 import { SplitView } from '@/features/workitem/components/SplitView';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageShell } from '@/components/common/page-shell';
 import { Pager } from '@/components/common/pager';
 import { usePageParam } from '@/lib/use-page-param';
 import { PageHead } from '@/components/badges';
@@ -93,8 +94,9 @@ export function ListView() {
     );
   }
 
-  return (
-    <div>
+  // 헤더부(제목·필터·벌크바)는 고정, 표/분할+페이저만 스크롤(PageShell).
+  const header = (
+    <>
       <PageHead
         title="목록"
         actions={
@@ -126,7 +128,11 @@ export function ListView() {
           onClear={() => setSelectedIds(new Set())}
         />
       )}
+    </>
+  );
 
+  return (
+    <PageShell header={header}>
       {items.length === 0 ? (
         <EmptyState
           icon={<ListX className="size-6" />}
@@ -158,6 +164,6 @@ export function ListView() {
           <Pager page={page} totalPages={totalPages} onPage={setPage} busy={isPlaceholderData} />
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
