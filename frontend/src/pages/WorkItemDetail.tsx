@@ -26,7 +26,7 @@ export function WorkItemDetail() {
   }
 
   return (
-    <div className="w-full">
+    <div className="mx-auto max-w-6xl">
       <WorkItemDetailPanel item={item} sprints={sprints} />
     </div>
   );
