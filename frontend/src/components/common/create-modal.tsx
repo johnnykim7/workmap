@@ -21,6 +21,7 @@ import { useProjects } from '@/features/projects/hooks';
 import { useMembers } from '@/features/members/hooks';
 import { useCreateWorkItem } from '@/features/workitem/hooks';
 import { workItemApi } from '@/features/workitem/api';
+import { TypeOption } from '@/components/badges';
 import {
   ISSUE_TYPE_LABEL, PRIORITY_LABEL, PROJECT_TEMPLATES,
   type IssueType, type Priority,
@@ -201,7 +202,7 @@ export function CreateModal() {
                     </SelectTrigger>
                     <SelectContent>
                       {allowedTypes.map((t) => (
-                        <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+                        <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

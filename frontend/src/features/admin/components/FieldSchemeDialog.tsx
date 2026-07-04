@@ -11,6 +11,7 @@ import {
 } from '@therecommerce/ds-ui';
 import { Field } from '@/components/common/field';
 import { ISSUE_TYPE_LABEL, type IssueType } from '@/types/domain';
+import { TypeOption } from '@/components/badges';
 import type { FieldSchemeRequest, FieldSchemeResponse } from '../api';
 
 const ISSUE_TYPES = Object.keys(ISSUE_TYPE_LABEL) as IssueType[];
@@ -92,7 +93,7 @@ export function FieldSchemeDialog({ open, onOpenChange, busy = false, editing, o
                   </SelectTrigger>
                   <SelectContent>
                     {ISSUE_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+                      <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

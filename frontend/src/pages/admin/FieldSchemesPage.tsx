@@ -7,7 +7,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
 import { Plus, Pencil, Trash2, ListChecks, AlertTriangle } from 'lucide-react';
-import { PageHead } from '@/components/badges';
+import { PageHead, TypeOption } from '@/components/badges';
 import { Pager } from '@/components/common/pager';
 import { usePageParam } from '@/lib/use-page-param';
 import { AdminTabs } from '@/features/admin/components/AdminTabs';
@@ -87,7 +87,7 @@ export function FieldSchemesPage() {
           <SelectContent>
             <SelectItem value={ALL}>모든 유형</SelectItem>
             {ISSUE_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+              <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
             ))}
           </SelectContent>
         </Select>

@@ -65,6 +65,16 @@ export const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
   SUBTASK: 'Sub-task',
 };
 
+// 유형 한 줄 설명 — 아이콘 툴팁 등 도움말용 SSoT (T1-3 유형 체계 기반)
+export const ISSUE_TYPE_DESC: Record<IssueType, string> = {
+  EPIC: '여러 Story/Task를 묶는 큰 목표 단위',
+  STORY: '사용자 관점의 기능 단위',
+  TASK: '수행할 작업 단위',
+  BUG: '결함·장애 등 고쳐야 할 문제',
+  DOC: '문서 작성·정리 작업',
+  SUBTASK: '상위 항목을 쪼갠 하위 작업',
+};
+
 export const ISSUE_TYPE_COLOR: Record<IssueType, 'violet' | 'green' | 'blue' | 'red' | 'amber' | 'slate'> = {
   EPIC: 'violet',
   STORY: 'green',

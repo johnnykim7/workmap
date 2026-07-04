@@ -11,6 +11,7 @@ import {
 } from '@therecommerce/ds-ui';
 import { Field } from '@/components/common/field';
 import { ISSUE_TYPE_LABEL, type IssueType, type WorkItemResponse } from '@/types/domain';
+import { TypeOption } from '@/components/badges';
 import { useConvert } from '../hooks';
 
 const ISSUE_TYPES = Object.keys(ISSUE_TYPE_LABEL) as IssueType[];
@@ -74,7 +75,7 @@ export function ConvertDialog({ item, open, onOpenChange }: Props) {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {ISSUE_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+                      <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

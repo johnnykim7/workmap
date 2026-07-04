@@ -11,7 +11,8 @@ import {
 } from '@therecommerce/ds-ui';
 import { ArrowUpRight } from 'lucide-react';
 import { Field } from '@/components/common/field';
-import { ISSUE_TYPE_LABEL, type IssueType, type WorkItemResponse } from '@/types/domain';
+import { type IssueType, type WorkItemResponse } from '@/types/domain';
+import { TypeOption } from '@/components/badges';
 import { usePromoteToBacklog } from '../hooks';
 
 // 백로그 전환 대상 유형(BE 기본 STORY).
@@ -83,7 +84,7 @@ export function PromoteToBacklog({ item }: { item: WorkItemResponse }) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {PROMOTE_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+                        <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

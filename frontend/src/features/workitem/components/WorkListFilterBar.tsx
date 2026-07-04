@@ -5,9 +5,10 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SearchInput,
 } from '@therecommerce/ds-ui';
 import {
-  ISSUE_TYPE_LABEL, WORK_STATUS_LABEL, PRIORITY_LABEL,
+  WORK_STATUS_LABEL, PRIORITY_LABEL,
   type IssueType, type WorkStatus, type Priority, type ProjectMember,
 } from '@/types/domain';
+import { TypeOption } from '@/components/badges';
 import type { WorkItemListParams } from '../list-api';
 
 const ALL = 'ALL'; // Radix Select 빈 value 불가 → 전체 센티넬
@@ -42,7 +43,7 @@ export function WorkListFilterBar({ params, members, onChange }: Props) {
         <SelectContent>
           <SelectItem value={ALL}>전체 유형</SelectItem>
           {(['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] as IssueType[]).map((t) => (
-            <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+            <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
           ))}
         </SelectContent>
       </Select>

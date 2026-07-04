@@ -7,7 +7,7 @@ import {
   Button, SearchInput, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
 import { SearchX, AlertTriangle } from 'lucide-react';
-import { PageHead } from '@/components/badges';
+import { PageHead, TypeOption } from '@/components/badges';
 import { EmptyState } from '@/components/common/empty-state';
 import { PageShell } from '@/components/common/page-shell';
 import { Pager } from '@/components/common/pager';
@@ -144,7 +144,7 @@ export function SearchPage() {
           <SelectContent>
             <SelectItem value={ALL}>모든 유형</SelectItem>
             {(Object.keys(ISSUE_TYPE_LABEL) as IssueType[]).map((t) => (
-              <SelectItem key={t} value={t}>{ISSUE_TYPE_LABEL[t]}</SelectItem>
+              <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
             ))}
           </SelectContent>
         </Select>
