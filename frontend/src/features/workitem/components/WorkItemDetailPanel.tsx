@@ -47,17 +47,13 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
 
   return (
     <div>
-      {/* 상단 헤더 고정 — 분할뷰(stacked)에선 우측 패널 내부에서, 풀페이지에선 콘텐츠 상단에서 sticky.
-          AdminShell 헤더 h-14(56px) 아래에 붙는다(top-0 = 본문 컨테이너 기준 상단). */}
-      <div className="sticky top-14 z-10 bg-background pt-1">
-        <DetailHeader
-          item={item}
-          showBack={!stacked}
-          onAddSubtask={() => addSubtaskRef.current()}
-          onAddLink={() => addLinkRef.current()}
-          onAddAttachment={() => addAttachmentRef.current()}
-        />
-      </div>
+      <DetailHeader
+        item={item}
+        showBack={!stacked}
+        onAddSubtask={() => addSubtaskRef.current()}
+        onAddLink={() => addLinkRef.current()}
+        onAddAttachment={() => addAttachmentRef.current()}
+      />
       {/* 분할뷰든 풀페이지든 동일 레이아웃: 본문(설명) 좌 + 세부사항 우.
           폭이 좁으면(분할뷰 우측) lg 미만에서 자연히 세로로 접힘(반응형). Jira 정합. */}
       <div className="flex flex-col gap-6 lg:flex-row">
