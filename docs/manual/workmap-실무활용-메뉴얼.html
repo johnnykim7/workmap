@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkMap 실무 활용 메뉴얼 — 워크스페이스·프로젝트·에픽·업무·스프린트</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --border:#e5e7eb; --text:#1f2430; --muted:#6b7280;
+    --primary:#4f46e5; --primary-soft:#eef2ff; --accent:#7c3aed;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626; --blue:#2563eb;
+    --code-bg:#f3f4f6; --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased}
+  a{color:var(--primary);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* layout */
+  .wrap{display:flex;max-width:1280px;margin:0 auto;gap:0}
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;overflow-y:auto;
+    padding:28px 20px;border-right:1px solid var(--border);background:var(--panel)}
+  nav.toc .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  nav.toc .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  nav.toc .brand .t{font-weight:700;font-size:17px}
+  nav.toc .brand .s{font-size:11px;color:var(--muted)}
+  nav.toc .tag{display:inline-block;margin:10px 0 18px;font-size:11px;color:var(--muted);
+    background:var(--code-bg);padding:3px 8px;border-radius:6px}
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:sec}
+  nav.toc > ol > li{margin:2px 0}
+  nav.toc a.link{display:block;padding:7px 10px;border-radius:7px;color:var(--text);font-size:13.5px}
+  nav.toc a.link:hover{background:var(--code-bg);text-decoration:none}
+  nav.toc a.link.sub{padding-left:22px;font-size:12.5px;color:var(--muted)}
+  nav.toc .grp{margin-top:16px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+    text-transform:uppercase;padding:0 10px}
+
+  main{flex:1;min-width:0;padding:40px 48px 120px}
+
+  /* hero */
+  .hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:16px;
+    padding:36px 40px;margin-bottom:36px;box-shadow:var(--shadow)}
+  .hero h1{margin:0 0 8px;font-size:28px;font-weight:800;letter-spacing:-.01em}
+  .hero p{margin:0;opacity:.92;font-size:15px;max-width:760px}
+  .hero .pills{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .hero .pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);
+    padding:5px 12px;border-radius:99px;font-size:12.5px}
+
+  section{margin-bottom:52px;scroll-margin-top:20px}
+  h2{font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;
+    padding-top:8px;border-top:none}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    background:var(--primary);color:#fff;border-radius:8px;font-size:14px;margin-right:10px;vertical-align:2px}
+  h3{font-size:16.5px;font-weight:700;margin:28px 0 10px}
+  .lead{color:var(--muted);font-size:14.5px;margin:0 0 20px}
+
+  p{margin:12px 0}
+  ul,ol.steps{margin:12px 0;padding-left:22px}
+  li{margin:6px 0}
+
+  /* figure / screenshot */
+  figure{margin:20px 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+    background:var(--panel);box-shadow:var(--shadow)}
+  figure img{display:block;width:100%;height:auto;background:#fafafa}
+  figure figcaption{padding:9px 14px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);
+    background:#fcfcfd}
+  figure figcaption b{color:var(--text)}
+
+  /* callouts */
+  .note,.tip,.warn,.rule{border-radius:10px;padding:14px 16px 14px 44px;position:relative;margin:18px 0;font-size:14px}
+  .note{background:#eff6ff;border:1px solid #bfdbfe}
+  .tip{background:#ecfdf5;border:1px solid #a7f3d0}
+  .warn{background:#fffbeb;border:1px solid #fde68a}
+  .rule{background:#faf5ff;border:1px solid #e9d5ff}
+  .note::before{content:"ℹ";position:absolute;left:15px;top:13px;font-weight:700;color:var(--blue)}
+  .tip::before{content:"✓";position:absolute;left:15px;top:13px;font-weight:700;color:var(--green)}
+  .warn::before{content:"!";position:absolute;left:17px;top:13px;font-weight:700;color:var(--amber)}
+  .rule::before{content:"§";position:absolute;left:15px;top:13px;font-weight:700;color:var(--accent)}
+  .callout-title{font-weight:700;display:block;margin-bottom:2px}
+
+  /* badges */
+  .badge{display:inline-block;padding:1px 8px;border-radius:5px;font-size:12px;font-weight:600;vertical-align:1px}
+  .b-epic{background:#f3e8ff;color:#7c3aed}
+  .b-story{background:#dcfce7;color:#15803d}
+  .b-task{background:#dbeafe;color:#1d4ed8}
+  .b-bug{background:#fee2e2;color:#b91c1c}
+  .b-doc{background:#fef3c7;color:#b45309}
+  .b-sub{background:#f1f5f9;color:#475569}
+  .b-dev{background:#dbeafe;color:#1d4ed8}
+  .b-ops{background:#fef3c7;color:#b45309}
+
+  /* step cards */
+  ol.steps{counter-reset:st;list-style:none;padding-left:0}
+  ol.steps>li{counter-increment:st;position:relative;padding:4px 0 4px 40px;margin:10px 0}
+  ol.steps>li::before{content:counter(st);position:absolute;left:0;top:2px;width:26px;height:26px;
+    background:var(--primary-soft);color:var(--primary);border-radius:50%;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;background:var(--panel);
+    border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f9fafb;font-weight:700;font-size:12.5px;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+
+  code{background:var(--code-bg);padding:1.5px 6px;border-radius:5px;font-size:13px;
+    font-family:"SF Mono",Menlo,Consolas,monospace}
+
+  /* two-col compare */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+  .col{border:1px solid var(--border);border-radius:10px;padding:16px 18px;background:var(--panel)}
+  .col h4{margin:0 0 8px;font-size:15px}
+  @media(max-width:900px){
+    nav.toc{display:none}
+    main{padding:24px 18px 80px}
+    .cols{grid-template-columns:1fr}
+  }
+  .footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+  kbd{background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px}
+
+  /* writing-rule formula box */
+  .formula{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#0f172a;color:#e2e8f0;
+    border-radius:10px;padding:14px 18px;margin:14px 0}
+  .formula .ftag{font-size:11px;font-weight:700;letter-spacing:.05em;color:#94a3b8;
+    border:1px solid #334155;border-radius:5px;padding:2px 8px;flex:none}
+  .formula code.big{background:transparent;color:#f1f5f9;font-size:15px;padding:0;
+    font-family:"SF Mono",Menlo,Consolas,monospace}
+  .formula code.big b{color:#a5b4fc}
+  /* example tables in writing section: first column highlight */
+  #writing table td b{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc">
+  <div class="brand">
+    <div class="logo">W</div>
+    <div><div class="t">WorkMap</div><div class="s">실무 활용 메뉴얼</div></div>
+  </div>
+  <span class="tag">업무지도 · 실무편</span>
+  <ol>
+    <div class="grp">시작하기</div>
+    <li><a class="link" href="#intro">0. 핵심 개념 — 하나의 Task, 여러 관점</a></li>
+    <li><a class="link sub" href="#writing">0-0. 업무 작성 규칙 (에픽·스토리·Dev)</a></li>
+    <li><a class="link" href="#hierarchy">0-1. 업무 계층과 유형</a></li>
+    <div class="grp">개발 업무 시나리오</div>
+    <li><a class="link" href="#s1">1. 워크스페이스 만들기</a></li>
+    <li><a class="link" href="#s2">2. 프로젝트 만들기</a></li>
+    <li><a class="link" href="#s3">3. 에픽 만들기</a></li>
+    <li><a class="link" href="#s4">4. 업무를 에픽에 접목</a></li>
+    <li><a class="link" href="#s5">5. 백로그 정리</a></li>
+    <li><a class="link" href="#s6">6. 스프린트 활용</a></li>
+    <li><a class="link" href="#s7">7. 보드로 진행 관리</a></li>
+    <li><a class="link" href="#s8">8. 진척·번다운 추적</a></li>
+    <div class="grp">운영 업무 시나리오</div>
+    <li><a class="link" href="#ops">9. 운영형 프로젝트 운용</a></li>
+    <div class="grp">참고</div>
+    <li><a class="link" href="#views">10. 같은 데이터, 여러 보기</a></li>
+    <li><a class="link" href="#cheat">11. 빠른 참조표</a></li>
+  </ol>
+</nav>
+
+<main>
+  <div class="hero">
+    <h1>WorkMap 실무 활용 메뉴얼</h1>
+    <p>워크스페이스에서 프로젝트를 만들고, <b>에픽 → 업무 → 스프린트</b>로 이어지는 실제 업무 흐름을 화면과 함께 따라가는 안내서입니다. 개발 업무와 운영 업무 두 가지 시나리오로 구성했습니다.</p>
+    <div class="pills">
+      <span class="pill">워크스페이스 &gt; 프로젝트 &gt; 업무</span>
+      <span class="pill">에픽 · 스토리 · 태스크</span>
+      <span class="pill">백로그 · 스프린트 · 보드</span>
+      <span class="pill">개발형 / 운영형</span>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── 0 ───────────────────────── -->
+  <section id="intro">
+    <h2><span class="num">0</span>핵심 개념 — 하나의 Task, 여러 관점</h2>
+    <p class="lead">WorkMap을 처음 쓸 때 가장 먼저 이해할 한 가지입니다.</p>
+    <p>WorkMap에서 <b>이슈·리스크·WBS 항목·칸반 카드·타임라인 막대</b>는 서로 다른 데이터가 아니라 <b>하나의 업무(Task) 데이터를 다른 방식으로 보여주는 화면</b>입니다. 업무를 한 번 등록하면, 보드에서는 카드로, 백로그에서는 줄로, 타임라인에서는 기간 막대로, 보고서에서는 통계로 자동으로 나타납니다.</p>
+    <div class="tip">
+      <span class="callout-title">그래서 실무에서 중요한 점</span>
+      "보드용 따로, 보고서용 따로" 만들 필요가 없습니다. <b>업무 하나를 잘 등록</b>(유형·담당자·에픽·스프린트·기간)하면 모든 화면이 같이 채워집니다. 이 메뉴얼은 그 "잘 등록하는" 순서를 따라갑니다.</p>
+  </section>
+
+  <!-- ───────────────────────── 0-0 작성 규칙 ───────────────────────── -->
+  <section id="writing">
+    <h2><span class="num">0-0</span>업무를 어떻게 적는가 — 작성 규칙</h2>
+    <p class="lead">스크럼이 잘 굴러가려면 "무엇을 만드냐"보다 <b>"어떻게 적느냐"</b>가 먼저입니다. 유형마다 <b>작성자</b>와 <b>문장 형식</b>이 정해져 있습니다. 이 규칙만 지켜도 팀 전체가 같은 언어로 일하게 됩니다.</p>
+
+    <div class="note">
+      <span class="callout-title">큰 그림 — 누가 어디에 무엇을 적나</span>
+      <b>에픽·스토리</b>는 주로 <b>PO(기획자)</b>가 <b>비즈니스 언어</b>로 적고, <b>Dev·Sub-task</b>는 <b>개발자</b>가 <b>기술 언어</b>로 적습니다. 에픽은 <b>로드맵(타임라인)</b>에, 스토리·Dev는 <b>백로그</b>에 쌓이고, Sub-task는 스프린트를 계획할 때 잘게 쪼개 꺼냅니다.</p>
+
+    <h3>① 에픽(Epic) — "…으로서, …이 필요합니다"</h3>
+    <p>에픽은 여러 스프린트에 걸친 큰 목표입니다. <b>로드맵에 기록</b>하며, 반드시 <b>"…으로서"</b>로 시작해 <b>누가·왜 이 일이 필요한지(출처와 목적)</b>를 드러냅니다.</p>
+    <div class="formula">
+      <span class="ftag">형식</span>
+      <code class="big">[역할]<b>으로서</b>, [무엇]<b>이 필요합니다</b>.</code>
+    </div>
+    <table>
+      <tr><th>좋은 예 <span class="badge b-epic">Epic</span></th></tr>
+      <tr><td>사용자<b>로서</b>, 블록 코딩 프로젝트를 공유하는 웹사이트<b>가 필요합니다</b>.</td></tr>
+      <tr><td>개발자<b>로서</b>, 백엔드 개편에 따른 어드민 페이지 수정<b>이 필요합니다</b>.</td></tr>
+      <tr><td>세일즈팀<b>으로서</b>, 라이선스를 발급하는 시스템<b>이 필요합니다</b>.</td></tr>
+    </table>
+    <div class="tip"><span class="callout-title">왜 "…으로서"를 강제하나</span> 시간이 지나면 "이 에픽을 왜 시작했지?"를 잊어버립니다. 역할(출처)과 목적을 문장에 박아두면, 우선순위를 다툴 때 "누구의 무슨 가치를 위한 일인가"로 바로 판단할 수 있습니다.</div>
+
+    <h3>② 스토리(Story) — "…는 …를 수행하여 …한다"</h3>
+    <p>스토리는 고객 가치를 주는 기능 단위입니다. 에픽의 하위로 두거나, 에픽 없이 단독으로 <b>백로그에 작성</b>합니다. <b>비즈니스 언어</b>로, 화면·API 같은 기술 용어 없이 적습니다.</p>
+    <div class="formula">
+      <span class="ftag">형식</span>
+      <code class="big">[(역할을 가진) 사용자]<b>는</b> [행위 / 목표]<b>를 수행하여</b> [이유]<b>를 한다</b>.</code>
+    </div>
+    <table>
+      <tr><th>좋은 예 <span class="badge b-story">Story</span></th></tr>
+      <tr><td>어드민 사용자는 라이선스의 정보를 입력하고 라이선스 키를 발급한다.</td></tr>
+      <tr><td>대시보드 사용자는 라이선스 키를 입력해서 사용 가능한 라이선스를 얻는다.</td></tr>
+      <tr><td>사용자는 회원가입하고 로그인할 수 있다.</td></tr>
+    </table>
+
+    <h3>③ Dev · Sub-task — 개발자 언어 그대로</h3>
+    <p>스토리를 실제로 구현하기 위한 작업입니다. 형식 제약 없이 <b>개발자가 쓰는 대로</b> 적습니다. 하나가 <b>3일을 넘기지 않도록</b> 잘게 쪼개는 것이 좋습니다.</p>
+    <div class="formula">
+      <span class="ftag">형식</span>
+      <code class="big">개발자가 작성하는 대로 (기술 언어 자유)</code>
+    </div>
+    <table>
+      <tr><th>좋은 예 <span class="badge b-task">Task</span> / <span class="badge b-sub">Sub-task</span></th></tr>
+      <tr><td>어드민에서 발급한 라이선스 목록 페이지 개발</td></tr>
+      <tr><td>라이선스 키 발급 API 개발</td></tr>
+      <tr><td>도메인 구매</td></tr>
+    </table>
+
+    <h3>한눈에 비교</h3>
+    <table>
+      <tr><th>유형</th><th>작성자</th><th>언어</th><th>문장 형식</th><th>기록 위치</th></tr>
+      <tr>
+        <td><span class="badge b-epic">Epic</span></td>
+        <td>PO</td><td>비즈니스</td>
+        <td>…<b>으로서</b>, …<b>이 필요합니다</b></td>
+        <td>로드맵(타임라인)</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-story">Story</span></td>
+        <td>PO</td><td>비즈니스</td>
+        <td>…<b>는</b> …<b>를 수행하여</b> …<b>한다</b></td>
+        <td>백로그</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-task">Task</span><br><span class="badge b-sub">Sub-task</span></td>
+        <td>개발자</td><td>기술</td>
+        <td>자유 (작업 그대로)</td>
+        <td>백로그 → 스프린트</td>
+      </tr>
+    </table>
+    <div class="warn"><span class="callout-title">흔한 실수</span> 에픽·스토리에 "버튼 추가", "테이블 컬럼 변경" 같은 <b>기술 표현</b>을 쓰는 것. 그러면 비개발자(기획·세일즈)가 못 읽고, 우선순위 회의가 막힙니다. 기술 표현은 Dev·Sub-task로 내립니다.</div>
+  </section>
+
+  <section id="hierarchy">
+    <h2><span class="num">0-1</span>업무 계층과 유형</h2>
+    <p>업무는 6가지 유형이 있고, 큰 단위가 작은 단위를 품는 계층 구조입니다.</p>
+    <table>
+      <tr><th>유형</th><th>역할</th><th>예시</th><th>하위로 가질 수 있는 것</th></tr>
+      <tr><td><span class="badge b-epic">Epic</span></td><td>큰 목표·기능 묶음. 여러 스프린트에 걸침</td><td>"결제 시스템 개편"</td><td>Story·Task·Bug</td></tr>
+      <tr><td><span class="badge b-story">Story</span></td><td>사용자 관점의 기능 단위</td><td>"간편결제 연동"</td><td>Sub-task</td></tr>
+      <tr><td><span class="badge b-task">Task</span></td><td>실행 작업</td><td>"PG사 API 키 발급"</td><td>Sub-task</td></tr>
+      <tr><td><span class="badge b-bug">Bug</span></td><td>결함·장애</td><td>"장바구니 합계 오류"</td><td>Sub-task</td></tr>
+      <tr><td><span class="badge b-doc">Doc</span></td><td>문서·기획서</td><td>"결제 설계서"</td><td>—</td></tr>
+      <tr><td><span class="badge b-sub">Sub-task</span></td><td>위 항목의 잘게 쪼갠 단위</td><td>"단위 테스트 작성"</td><td>—</td></tr>
+    </table>
+    <div class="note">
+      <span class="callout-title">계층은 "연결"로 만든다</span>
+      Epic 안에 Story를 "넣는다"는 건, Story를 만들 때 <b>상위 항목(Epic)</b>을 지정하는 것입니다. 별도의 폴더를 만드는 게 아니라 <b>업무끼리 연결</b>해서 묶음이 생깁니다. 4번 단계에서 실습합니다.</p>
+  </section>
+
+  <!-- ───────────────────────── 1 ───────────────────────── -->
+  <section id="s1">
+    <h2><span class="num">1</span>워크스페이스 만들기</h2>
+    <p class="lead">워크스페이스(WS)는 본부·팀 단위의 독립된 작업 공간입니다. 프로젝트는 모두 워크스페이스 안에 들어갑니다.</p>
+    <ol class="steps">
+      <li>로그인 후 <b>워크스페이스 선택</b> 화면이 열립니다. 소속된 워크스페이스가 카드로 나옵니다.</li>
+      <li>관리자(Owner/Admin)는 우상단 <b>[워크스페이스 만들기]</b>로 새 WS를 만들 수 있습니다. 이름과 설명만 입력하면 됩니다.</li>
+      <li>작업할 워크스페이스 카드를 클릭하면 그 WS로 진입하고, 이후 모든 화면(프로젝트·메시지·설정)이 선택한 WS 기준으로 보입니다.</li>
+    </ol>
+    <figure>
+      <img src="shots/02-select-workspace.png" alt="워크스페이스 선택 화면">
+      <figcaption><b>워크스페이스 선택</b> — 소속 WS 목록. 관리자는 [워크스페이스 만들기]·[수정] 가능. 여기서는 예제용 <b>메뉴얼 예제</b> WS로 진입합니다.</figcaption>
+    </figure>
+    <div class="note"><span class="callout-title">워크스페이스 전환</span> 진입 후에도 좌측 상단의 워크스페이스 이름을 클릭하면 다른 WS로 전환하거나 전체 목록으로 돌아갈 수 있습니다.</div>
+  </section>
+
+  <!-- ───────────────────────── 2 ───────────────────────── -->
+  <section id="s2">
+    <h2><span class="num">2</span>프로젝트 만들기</h2>
+    <p class="lead">프로젝트는 업무를 담는 그릇입니다. 만들 때 <b>템플릿(유형)</b>을 고르면 그 업무 성격에 맞는 보기(탭)와 업무 유형이 자동으로 세팅됩니다.</p>
+
+    <h3>2-1. 프로젝트 유형 고르기</h3>
+    <p>좌측 LNB <b>프로젝트</b> → <b>[프로젝트 만들기]</b>를 누르면 4단계 마법사가 열립니다. 첫 단계에서 템플릿을 고릅니다.</p>
+    <table>
+      <tr><th>템플릿</th><th>적합한 업무</th><th>기본 보기(탭)</th></tr>
+      <tr><td><span class="badge b-dev">개발형</span></td><td>개발 프로젝트(이번 시나리오)</td><td>요약 · 백로그 · 보드 · 타임라인 · 보고서</td></tr>
+      <tr><td><span class="badge b-ops">운영형</span></td><td>고객대응·장애 접수(9번 시나리오)</td><td>요약 · 보드 · 목록 · 캘린더 · 승인 · 보고서</td></tr>
+      <tr><td>계획형</td><td>계획·경영공통</td><td>요약 · 타임라인 · 보고서</td></tr>
+      <tr><td>기본형</td><td>전체 보기를 켠 범용</td><td>8개 탭 전체</td></tr>
+    </table>
+    <figure>
+      <img src="shots/05-wizard-step1-template.png" alt="프로젝트 만들기 1단계 — 템플릿 선택">
+      <figcaption><b>마법사 1단계</b> — 템플릿 선택. 개발 업무는 <span class="badge b-dev">개발형</span>을 고릅니다. 상단 스텝퍼(템플릿 → 이름·키 → 설정 확인 → 멤버·가시성)로 진행합니다.</figcaption>
+    </figure>
+
+    <h3>2-2. 이름·키·기간 입력</h3>
+    <p><b>[다음]</b>을 누르면 2단계입니다. 프로젝트명과 <b>키(접두어)</b>를 정합니다. 키는 모든 업무 번호의 앞자리가 됩니다(예: 키가 <code>SHOP</code>이면 업무는 <code>SHOP-1</code>, <code>SHOP-2</code> …).</p>
+    <figure>
+      <img src="shots/06-wizard-step2-nameKey.png" alt="프로젝트 만들기 2단계 — 이름·키·워크스페이스·기간">
+      <figcaption><b>마법사 2단계</b> — 프로젝트명·키(대문자 2~10자)·워크스페이스·기간. 이 예제는 "쇼핑몰 리뉴얼 / 키 SHOP"으로 만들었습니다.</figcaption>
+    </figure>
+    <p>이어지는 <b>3단계(설정 확인)</b>에서는 템플릿이 채운 업무 유형·탭을 확인하고, <b>4단계(멤버·가시성)</b>에서 함께 작업할 멤버를 초대하고 공개/비공개를 정한 뒤 <b>[프로젝트 만들기]</b>로 완료합니다.</p>
+    <div class="tip"><span class="callout-title">나중에 바꿀 수 있음</span> 이름·기간·탭·가시성은 생성 후 프로젝트 <b>설정</b>에서 언제든 변경됩니다. 처음부터 완벽하게 정할 필요 없습니다.</div>
+  </section>
+
+  <!-- ───────────────────────── 3 ───────────────────────── -->
+  <section id="s3">
+    <h2><span class="num">3</span>에픽 만들기</h2>
+    <p class="lead">에픽은 "여러 스프린트에 걸친 큰 목표"입니다. 먼저 에픽을 세워두면 이후 만드는 스토리·태스크를 거기에 묶을 수 있습니다.</p>
+    <ol class="steps">
+      <li>화면 우상단의 <b>[+ 만들기]</b> 버튼을 누릅니다. 어느 화면에서든 업무를 만들 수 있습니다.</li>
+      <li><b>업무 유형</b>에서 <span class="badge b-epic">Epic</span>을 선택합니다.</li>
+      <li><b>요약</b>에 에픽 제목을 <b>"…으로서, …이 필요합니다"</b> 형식으로 적습니다(<a href="#writing">작성 규칙</a> 참고). 예: <i>"사용자로서, 빠른 간편결제 수단이 필요합니다"</i>. 설명·우선순위·라벨은 선택입니다.</li>
+      <li><b>[+ 만들기]</b>로 저장합니다. 여러 개를 연달아 만들 땐 <b>[다른 항목 만들기]</b>를 체크하면 모달이 유지됩니다.</li>
+    </ol>
+    <figure>
+      <img src="shots/07-create-modal.png" alt="업무 만들기 모달">
+      <figcaption><b>업무 만들기 모달</b> — 프로젝트·업무 유형·요약이 필수. 에픽을 만들 땐 유형을 <span class="badge b-epic">Epic</span>으로. 설명란은 서식·이미지가 들어가는 리치 에디터입니다.</figcaption>
+    </figure>
+    <div class="note"><span class="callout-title">에픽은 담당자가 없어도 됩니다</span> 에픽은 "묶음"이라 보통 담당자를 비워둡니다. 실제 작업은 그 아래 스토리·태스크에 담당자를 지정합니다.</div>
+    <p>이 예제에서는 에픽 두 개를 만들었습니다 — <span class="badge b-epic">Epic</span> <b>결제 시스템 개편</b>(SHOP-1), <span class="badge b-epic">Epic</span> <b>상품 검색 고도화</b>(SHOP-2).</p>
+  </section>
+
+  <!-- ───────────────────────── 4 ───────────────────────── -->
+  <section id="s4">
+    <h2><span class="num">4</span>업무를 에픽에 접목</h2>
+    <p class="lead">에픽 아래에 들어갈 스토리·태스크·버그를 만들면서 <b>상위 항목(Epic)</b>을 지정하면, 자동으로 그 에픽의 하위로 묶입니다.</p>
+    <ol class="steps">
+      <li><b>[+ 만들기]</b> → 유형을 <span class="badge b-story">Story</span> 또는 <span class="badge b-task">Task</span>로 선택합니다.</li>
+      <li>요약은 스토리면 <b>"…는 …를 수행하여 …한다"</b>(비즈니스 언어), Dev/Task면 <b>개발자 언어 그대로</b> 적습니다. <b>Epic 연결</b> 칸에서 앞서 만든 에픽을 고릅니다.</li>
+      <li>담당자·우선순위를 지정하면 보드·보고서에 바로 반영됩니다.</li>
+      <li>저장하면 해당 에픽의 <b>하위 항목 진행률</b>에 자동 집계됩니다.</li>
+    </ol>
+    <p>이렇게 만든 에픽 상세를 열어 보면, 하위 항목들이 진행률 바와 함께 한눈에 보입니다.</p>
+    <figure>
+      <img src="shots/10-workitem-epic.png" alt="에픽 상세 — 하위 항목 진행률">
+      <figcaption><b>에픽 상세</b>(SHOP-1 결제 시스템 개편) — <b>하위 항목 1/3(33%)</b> 진행률 바와 함께 묶인 스토리·태스크가 상태 배지와 함께 표시됩니다. 우측 패널에서 우선순위·라벨·기간을 인라인 편집합니다.</figcaption>
+    </figure>
+
+    <h3>업무 상세에서 할 수 있는 것</h3>
+    <p>업무를 클릭하면 상세가 열립니다. 유형에 따라 본문 섹션이 달라집니다.</p>
+    <table>
+      <tr><th>유형</th><th>전용 섹션</th></tr>
+      <tr><td><span class="badge b-story">Story</span></td><td>인수 조건(줄 단위 목록)</td></tr>
+      <tr><td><span class="badge b-task">Task</span></td><td>작업 체크리스트, 공수(Story Point)</td></tr>
+      <tr><td><span class="badge b-bug">Bug</span></td><td>재현 절차 · 기대 결과 · 실제 결과 · 환경 · 심각도</td></tr>
+    </table>
+    <p>공통으로 <b>설명(리치 에디터)·하위 작업·연결된 업무·첨부·댓글·활동 이력</b>이 있고, 우측에는 담당자·우선순위·라벨·스프린트·스토리포인트·기간 등을 바로 고치는 <b>세부 사항</b> 패널이 있습니다.</p>
+    <figure>
+      <img src="shots/11-workitem-story.png" alt="스토리 상세 화면">
+      <figcaption><b>스토리 상세</b>(SHOP-3 간편결제 연동) — 본문·댓글·활동 이력 + 우측 세부 사항/측정 패널. 모든 필드는 클릭 후 입력하면 즉시 저장됩니다.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ───────────────────────── 5 ───────────────────────── -->
+  <section id="s5">
+    <h2><span class="num">5</span>백로그 정리</h2>
+    <p class="lead">백로그는 "아직 스프린트에 넣지 않은 할 일 더미"입니다. 여기서 우선순위를 정하고 어떤 일을 다음 스프린트에 넣을지 고릅니다.</p>
+    <p>프로젝트 탭에서 <b>백로그</b>를 엽니다. 위쪽에는 스프린트 구역, 아래쪽에는 <b>백로그 영역</b>이 있습니다. 항목을 드래그해서 스프린트와 백로그 사이를 옮깁니다.</p>
+    <figure>
+      <img src="shots/08-backlog.png" alt="백로그 화면">
+      <figcaption><b>백로그</b> — 위: <b>Sprint 1</b>(진행 중)에 담긴 항목 3개와 스토리포인트 합계. 아래: 아직 스프린트에 없는 백로그 항목. 좌측 상단 <b>Epic 필터</b>로 특정 에픽만 모아 볼 수 있습니다.</figcaption>
+    </figure>
+    <ul>
+      <li>각 줄의 <b>Epic 칩</b>으로 어느 에픽 소속인지 한눈에 보이고, 클릭해서 바꿀 수 있습니다.</li>
+      <li>우측의 <b>스토리포인트</b>·상태 배지로 규모와 진행을 파악합니다.</li>
+      <li><b>모든 Epic</b> 드롭다운으로 에픽별로 걸러서 볼 수 있습니다.</li>
+    </ul>
+  </section>
+
+  <!-- ───────────────────────── 6 ───────────────────────── -->
+  <section id="s6">
+    <h2><span class="num">6</span>스프린트 활용</h2>
+    <p class="lead">스프린트는 "정해진 기간(보통 1~2주) 동안 끝낼 업무 묶음"입니다. WorkMap의 스프린트는 <b>계획 → 진행 → 완료</b> 흐름으로 움직입니다.</p>
+
+    <h3>6-1. 스프린트 생성과 담기</h3>
+    <ol class="steps">
+      <li>백로그 화면 우측 상단 <b>[+ 스프린트 만들기]</b>로 스프린트를 만듭니다. 이름·목표·기간을 정합니다(예: "Sprint 1 / 간편결제 1차 오픈 / 6.23~7.06").</li>
+      <li>백로그 항목을 <b>드래그</b>해서 스프린트 구역에 넣습니다. 또는 업무 상세의 <b>Sprint</b> 필드에서 직접 지정합니다.</li>
+      <li>스프린트에 담은 항목의 스토리포인트가 합산되어 헤더에 표시됩니다(이 예제는 5+3+2 = 10pt).</li>
+    </ol>
+
+    <h3>6-2. 스프린트 시작·완료</h3>
+    <table>
+      <tr><th>동작</th><th>위치</th><th>효과</th></tr>
+      <tr><td><b>스프린트 시작</b></td><td>스프린트 헤더 → 시작</td><td>상태가 <b>진행 중</b>으로. 번다운 차트 기록 시작. 진행 중 업무의 착수일 자동 기록</td></tr>
+      <tr><td><b>스프린트 완료</b></td><td>스프린트 헤더 → 완료</td><td>완료 처리. 못 끝낸 항목은 다음 스프린트나 백로그로 이월</td></tr>
+    </table>
+    <div class="warn"><span class="callout-title">한 번에 한 스프린트만 진행</span> 보통 "진행 중" 스프린트는 하나입니다. 현재 스프린트를 완료해야 다음 스프린트를 시작하는 흐름이 자연스럽습니다.</div>
+  </section>
+
+  <!-- ───────────────────────── 7 ───────────────────────── -->
+  <section id="s7">
+    <h2><span class="num">7</span>보드로 진행 관리</h2>
+    <p class="lead">스프린트가 시작되면 <b>보드(칸반)</b>에서 매일 일을 굴립니다. 카드를 드래그해 상태를 옮기는 것이 핵심입니다.</p>
+    <figure>
+      <img src="shots/09-board.png" alt="보드(칸반) 화면">
+      <figcaption><b>보드</b> — 개발형 워크플로(할 일 → 개발하기로 선택됨 → 진행 중 → 검토 중 → 완료). 카드를 옆 컬럼으로 드래그하면 상태가 바뀝니다. 카드에는 업무 번호·유형·우선순위·스토리포인트가 표시됩니다.</figcaption>
+    </figure>
+    <ul>
+      <li><b>드래그로 상태 변경</b> — 단, 정해진 흐름(워크플로)을 벗어나는 이동은 막힙니다. 서버가 검증해 잘못된 이동은 자동으로 되돌립니다.</li>
+      <li><b>막힘 처리</b> — 진행이 막히면 막힘 상태로 옮길 때 <b>차단 사유</b>를 반드시 적게 됩니다. 막힌 업무는 회사 홈·검색에서 따로 모아 볼 수 있습니다.</li>
+      <li><b>카드 클릭</b> → 업무 상세가 열려 담당자·설명·댓글을 바로 다룹니다.</li>
+    </ul>
+  </section>
+
+  <!-- ───────────────────────── 8 ───────────────────────── -->
+  <section id="s8">
+    <h2><span class="num">8</span>진척·번다운 추적</h2>
+    <p class="lead">스프린트가 잘 흘러가는지, 프로젝트가 얼마나 진행됐는지는 <b>보고서</b> 탭에서 봅니다.</p>
+    <figure>
+      <img src="shots/13-reports.png" alt="보고서 — 진행률·분포·번다운·벨로시티">
+      <figcaption><b>보고서</b> — 상단 지표(전체/완료/지연/막힘)와 진행률, 상태·유형·담당자 분포, 하단에 스프린트별 <b>번다운</b>과 <b>벨로시티</b> 차트. 모두 등록된 업무에서 자동 집계됩니다.</figcaption>
+    </figure>
+    <table>
+      <tr><th>지표</th><th>의미</th></tr>
+      <tr><td><b>번다운</b></td><td>스프린트 동안 남은 작업이 이상선(점선)대로 줄고 있는지. 실제선이 위에 있으면 지연 신호</td></tr>
+      <tr><td><b>벨로시티</b></td><td>완료한 스프린트들의 처리량(스토리포인트). 다음 스프린트 계획의 기준치</td></tr>
+      <tr><td><b>상태/유형/담당자 분포</b></td><td>일이 어디에 몰려 있는지, 특정 담당자에 과부하는 없는지</td></tr>
+    </table>
+    <p>프로젝트 첫 화면인 <b>요약</b>에서도 전체/완료/지연/막힘 지표와 진행률, 멤버를 빠르게 볼 수 있습니다.</p>
+    <figure>
+      <img src="shots/14-summary.png" alt="프로젝트 요약 화면">
+      <figcaption><b>프로젝트 요약</b> — 진입 시 첫 화면. 지표·진행률·멤버를 한눈에.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ───────────────────────── 9 운영 ───────────────────────── -->
+  <section id="ops">
+    <h2><span class="num">9</span>운영형 프로젝트 운용</h2>
+    <p class="lead">고객 문의·장애 접수 같은 <b>운영 업무</b>는 스프린트보다 "들어온 일을 접수하고 처리해 닫는" 흐름이 중요합니다. <span class="badge b-ops">운영형</span> 템플릿이 이에 맞춰져 있습니다.</p>
+
+    <h3>9-1. 개발형과 무엇이 다른가</h3>
+    <div class="cols">
+      <div class="col">
+        <h4><span class="badge b-dev">개발형</span></h4>
+        <ul>
+          <li>탭: 요약·<b>백로그</b>·보드·타임라인·보고서</li>
+          <li>워크플로: 할 일 → 진행 중 → 검토 중 → 완료</li>
+          <li>에픽·스프린트 중심의 계획적 진행</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4><span class="badge b-ops">운영형</span></h4>
+        <ul>
+          <li>탭: 요약·보드·목록·<b>캘린더·승인</b>·보고서</li>
+          <li>워크플로: 접수 → 확인 중 → 처리 중 → 현장확인</li>
+          <li>접수된 건을 빠르게 처리·승인하는 흐름</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>9-2. 접수 → 처리</h3>
+    <p>운영 업무는 <span class="badge b-task">Task</span>(요청·문의)나 <span class="badge b-bug">Bug</span>(장애)로 접수합니다. 보드의 컬럼이 운영 흐름에 맞춰져 있어, 접수된 카드를 처리 단계로 밀어가며 닫습니다.</p>
+    <figure>
+      <img src="shots/16-ops-board.png" alt="운영형 보드">
+      <figcaption><b>운영형 보드</b>(CS 운영) — 접수·확인 중·처리 중·현장확인 컬럼. 문의/장애/요청이 카드로 접수되어 처리 단계로 이동합니다. 탭 구성(목록·캘린더·승인)도 개발형과 다릅니다.</figcaption>
+    </figure>
+
+    <h3>9-3. 승인 게이트</h3>
+    <p>운영형에는 <b>승인</b> 탭이 있습니다. 특정 업무는 처리 전·후에 승인이 필요하도록 설정할 수 있고, 승인 대기/완료 건을 이 탭에서 모아 처리합니다.</p>
+    <figure>
+      <img src="shots/17-ops-approvals.png" alt="운영형 승인 탭">
+      <figcaption><b>승인</b> 탭 — 승인 대기·완료 업무를 모아 결재합니다(운영형 전용).</figcaption>
+    </figure>
+    <div class="note"><span class="callout-title">현장검증·백로그 전환</span> 운영 업무 상세에는 <b>현장검증</b>(발견 이슈를 후속 버그로 자동 생성)과 <b>백로그 전환</b>(반복되는 운영 건을 개발 백로그로 승격) 기능이 추가로 있습니다.</div>
+  </section>
+
+  <!-- ───────────────────────── 10 ───────────────────────── -->
+  <section id="views">
+    <h2><span class="num">10</span>같은 데이터, 여러 보기</h2>
+    <p class="lead">0번에서 말한 "하나의 Task, 여러 관점"을 실제 화면으로 확인합니다. 같은 업무들이 보기만 바뀝니다.</p>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/12-timeline.png" alt="타임라인 보기">
+        <figcaption><b>타임라인</b> — 시작일~기한을 기간 막대로. 일정 겹침과 마일스톤을 봅니다.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/15-list.png" alt="목록 보기">
+        <figcaption><b>목록</b> — 표 형태. 필터·정렬·여러 건 일괄 편집에 유리합니다.</figcaption>
+      </figure>
+    </div>
+    <p>그 외에도 <b>검색</b>(전사 통합 검색·퀵필터)과 <b>받은함</b>(나에게 온 배정·멘션·알림)으로 내 일을 빠르게 찾습니다.</p>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/18-search.png" alt="검색 화면">
+        <figcaption><b>검색</b> — 키워드·상태·유형·우선순위·라벨 필터 + "내 항목/막힌 것/미배정" 퀵필터.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/03-home.png" alt="회사 홈 대시보드">
+        <figcaption><b>회사 홈</b> — 진행 중·오늘 마감·미배정·막힘을 전사 차원에서 요약.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── 11 ───────────────────────── -->
+  <section id="cheat">
+    <h2><span class="num">11</span>빠른 참조표</h2>
+    <h3>실무 흐름 한 장 요약</h3>
+    <table>
+      <tr><th>단계</th><th>무엇을</th><th>어디서</th></tr>
+      <tr><td>1</td><td>워크스페이스 선택/생성</td><td>로그인 직후 워크스페이스 선택 화면</td></tr>
+      <tr><td>2</td><td>프로젝트 생성(템플릿 선택)</td><td>LNB 프로젝트 → [프로젝트 만들기]</td></tr>
+      <tr><td>3</td><td>에픽 생성</td><td>[+ 만들기] → 유형 Epic</td></tr>
+      <tr><td>4</td><td>스토리·태스크 생성 + Epic 연결</td><td>[+ 만들기] → Epic 연결 칸</td></tr>
+      <tr><td>5</td><td>백로그 우선순위 정리</td><td>프로젝트 → 백로그 탭</td></tr>
+      <tr><td>6</td><td>스프린트 생성·담기·시작</td><td>백로그 → [+ 스프린트 만들기]</td></tr>
+      <tr><td>7</td><td>매일 카드 드래그로 진행</td><td>프로젝트 → 보드 탭</td></tr>
+      <tr><td>8</td><td>번다운·진척 확인 / 스프린트 완료</td><td>프로젝트 → 보고서 탭</td></tr>
+    </table>
+
+    <h3>자주 쓰는 동작</h3>
+    <table>
+      <tr><th>하고 싶은 것</th><th>방법</th></tr>
+      <tr><td>아무 데서나 업무 추가</td><td>우상단 <kbd>+ 만들기</kbd></td></tr>
+      <tr><td>업무를 에픽에 넣기</td><td>업무 만들 때/상세에서 <b>Epic 연결</b> 지정</td></tr>
+      <tr><td>업무를 스프린트에 넣기</td><td>백로그에서 드래그 또는 상세의 <b>Sprint</b> 필드</td></tr>
+      <tr><td>상태 바꾸기</td><td>보드에서 카드 드래그(워크플로 내에서만)</td></tr>
+      <tr><td>막힘 표시</td><td>막힘 상태로 이동 시 <b>차단 사유</b> 입력</td></tr>
+      <tr><td>내 일만 보기</td><td>검색 → 퀵필터 <b>내 항목</b></td></tr>
+    </table>
+    <div class="rule"><span class="callout-title">핵심 한 줄</span> <b>업무를 한 번 잘 등록</b>(유형·담당자·에픽·스프린트·기간)하면 보드·백로그·타임라인·보고서가 전부 자동으로 채워집니다. 화면별로 따로 입력하지 마세요.</div>
+  </section>
+
+  <div class="footer">
+    WorkMap(업무지도) 실무 활용 메뉴얼 · 캡처 화면은 예제 워크스페이스 "메뉴얼 예제" 기준입니다.<br>
+    전체 UI 화면별 안내는 <a href="workmap-UI-메뉴얼.html">WorkMap UI 메뉴얼</a>을 참고하세요.
+  </div>
+</main>
+</div>
+</body>
+</html>

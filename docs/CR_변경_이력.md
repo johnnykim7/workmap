@@ -42,6 +42,7 @@
 | CR-034 | 목록 페이징 상태를 URL(?page=) 소유로 전환(뒤로가기 리셋 버그 보정) | 설계보정 | Medium | v2.2 |
 | CR-035 | 타임라인 간트 고도화(SVAR React Gantt — 드래그·의존성선·크리티컬패스) | 변경 | High | v2.3 |
 | CR-037 | 첨부 실파일 업로드 전환 + 공통 첨부 컴포넌트·파일 뷰어(그리드/목록·삭제·다운로드·이미지 줌뷰어) | 신규/설계보정 | Medium | v2.3 |
+| CR-038 | 스프린트 편집·삭제 (Jira식 편집 폼 + …메뉴 편집/삭제, FUTURE만 삭제·담긴 항목 백로그 복귀) | 신규 | Medium | v2.3 |
 
 ---
 
@@ -760,6 +761,29 @@
 - **미확인/리스크**: ① SVAR 막대 내부 커스텀 렌더 API 미확인(좌측 그리드 cell은 확인) → 설치 후 검증 ② 오늘선/스프린트 밴드 자체 오버레이 정합 ③ Tailwind v4 LNB 재확인([[workmap-tailwind-lnb-trap]]) — 배포 후 사이드바 확인 필수.
 - **요청자**: 사용자 | **승인자**: 사용자(2026-07-04, "SVAR 코어+크리티컬패스 자체계산", "이 정공법으로 설계 진행", 대규모) | **적용 버전**: v2.3
 - **변경 일자**: 2026-07-04
+
+### CR-038 — 스프린트 편집·삭제 (Jira식 편집 폼 + …메뉴 편집/삭제)
+
+- **대상 기능 ID**: WMP-AGL-007(편집, 신규), WMP-AGL-008(삭제, 신규)
+- **변경 타입**: 신규(BE+FE) | **영향도**: Medium(agile 모듈 — 신규 엔드포인트 2종)
+- **상태**: **설계 캐스케이드 완료(2026-07-04). 구현 착수.**
+- **배경**: 사용자 관찰 — 현 스프린트 헤더에 시작/완료 버튼만 있고 Jira처럼 **편집·삭제 메뉴가 없음**(캡처). 실측 결과 BE(PATCH/DELETE 엔드포인트·Service·Mapper)·FE(다이얼로그·훅·…메뉴) 모두 전무. 생성 시 못 정한 기간·이름·목표를 뒤에 바로잡거나 잘못 만든 예정 스프린트를 지울 수단이 없었음.
+- **핵심 설계 결정(사용자 합의 2026-07-04)**:
+  - **편집 폼 필드**: 이름(필수)·**기간 프리셋**(1주/2주/3주/4주/사용자지정)·시작일·종료일·목표. Jira의 "자동 시작/완료 토글"은 BE 스케줄러가 필요해 이번 범위 제외.
+  - **기간 프리셋**: 시작일 기준 프리셋 선택 시 종료일 자동계산(1주=+7일 등), 사용자지정이면 종료일 직접 입력. FE 편의 로직(BE는 startDate/endDate만 받음).
+  - **편집은 어느 상태에서든 허용**(FUTURE/ACTIVE/COMPLETED). `status`는 편집으로 바꾸지 않음(전이는 start/complete FSM 전용).
+  - **삭제는 FUTURE(예정)만 허용**. ACTIVE/COMPLETED 삭제는 FSM 가드에서 거부(데이터/이력 보호). …메뉴에서 삭제 항목은 FUTURE에서만 노출.
+  - **삭제 시 담긴 워크아이템은 백로그로 복귀**(sprint_id=NULL) 후 스프린트 레코드 삭제(하드 삭제 — sprints는 소프트 삭제 대상 아님).
+- **변경 내용**:
+  - **T1-1**: WMP-AGL-007(편집)·008(삭제) 신규 항목 + 기능 목록 표 2행 추가.
+  - **T1-5**: sprint FSM 다이어그램에 `FUTURE --> [*] : 삭제` 전이 추가 + 편집(상태 무변경)·삭제(FUTURE만) 규칙 명시. 각 상태 비고에 편집·삭제 가능 여부 표기.
+  - **T3-2**: API 표에 `PATCH /sprints/{id}`(편집)·`DELETE /sprints/{id}`(삭제) 2행 추가.
+  - **T3-3**: §6.1 백로그에 스프린트 …(더보기) 메뉴·EditSprintDialog(기간 프리셋 포함)·ConfirmDialog 항목 추가 + 컴포넌트 매핑 갱신.
+  - **BE 구현**: `SprintDtos.UpdateRequest`(name·goal·startDate·endDate) + `SprintService.update`(endDate≥startDate 검증)·`delete`(FUTURE 가드→항목 백로그 복귀→삭제) + `SprintMapper` update/delete 쿼리 + `WorkItemMapper.clearSprintBySprintId`(백로그 복귀) + SprintController PATCH/DELETE + `WmpAuthz.WRITER` 가드 + 에러코드 **WMP-7847**(SPRINT_DELETE_NOT_FUTURE) 신규.
+  - **FE 구현**: `agileApi.updateSprint`·`deleteSprint` + `useUpdateSprint`·`useDeleteSprint` 훅 + `EditSprintDialog`(기간 프리셋 Select·종료일 자동계산) + `SprintHeader` …메뉴(DropdownMenu, VIEWER 숨김) + 삭제 ConfirmDialog + `duration.ts`(프리셋→종료일 순수 함수, 단위테스트).
+- **스키마 무변경**: sprints 테이블 그대로. 신규 마이그레이션 없음. 에러코드만 WMP-7846 1종 신규.
+- **영향 설계서**: T1-1, T1-5, T3-2, T3-3, CR_변경_이력(5종). **T1-3/T1-4/T1-6/T3-1 무변경**(비즈규칙·정책·이벤트·스키마 전부 그대로).
+- **테스트(예정)**: SprintServiceTest(편집·삭제 happy + FUTURE 아닌 삭제 거부 + endDate<startDate 거부) + duration 순수 함수 단위테스트. FE tsc -b + vite build.
 
 ### CR-036 — 백로그 보기 토글(우선순위순 ↔ Epic별 그룹) + Epic별 고유 색 (CR-022 보완)
 

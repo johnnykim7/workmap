@@ -188,6 +188,8 @@
 | GET | /projects/{id}/backlog | 백로그(스프린트들 + 백로그, Epic 그룹 트리) | 🔒 | P1 | WMP-AGL-001 |
 | GET | /projects/{id}/sprints | 스프린트 목록 | 🔒 | P1 | WMP-AGL-001 |
 | POST | /projects/{id}/sprints | 스프린트 생성 | 🔒 | P1 | WMP-AGL-001 |
+| PATCH | /sprints/{id} | 스프린트 편집(name·goal·startDate·endDate, status 무변경) | 🔒 | P2 | WMP-AGL-007 |
+| DELETE | /sprints/{id} | 스프린트 삭제(FUTURE만, 담긴 항목 백로그 복귀) | 🔒 | P2 | WMP-AGL-008 |
 | POST | /sprints/{id}/start | 스프린트 시작(기간 고정, 동시 ACTIVE 1개) | 🔒 | P1 | WMP-AGL-003 |
 | POST | /sprints/{id}/complete | 스프린트 완료(미완료 이월) | 🔒 | P1 | WMP-AGL-004 |
 | PATCH | /work-items/{id}/sprint | 스프린트 담기/빼기(백로그↔스프린트 이동) | 🔒 | P1 | WMP-AGL-002 |

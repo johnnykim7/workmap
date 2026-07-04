@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkMap 사용 메뉴얼</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:linear-gradient(135deg,#eef2ff,#faf5ff);color:#1f2430;padding:24px}
+  .box{max-width:760px;width:100%}
+  .head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .logo{width:44px;height:44px;border-radius:11px;background:#4f46e5;color:#fff;display:flex;
+    align-items:center;justify-content:center;font-weight:800;font-size:20px}
+  h1{margin:0;font-size:26px;font-weight:800}
+  .sub{color:#6b7280;margin:0 0 28px;font-size:14.5px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.cards{grid-template-columns:1fr}}
+  a.card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e7eb;
+    border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:.15s}
+  a.card:hover{border-color:#a5b4fc;transform:translateY(-2px);box-shadow:0 6px 20px rgba(79,70,229,.12)}
+  .card .ico{font-size:26px;margin-bottom:10px}
+  .card h2{margin:0 0 6px;font-size:18px}
+  .card p{margin:0;color:#6b7280;font-size:13.5px;line-height:1.6}
+  .card .go{margin-top:14px;color:#4f46e5;font-weight:700;font-size:13.5px}
+  .foot{margin-top:24px;color:#9ca3af;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="head">
+      <div class="logo">W</div>
+      <h1>WorkMap 사용 메뉴얼</h1>
+    </div>
+    <p class="sub">업무지도(WorkMap)를 쓰기 위한 두 가지 안내서입니다.</p>
+    <div class="cards">
+      <a class="card" href="workmap-UI-메뉴얼.html">
+        <div class="ico">🖥️</div>
+        <h2>UI 메뉴얼</h2>
+        <p>로그인부터 관리자까지 <b>모든 화면을 하나씩</b>. 각 화면이 어디 있고 무엇을 하는지 캡처와 함께 안내.</p>
+        <div class="go">전체 화면 보기 →</div>
+      </a>
+      <a class="card" href="workmap-실무활용-메뉴얼.html">
+        <div class="ico">🚀</div>
+        <h2>실무 활용 메뉴얼</h2>
+        <p>워크스페이스 → 프로젝트 → <b>에픽·업무·스프린트</b>로 이어지는 실제 업무 흐름. 개발/운영 두 시나리오 + 작성 규칙.</p>
+        <div class="go">업무 흐름 보기 →</div>
+      </a>
+    </div>
+    <p class="foot">캡처는 예제 워크스페이스 "메뉴얼 예제" 기준 · WorkMap 업무지도</p>
+  </div>
+</body>
+</html>

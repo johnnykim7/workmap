@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkMap UI 메뉴얼 — 전체 화면 안내</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --border:#e5e7eb; --text:#1f2430; --muted:#6b7280;
+    --primary:#4f46e5; --primary-soft:#eef2ff; --accent:#7c3aed;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626; --blue:#2563eb;
+    --code-bg:#f3f4f6; --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased}
+  a{color:var(--primary);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .wrap{display:flex;max-width:1280px;margin:0 auto}
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;overflow-y:auto;
+    padding:28px 20px;border-right:1px solid var(--border);background:var(--panel)}
+  nav.toc .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  nav.toc .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  nav.toc .brand .t{font-weight:700;font-size:17px}
+  nav.toc .brand .s{font-size:11px;color:var(--muted)}
+  nav.toc .tag{display:inline-block;margin:10px 0 18px;font-size:11px;color:var(--muted);
+    background:var(--code-bg);padding:3px 8px;border-radius:6px}
+  nav.toc ol{list-style:none;margin:0;padding:0}
+  nav.toc li{margin:2px 0}
+  nav.toc a.link{display:block;padding:7px 10px;border-radius:7px;color:var(--text);font-size:13.5px}
+  nav.toc a.link:hover{background:var(--code-bg);text-decoration:none}
+  nav.toc a.link.sub{padding-left:22px;font-size:12.5px;color:var(--muted)}
+  nav.toc .grp{margin-top:16px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+    text-transform:uppercase;padding:0 10px}
+
+  main{flex:1;min-width:0;padding:40px 48px 120px}
+  .hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:16px;
+    padding:36px 40px;margin-bottom:36px;box-shadow:var(--shadow)}
+  .hero h1{margin:0 0 8px;font-size:28px;font-weight:800;letter-spacing:-.01em}
+  .hero p{margin:0;opacity:.92;font-size:15px;max-width:760px}
+  .hero .pills{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .hero .pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);
+    padding:5px 12px;border-radius:99px;font-size:12.5px}
+
+  section{margin-bottom:52px;scroll-margin-top:20px}
+  h2{font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    background:var(--primary);color:#fff;border-radius:8px;font-size:14px;margin-right:10px;vertical-align:2px}
+  h3{font-size:16.5px;font-weight:700;margin:28px 0 10px;padding-top:6px}
+  .lead{color:var(--muted);font-size:14.5px;margin:0 0 20px}
+  p{margin:12px 0}
+  ul,ol{margin:12px 0;padding-left:22px}
+  li{margin:6px 0}
+
+  figure{margin:20px 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+    background:var(--panel);box-shadow:var(--shadow)}
+  figure img{display:block;width:100%;height:auto;background:#fafafa}
+  figure figcaption{padding:9px 14px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);background:#fcfcfd}
+  figure figcaption b{color:var(--text)}
+
+  .note,.tip,.warn,.rule{border-radius:10px;padding:14px 16px 14px 44px;position:relative;margin:18px 0;font-size:14px}
+  .note{background:#eff6ff;border:1px solid #bfdbfe}
+  .tip{background:#ecfdf5;border:1px solid #a7f3d0}
+  .warn{background:#fffbeb;border:1px solid #fde68a}
+  .rule{background:#faf5ff;border:1px solid #e9d5ff}
+  .note::before{content:"ℹ";position:absolute;left:15px;top:13px;font-weight:700;color:var(--blue)}
+  .tip::before{content:"✓";position:absolute;left:15px;top:13px;font-weight:700;color:var(--green)}
+  .warn::before{content:"!";position:absolute;left:17px;top:13px;font-weight:700;color:var(--amber)}
+  .rule::before{content:"§";position:absolute;left:15px;top:13px;font-weight:700;color:var(--accent)}
+  .callout-title{font-weight:700;display:block;margin-bottom:2px}
+
+  .badge{display:inline-block;padding:1px 8px;border-radius:5px;font-size:12px;font-weight:600;vertical-align:1px}
+  .b-epic{background:#f3e8ff;color:#7c3aed}.b-story{background:#dcfce7;color:#15803d}
+  .b-task{background:#dbeafe;color:#1d4ed8}.b-bug{background:#fee2e2;color:#b91c1c}
+  .b-dev{background:#dbeafe;color:#1d4ed8}.b-ops{background:#fef3c7;color:#b45309}
+  .b-admin{background:#ede9fe;color:#6d28d9}.b-role{background:#f1f5f9;color:#475569}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;background:var(--panel);
+    border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f9fafb;font-weight:700;font-size:12.5px;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--code-bg);padding:1.5px 6px;border-radius:5px;font-size:13px;
+    font-family:"SF Mono",Menlo,Consolas,monospace}
+  kbd{background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+  @media(max-width:900px){nav.toc{display:none}main{padding:24px 18px 80px}.cols{grid-template-columns:1fr}}
+
+  /* annotated callout-list for screens */
+  .anno{list-style:none;padding-left:0;margin:14px 0}
+  .anno li{position:relative;padding:6px 0 6px 30px;border-bottom:1px dashed var(--border)}
+  .anno li:last-child{border-bottom:none}
+  .anno li::before{content:"▸";position:absolute;left:6px;top:6px;color:var(--primary);font-weight:700}
+  .anno b{color:var(--text)}
+
+  .footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc">
+  <div class="brand">
+    <div class="logo">W</div>
+    <div><div class="t">WorkMap</div><div class="s">UI 메뉴얼</div></div>
+  </div>
+  <span class="tag">업무지도 · 전체 화면</span>
+  <ol>
+    <div class="grp">기본</div>
+    <li><a class="link" href="#login">1. 로그인 · 워크스페이스 선택</a></li>
+    <li><a class="link" href="#shell">2. 화면 공통 구조 (LNB·헤더)</a></li>
+    <div class="grp">메인 화면</div>
+    <li><a class="link" href="#home">3. 회사 홈 (대시보드)</a></li>
+    <li><a class="link" href="#inbox">4. 받은함 · 알림</a></li>
+    <li><a class="link" href="#search">5. 검색</a></li>
+    <li><a class="link" href="#chat">6. 워크룸 (메시지)</a></li>
+    <div class="grp">프로젝트</div>
+    <li><a class="link" href="#projects">7. 프로젝트 목록 · 생성</a></li>
+    <li><a class="link" href="#tabs">8. 프로젝트 탭 (8종 보기)</a></li>
+    <li><a class="link sub" href="#tab-summary">— 요약 · 보드 · 백로그</a></li>
+    <li><a class="link sub" href="#tab-views">— 목록 · 타임라인 · 캘린더</a></li>
+    <li><a class="link sub" href="#tab-rep">— 승인 · 보고서</a></li>
+    <li><a class="link" href="#detail">9. 업무 상세 · 만들기</a></li>
+    <div class="grp">설정</div>
+    <li><a class="link" href="#account">10. 개인 설정</a></li>
+    <li><a class="link" href="#admin">11. 관리자</a></li>
+    <div class="grp">참고</div>
+    <li><a class="link" href="#index">12. 전체 화면 인덱스</a></li>
+  </ol>
+</nav>
+
+<main>
+  <div class="hero">
+    <h1>WorkMap UI 메뉴얼</h1>
+    <p>WorkMap의 <b>모든 화면을 하나씩</b> 짚어보는 안내서입니다. 각 화면이 어디에 있고, 무엇을 보여주고, 어떤 동작을 할 수 있는지 캡처와 함께 정리했습니다. 실제 업무 흐름(에픽·스프린트 운영)은 <a href="workmap-실무활용-메뉴얼.html" style="color:#fff;text-decoration:underline">실무 활용 메뉴얼</a>을 참고하세요.</p>
+    <div class="pills">
+      <span class="pill">LNB · 헤더</span><span class="pill">홈 · 받은함 · 검색 · 워크룸</span>
+      <span class="pill">프로젝트 8탭</span><span class="pill">개인 설정 · 관리자</span>
+    </div>
+  </div>
+
+  <!-- 1 -->
+  <section id="login">
+    <h2><span class="num">1</span>로그인 · 워크스페이스 선택</h2>
+    <p class="lead">WorkMap은 계정 로그인 후, 작업할 워크스페이스를 고르는 것으로 시작합니다.</p>
+    <h3>로그인</h3>
+    <p>이메일과 비밀번호로 로그인합니다. 계정이 없으면 <b>관리자 초대</b>를 통해서만 가입할 수 있습니다(자가 가입 없음). 비밀번호를 잊었으면 <b>비밀번호를 잊으셨나요?</b>에서 이메일 인증번호로 재설정합니다.</p>
+    <figure>
+      <img src="shots/01-login.png" alt="로그인 화면">
+      <figcaption><b>로그인</b> — 이메일·비밀번호. 하단에 비밀번호 찾기 링크와 가입 안내.</figcaption>
+    </figure>
+    <h3>워크스페이스 선택</h3>
+    <p>로그인하면 소속된 <b>워크스페이스(WS)</b> 목록이 나옵니다. 작업할 WS를 클릭해 진입합니다. 관리자는 <b>[워크스페이스 만들기]</b>·<b>[수정]</b>이 가능합니다.</p>
+    <figure>
+      <img src="shots/02-select-workspace.png" alt="워크스페이스 선택">
+      <figcaption><b>워크스페이스 선택</b> — WS는 본부·팀 단위의 독립 작업 공간. 진입 후 모든 화면이 선택 WS 기준으로 보입니다.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2 -->
+  <section id="shell">
+    <h2><span class="num">2</span>화면 공통 구조 — LNB · 헤더</h2>
+    <p class="lead">진입 후 모든 화면은 같은 골격을 씁니다. <b>좌측 내비게이션(LNB)</b>과 <b>상단 헤더</b>입니다.</p>
+    <figure>
+      <img src="shots/03-home.png" alt="앱 공통 구조 — LNB와 헤더">
+      <figcaption><b>공통 구조</b> — 좌측 LNB(메뉴), 상단 헤더(만들기·알림 벨·계정), 본문. 캡처는 회사 홈 기준.</figcaption>
+    </figure>
+
+    <h3>좌측 내비게이션(LNB)</h3>
+    <ul class="anno">
+      <li><b>워크스페이스 스위처</b>(최상단) — 현재 WS명. 클릭하면 다른 WS로 전환하거나 멤버 관리로 이동.</li>
+      <li><b>대시보드</b> — 회사 홈으로.</li>
+      <li><b>알림</b> — 받은함.</li>
+      <li><b>검색</b> — 전사 통합 검색.</li>
+      <li><b>워크룸</b> — 채팅. 펼치면 채널 목록.</li>
+      <li><b>프로젝트</b> — 프로젝트 목록. 펼치면 현재 WS의 프로젝트들.</li>
+      <li><b>설정</b> — 관리자 메뉴(Owner/Admin에게만 보임).</li>
+    </ul>
+
+    <h3>상단 헤더</h3>
+    <ul class="anno">
+      <li><b>[+ 만들기]</b> — 어느 화면에서든 업무를 새로 만드는 버튼(읽기 전용 권한은 숨김).</li>
+      <li><b>알림 벨</b> — 안 읽은 알림 수 배지. 클릭하면 최근 알림 드롭다운.</li>
+      <li><b>계정 아바타</b> — 클릭 시 메뉴: 알림 설정 · 화면 테마 · 비밀번호 변경 · 로그아웃.</li>
+    </ul>
+    <div class="note"><span class="callout-title">권한별 표시 차이</span> 설정(관리자) 메뉴와 [만들기] 버튼은 권한에 따라 보이거나 숨겨집니다. VIEWER(읽기 전용)는 만들기·편집 버튼이 나타나지 않습니다.</div>
+  </section>
+
+  <!-- 3 -->
+  <section id="home">
+    <h2><span class="num">3</span>회사 홈 (대시보드)</h2>
+    <p class="lead">로그인 후 첫 화면. 전사 차원에서 "지금 무엇을 챙겨야 하는지"를 요약합니다.</p>
+    <figure>
+      <img src="shots/03-home.png" alt="회사 홈 대시보드">
+      <figcaption><b>회사 홈</b> — 상단 지표 카드 + 하단 현황 패널.</figcaption>
+    </figure>
+    <ul class="anno">
+      <li><b>지표 카드</b> — 진행 중 · 오늘 마감 · 이번 주 마감 · 미배정 · 장기 미변경. 주의가 필요한 값은 색(amber)으로 강조.</li>
+      <li><b>현황 패널</b> — 막힌 업무(빨강) · 지연 업무 · 미배정 업무. 카드 클릭 시 해당 조건의 검색 결과로 이동.</li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section id="inbox">
+    <h2><span class="num">4</span>받은함 · 알림</h2>
+    <p class="lead">나에게 온 배정·멘션·상태 변경·승인 요청 등을 모아 봅니다.</p>
+    <figure>
+      <img src="shots/19-inbox.png" alt="받은함 화면">
+      <figcaption><b>받은함</b> — 전체 / 안 읽음 탭. 행 클릭 시 읽음 처리 후 해당 업무로 이동.</figcaption>
+    </figure>
+    <ul class="anno">
+      <li><b>전체 / 안 읽음 탭</b>으로 필터.</li>
+      <li><b>행 클릭</b> → 알림이 읽음 처리되고 관련 업무 상세로 이동.</li>
+      <li><b>[알림 설정]</b> → 종류별로 받을 채널(인앱/이메일/푸시)을 켜고 끔(개인 설정 참고).</li>
+    </ul>
+    <div class="note"><span class="callout-title">헤더 알림 벨</span> 앱을 켜두면 헤더 벨에 안 읽은 수가 표시되고, 새 알림이 오면 토스트로 알립니다.</div>
+  </section>
+
+  <!-- 5 -->
+  <section id="search">
+    <h2><span class="num">5</span>검색</h2>
+    <p class="lead">제목·번호·설명·댓글을 가로질러 전사 업무를 찾습니다.</p>
+    <figure>
+      <img src="shots/18-search.png" alt="검색 화면">
+      <figcaption><b>검색</b> — 키워드 + 상태·유형·우선순위·라벨 필터 + 퀵필터. 결과는 표로.</figcaption>
+    </figure>
+    <ul class="anno">
+      <li><b>키워드</b> — 제목·업무 번호·설명·댓글까지 검색.</li>
+      <li><b>필터</b> — 상태 · 업무 유형 · 우선순위 · 라벨(여러 개 선택).</li>
+      <li><b>퀵필터</b> — 내 항목 · 최근 업데이트 · 막힌 것 · 미배정(원클릭 프리셋).</li>
+      <li><b>저장 필터</b> — 자주 쓰는 조건을 저장해 재사용.</li>
+    </ul>
+  </section>
+
+  <!-- 6 -->
+  <section id="chat">
+    <h2><span class="num">6</span>워크룸 (메시지)</h2>
+    <p class="lead">워크스페이스 단위의 채팅. 채널·스레드 답글·리액션·멘션을 지원합니다.</p>
+    <figure>
+      <img src="shots/20-chat.png" alt="워크룸 채팅 화면">
+      <figcaption><b>워크룸</b> — LNB에 채널 목록, 본문에 메시지·리액션·스레드 답글, 하단에 리치 입력창.</figcaption>
+    </figure>
+    <ul class="anno">
+      <li><b>채널</b> — LNB 워크룸 아래에 채널 목록. 새 채널은 <b>[채널 만들기]</b>로.</li>
+      <li><b>메시지</b> — 서식·이미지가 들어가는 입력창. 보낸 메시지에 <b>리액션(이모지)</b> 추가 가능.</li>
+      <li><b>스레드</b> — 메시지의 <b>답글</b>을 클릭하면 우측 스레드 패널에서 이어 대화.</li>
+      <li>실시간 갱신은 폴링(약 5초). 멘션으로 특정 사람을 호출.</li>
+    </ul>
+  </section>
+
+  <!-- 7 -->
+  <section id="projects">
+    <h2><span class="num">7</span>프로젝트 목록 · 생성</h2>
+    <p class="lead">현재 워크스페이스의 프로젝트를 카드로 보고, 새 프로젝트를 만듭니다.</p>
+    <figure>
+      <img src="shots/04-projects.png" alt="프로젝트 목록">
+      <figcaption><b>프로젝트 목록</b> — 유형·상태 필터 + 카드 그리드. 카드 클릭 시 프로젝트로 진입.</figcaption>
+    </figure>
+    <p>각 카드는 프로젝트명·유형 배지(<span class="badge b-dev">개발형</span>/<span class="badge b-ops">운영형</span>/계획형/기본형)·상태(준비/진행/완료/보관)·멤버를 보여줍니다.</p>
+
+    <h3>프로젝트 만들기 (4단계 마법사)</h3>
+    <p><b>[프로젝트 만들기]</b>를 누르면 마법사가 열립니다.</p>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/05-wizard-step1-template.png" alt="마법사 1단계">
+        <figcaption><b>1단계 템플릿</b> — 유형 선택(개발형/운영형/계획형/기본형). 유형이 탭·업무 유형을 자동 세팅.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/06-wizard-step2-nameKey.png" alt="마법사 2단계">
+        <figcaption><b>2단계 이름·키</b> — 프로젝트명·키(업무 번호 접두어)·워크스페이스·기간.</figcaption>
+      </figure>
+    </div>
+    <p>이어 <b>3단계(설정 확인 — 업무 유형·탭)</b>, <b>4단계(멤버 초대·공개/비공개)</b>를 거쳐 완료합니다.</p>
+  </section>
+
+  <!-- 8 -->
+  <section id="tabs">
+    <h2><span class="num">8</span>프로젝트 탭 — 8종 보기</h2>
+    <p class="lead">프로젝트에 들어가면 상단에 탭이 있습니다. <b>같은 업무 데이터를 여러 방식</b>으로 보여줍니다. 노출되는 탭은 프로젝트 유형에 따라 다릅니다.</p>
+    <table>
+      <tr><th>탭</th><th>무엇을 보여주나</th><th>주로 쓰는 유형</th></tr>
+      <tr><td><b>요약</b></td><td>지표·진행률·멤버 개요</td><td>전체</td></tr>
+      <tr><td><b>보드</b></td><td>상태별 칸반. 드래그로 상태 전이</td><td>전체</td></tr>
+      <tr><td><b>백로그</b></td><td>스프린트·백로그 + 드래그 정리</td><td><span class="badge b-dev">개발형</span></td></tr>
+      <tr><td><b>목록</b></td><td>표 형태. 필터·정렬·일괄 편집</td><td>운영형·기본형</td></tr>
+      <tr><td><b>타임라인</b></td><td>기간 막대(로드맵)</td><td>개발형·계획형</td></tr>
+      <tr><td><b>캘린더</b></td><td>기한 기준 월별</td><td>운영형</td></tr>
+      <tr><td><b>승인</b></td><td>승인 대기/완료 결재</td><td><span class="badge b-ops">운영형</span></td></tr>
+      <tr><td><b>보고서</b></td><td>진행률·분포·번다운·벨로시티</td><td>전체</td></tr>
+    </table>
+
+    <h3 id="tab-summary">요약 · 보드 · 백로그</h3>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/14-summary.png" alt="요약 탭">
+        <figcaption><b>요약</b> — 진입 시 첫 화면. 지표·진행률·멤버.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/09-board.png" alt="보드 탭">
+        <figcaption><b>보드(칸반)</b> — 상태 컬럼 + 카드. 드래그로 상태 변경(워크플로 내에서만).</figcaption>
+      </figure>
+    </div>
+    <figure>
+      <img src="shots/08-backlog.png" alt="백로그 탭">
+      <figcaption><b>백로그</b> — 스프린트 구역 + 백로그 영역. 드래그로 항목 이동, Epic 필터, 스토리포인트 합계.</figcaption>
+    </figure>
+
+    <h3 id="tab-views">목록 · 타임라인 · 캘린더</h3>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/15-list.png" alt="목록 탭">
+        <figcaption><b>목록</b> — 표 + 필터·정렬·일괄 편집. 많은 항목을 다룰 때.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/12-timeline.png" alt="타임라인 탭">
+        <figcaption><b>타임라인</b> — 시작~기한 막대. 일정 겹침·마일스톤 파악.</figcaption>
+      </figure>
+    </div>
+    <figure>
+      <img src="shots/21-calendar.png" alt="캘린더 탭">
+      <figcaption><b>캘린더</b> — 기한(due) 기준 월별. 빈 칸 클릭으로 그 날짜의 업무를 바로 생성, 드래그로 일정 변경.</figcaption>
+    </figure>
+
+    <h3 id="tab-rep">승인 · 보고서</h3>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/17-ops-approvals.png" alt="승인 탭">
+        <figcaption><b>승인</b> — 승인 대기/완료 업무 결재(운영형 전용).</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/13-reports.png" alt="보고서 탭">
+        <figcaption><b>보고서</b> — 지표·분포·번다운·벨로시티. 모두 자동 집계.</figcaption>
+      </figure>
+    </div>
+    <div class="note"><span class="callout-title">운영형 보드는 흐름이 다릅니다</span> 운영형 프로젝트는 보드 컬럼이 <b>접수 → 확인 중 → 처리 중 → 현장확인</b>으로, 개발형(할 일 → 진행 중 → 검토 중 → 완료)과 다릅니다.</div>
+    <figure>
+      <img src="shots/16-ops-board.png" alt="운영형 보드">
+      <figcaption><b>운영형 보드</b> — 접수·처리 중심 워크플로. 탭 구성(목록·캘린더·승인)도 개발형과 다름.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 9 -->
+  <section id="detail">
+    <h2><span class="num">9</span>업무 상세 · 만들기</h2>
+    <p class="lead">업무 하나를 다루는 화면과, 어디서든 업무를 만드는 모달입니다.</p>
+
+    <h3>업무 만들기 모달</h3>
+    <p>헤더 <b>[+ 만들기]</b>로 열립니다. 프로젝트·업무 유형·요약이 필수이고, 나머지는 선택입니다.</p>
+    <figure>
+      <img src="shots/07-create-modal.png" alt="업무 만들기 모달">
+      <figcaption><b>만들기 모달</b> — 프로젝트·유형·요약(필수) + 설명(리치 에디터)·담당자·우선순위·Epic 연결·마감일·라벨. <b>[다른 항목 만들기]</b>로 연속 생성.</figcaption>
+    </figure>
+
+    <h3>업무 상세</h3>
+    <p>업무를 클릭하면 상세가 열립니다. 본문(유형별 섹션)·우측 세부 사항·댓글·활동 이력으로 구성됩니다.</p>
+    <figure>
+      <img src="shots/10-workitem-epic.png" alt="업무 상세 — 에픽">
+      <figcaption><b>업무 상세(에픽)</b> — 좌측 본문(설명·하위 항목 진행률·연결·첨부·댓글), 우측 세부 사항(담당자·우선순위·라벨·스프린트·기간)·측정 패널.</figcaption>
+    </figure>
+    <ul class="anno">
+      <li><b>본문 섹션은 유형마다 다름</b> — Story=인수 조건, Task=체크리스트·공수, Bug=재현/기대/실제/환경/심각도.</li>
+      <li><b>우측 세부 사항</b> — 담당자·우선순위·라벨·상위(Epic)·스프린트·스토리포인트·기간을 클릭 즉시 편집.</li>
+      <li><b>댓글·멘션·첨부·활동 이력</b> 공통 제공.</li>
+    </ul>
+  </section>
+
+  <!-- 10 -->
+  <section id="account">
+    <h2><span class="num">10</span>개인 설정</h2>
+    <p class="lead">헤더 계정 아바타 메뉴에서 들어갑니다. 알림·테마·비밀번호 세 가지입니다.</p>
+
+    <h3>알림 설정</h3>
+    <p>알림 <b>종류별</b>로 받을 <b>채널</b>(인앱/이메일/푸시)을 켜고 끕니다.</p>
+    <figure>
+      <img src="shots/27-account-notifications.png" alt="알림 설정 매트릭스">
+      <figcaption><b>알림 설정</b> — 행=알림 종류(배정·멘션·막힘·마감·스프린트·승인 등), 열=인앱/이메일/푸시. 기본값은 인앱 ON·외부 OFF. 푸시는 준비 중.</figcaption>
+    </figure>
+
+    <h3>화면 테마 · 비밀번호 변경</h3>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/28-account-theme.png" alt="화면 테마">
+        <figcaption><b>화면 테마</b> — LNB 톤·포인트색 프리셋 6종. 개인 화면에만 적용(브라우저에 저장).</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/29-account-password.png" alt="비밀번호 변경">
+        <figcaption><b>비밀번호 변경</b> — 현재 비밀번호 + 이메일 인증번호 2차 인증 후 새 비밀번호.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section id="admin">
+    <h2><span class="num">11</span>관리자 <span class="badge b-admin">Owner / Admin</span></h2>
+    <p class="lead">LNB <b>설정</b>으로 진입합니다. 상단 탭으로 6개 관리 영역을 전환합니다. 관리자 권한이 있어야 보입니다.</p>
+    <table>
+      <tr><th>탭</th><th>관리 대상</th></tr>
+      <tr><td><b>측정 단위</b></td><td>업무 측정에 쓰는 단위(이름·접미사·값 유형). 시스템 단위는 보호.</td></tr>
+      <tr><td><b>필드 스킴</b></td><td>유형/프로젝트별로 어떤 필드를 노출·필수로 할지.</td></tr>
+      <tr><td><b>워크플로</b></td><td>상태와 전이(허용 이동) 정의. 좌측 목록 + 우측 편집.</td></tr>
+      <tr><td><b>업무 유형</b></td><td>업무 유형 마스터(색·아이콘). 시스템 5종은 보호.</td></tr>
+      <tr><td><b>양식</b></td><td>프로젝트별 제출 양식(폼) 만들기 + 테스트 제출.</td></tr>
+      <tr><td><b>사용자</b></td><td>사용자 생성·수정·비활성화 + 이메일 초대(대기·재발송·취소).</td></tr>
+    </table>
+    <figure>
+      <img src="shots/23-admin-workflow.png" alt="관리자 — 워크플로">
+      <figcaption><b>워크플로</b> — 좌측 워크플로 목록(개발형·운영형 등), 우측에 상태(할 일·진행 중·완료…)와 전이(허용 이동) 정의. 시스템 워크플로는 읽기 전용.</figcaption>
+    </figure>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/22-admin-measure.png" alt="측정 단위">
+        <figcaption><b>측정 단위</b> — 단위 CRUD.</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/26-admin-users.png" alt="사용자 관리">
+        <figcaption><b>사용자</b> — 계정 관리 + 이메일 초대.</figcaption>
+      </figure>
+    </div>
+    <div class="cols">
+      <figure style="margin:0">
+        <img src="shots/24-admin-issuetypes.png" alt="업무 유형">
+        <figcaption><b>업무 유형</b> — 유형 마스터(색·아이콘).</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="shots/25-admin-forms.png" alt="양식 빌더">
+        <figcaption><b>양식</b> — 제출 폼 빌더.</figcaption>
+      </figure>
+    </div>
+    <figure>
+      <img src="shots/30-admin-fieldschemes.png" alt="필드 스킴">
+      <figcaption><b>필드 스킴</b> — 유형/프로젝트별 필드 노출·필수 설정.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 12 -->
+  <section id="index">
+    <h2><span class="num">12</span>전체 화면 인덱스</h2>
+    <p class="lead">화면 → 진입 경로 → 핵심 기능 한눈에.</p>
+    <table>
+      <tr><th>화면</th><th>진입 경로</th><th>핵심</th></tr>
+      <tr><td>로그인</td><td><code>/login</code></td><td>이메일·비밀번호, 비번 찾기</td></tr>
+      <tr><td>워크스페이스 선택</td><td>로그인 직후</td><td>WS 선택·생성</td></tr>
+      <tr><td>회사 홈</td><td>LNB 대시보드</td><td>전사 지표·현황</td></tr>
+      <tr><td>받은함</td><td>LNB 알림</td><td>배정·멘션·알림</td></tr>
+      <tr><td>검색</td><td>LNB 검색</td><td>통합 검색·퀵필터·저장필터</td></tr>
+      <tr><td>워크룸</td><td>LNB 워크룸</td><td>채널·메시지·스레드·리액션</td></tr>
+      <tr><td>프로젝트 목록</td><td>LNB 프로젝트</td><td>카드·필터·생성 마법사</td></tr>
+      <tr><td>요약</td><td>프로젝트 → 요약</td><td>지표·진행률·멤버</td></tr>
+      <tr><td>보드</td><td>프로젝트 → 보드</td><td>칸반·드래그 상태전이</td></tr>
+      <tr><td>백로그</td><td>프로젝트 → 백로그</td><td>스프린트·드래그 정리</td></tr>
+      <tr><td>목록</td><td>프로젝트 → 목록</td><td>표·일괄 편집</td></tr>
+      <tr><td>타임라인</td><td>프로젝트 → 타임라인</td><td>기간 막대(로드맵)</td></tr>
+      <tr><td>캘린더</td><td>프로젝트 → 캘린더</td><td>기한 월별·빈칸 생성</td></tr>
+      <tr><td>승인</td><td>프로젝트 → 승인</td><td>결재(운영형)</td></tr>
+      <tr><td>보고서</td><td>프로젝트 → 보고서</td><td>분포·번다운·벨로시티</td></tr>
+      <tr><td>업무 상세</td><td>업무 클릭</td><td>본문·세부·댓글·이력</td></tr>
+      <tr><td>만들기 모달</td><td>헤더 [+ 만들기]</td><td>업무 생성</td></tr>
+      <tr><td>개인 설정</td><td>계정 아바타 메뉴</td><td>알림·테마·비밀번호</td></tr>
+      <tr><td>관리자</td><td>LNB 설정</td><td>측정·필드·워크플로·유형·양식·사용자</td></tr>
+    </table>
+  </section>
+
+  <div class="footer">
+    WorkMap(업무지도) UI 메뉴얼 · 캡처는 예제 워크스페이스 "메뉴얼 예제" 기준입니다.<br>
+    업무 흐름(에픽·스프린트 운영) 안내는 <a href="workmap-실무활용-메뉴얼.html">실무 활용 메뉴얼</a>을 참고하세요.
+  </div>
+</main>
+</div>
+</body>
+</html>

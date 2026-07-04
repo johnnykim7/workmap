@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const FILE='file://'+new URL('../workmap-실무활용-메뉴얼.html',import.meta.url).pathname;
+const b=await chromium.launch();
+const p=await (await b.newContext({viewport:{width:1280,height:1400},deviceScaleFactor:1})).newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.goto(FILE,{waitUntil:'networkidle'});
+await p.evaluate(()=>document.getElementById('writing').scrollIntoView());
+await p.waitForTimeout(500);
+await p.screenshot({path:new URL('../_preview-writing.png',import.meta.url).pathname});
+console.log('errors',errs);
+await b.close();

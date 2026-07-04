@@ -1,0 +1,21 @@
+{
+  "workspaceId": 4,
+  "devProjectId": 5,
+  "devKey": "SHOP",
+  "opsProjectId": 6,
+  "opsKey": "OPS",
+  "epic1": 18,
+  "epic2": 19,
+  "stories": [
+    20,
+    21,
+    23
+  ],
+  "tasks": [
+    22,
+    24
+  ],
+  "bug": 25,
+  "sprint1": 3,
+  "_boardSample": "{\"projectId\":5,\"workflowId\":1,\"sprintId\":3,\"columns\":[{\"statusId\":1,\"code\":\"TODO\",\"label\":\"할 일\",\"commonStatus\":\"TODO\",\"isDone\":false,\"isApproval\":false,\"cards\":[{\"id\":20,\"key\":\"SHOP-3\",\"projectId\":5,\"issueType\":\"STORY\",\"parentId\":null,\"epicId\":18,\"title\":\"간편결제(카카오페이) 연동\",\"description\":null,\"workflowId\":1,\"statusId\":1,\"commonStatus\":\"TODO\",\"priority\":\"HIGH\",\"assigneeId\":null,\"reporterId\":1,\"sprintId\":3,\"storyPoints\":null,\"estimateHours\":null,\"startDate\":null,\"dueDate\":null,\"progress\":0,\"blockReason\":null,\"measureUnitId\":null,\"targetValue\":null,\"currentValue\":null,\"acceptanceCriteria\":[],\"stepsToReproduce\":[],\"expectedResult\":null,\"actualResult\":null,\"environment\":null,\"severity\":null,\"checklist\":null,\"labels\":[\"payment\"],\"relatedSolutions\":[],\"completedAt\":null,\"createdBy\":1,\"createdAt\":\"2026-06-29T07:39:35.206911Z\"},{\"id\":21,\"key\":\"SHOP-4\",\"projectId\":5,\"issueType\":\"STORY\",\"parentId\":null,\"epicId\":18,\"title\":\"결제 실패 재시도 처리\",\"description\":null,\"workflowId\":1,\"statusId\":1,\"commonStatus\":\"TODO\",\"priority\":\"MEDIUM\",\"assigneeId\":null,\"reporterId\":1,\"sprintId\":3,\"storyPoints\":null,\"estimateHours\":null,\"startDate\":null,\"dueDate\":null,\"progress\":0,\"blockReason\":null,\"measureUnitId\":null,\"ta"
+}

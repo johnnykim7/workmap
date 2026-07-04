@@ -1,0 +1,21 @@
+[
+  "01-login",
+  "02-select-workspace",
+  "03-home",
+  "04-projects",
+  "05-wizard-step1-template",
+  "06-wizard-step2-nameKey",
+  "07-create-modal",
+  "08-backlog",
+  "09-board",
+  "10-workitem-epic",
+  "11-workitem-story",
+  "12-timeline",
+  "13-reports",
+  "14-summary",
+  "15-list",
+  "16-ops-board",
+  "17-ops-approvals",
+  "18-search",
+  "19-inbox"
+]
