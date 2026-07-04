@@ -46,7 +46,8 @@ export function LinkedItems({ item, addRef }: { item: WorkItemResponse; addRef?:
       {isPending ? (
         <p className="text-sm text-muted-foreground">불러오는 중…</p>
       ) : links.length === 0 ? (
-        <p className="text-sm text-muted-foreground">연결된 업무가 없습니다.</p>
+        // 빈 섹션 압축: 안내문 줄 제거(제목+연결 버튼만).
+        null
       ) : (
         <div className="space-y-3">
           {LINK_TYPES.filter((t) => grouped[t].length > 0).map((t) => (

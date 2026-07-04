@@ -46,7 +46,8 @@ export function SubtaskList({ item, addRef }: Props) {
       {isPending ? (
         <p className="text-sm text-muted-foreground">불러오는 중…</p>
       ) : subtasks.length === 0 && !adding ? (
-        <p className="text-sm text-muted-foreground">하위 작업이 없습니다.</p>
+        // 빈 섹션 압축: 안내문 줄 제거(제목+추가 버튼만) — 여러 빈 섹션이 쌓여 휑해지는 것 방지.
+        null
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
           {subtasks.map((s) => (
