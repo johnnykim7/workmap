@@ -23,6 +23,10 @@ public class WmpSecurityConfig extends BaseSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         applyCommonConfig(http);
         customizeFilterChain(http);
+        // X-Frame-Options 기본값 DENY → SAMEORIGIN(CR-037). PDF 첨부 미리보기를 같은 오리진
+        // iframe(/files/serve/*)에서 렌더하려면 DENY면 브라우저가 프레임을 차단한다.
+        // SAMEORIGIN이라 외부 사이트의 clickjacking은 여전히 막는다.
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();
     }
 
