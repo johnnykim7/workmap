@@ -23,7 +23,7 @@ export function ProjectFilterBar({ filter, onChange }: Props) {
   return (
     <div className="mb-4 flex items-center gap-2">
       <SearchInput
-        className="min-w-0 flex-1"
+        className="w-64 shrink-0"
         placeholder="프로젝트명·키 검색"
         value={filter.keyword ?? ''}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
