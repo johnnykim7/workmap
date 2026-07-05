@@ -49,11 +49,12 @@ export interface ChatReply {
   createdAt: string;
 }
 
+// 채널 멤버 응답 계약(BE MemberResponse) — userName 조인, email 미제공.
 export interface ChatMember {
   userId: number;
-  name: string;
-  email: string;
+  userName: string;
   role?: string;
+  joinedAt?: string;
 }
 
 export interface ChatBookmark {

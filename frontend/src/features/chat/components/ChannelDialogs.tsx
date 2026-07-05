@@ -137,11 +137,11 @@ export function MembersDialog({
                 members.map((m) => (
                   <div key={m.userId} className="flex items-center gap-2 rounded-md px-1 py-1">
                     <Avatar className="size-7">
-                      <AvatarFallback className="text-xs">{initialOf(m.name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{initialOf(m.userName)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-foreground">{m.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">{m.email}</div>
+                      {/* 채널 멤버 응답엔 email이 없음(BE MemberResponse) — 이름만 표시. */}
+                      <div className="truncate text-sm text-foreground">{m.userName}</div>
                     </div>
                     <Button
                       variant="ghost"
