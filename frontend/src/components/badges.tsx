@@ -52,7 +52,19 @@ const TYPE_ICON_COLOR: Record<string, string> = {
 };
 
 // 유형 아이콘(색) + 라벨 — Select 옵션/트리거용. 배경 배지 없이 차분하게(색 절제).
-export function TypeOption({ type }: { type: IssueType }) {
+// withDesc: 유형 선택 드롭다운에서 라벨 밑에 예시 포함 설명을 함께 노출(고르는 순간 감을 준다).
+export function TypeOption({ type, withDesc = false }: { type: IssueType; withDesc?: boolean }) {
+  if (withDesc) {
+    return (
+      <span className="flex items-start gap-2">
+        <span className={`mt-0.5 ${TYPE_ICON_COLOR[ISSUE_TYPE_COLOR[type]]}`}>{TYPE_ICON[type]}</span>
+        <span className="flex flex-col">
+          <span>{ISSUE_TYPE_LABEL[type]}</span>
+          <span className="text-xs text-muted-foreground">{ISSUE_TYPE_DESC[type]}</span>
+        </span>
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-2">
       <span className={TYPE_ICON_COLOR[ISSUE_TYPE_COLOR[type]]}>{TYPE_ICON[type]}</span>

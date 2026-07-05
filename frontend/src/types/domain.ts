@@ -65,15 +65,21 @@ export const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
   SUBTASK: 'Sub-task',
 };
 
-// 유형 한 줄 설명 — 아이콘 툴팁 등 도움말용 SSoT (T1-3 유형 체계 기반)
+// 유형 한 줄 설명 — 아이콘 툴팁·유형 선택 옵션 등 도움말용 SSoT (T1-3 유형 체계 기반).
+// "확 와닿음" 원칙: 추상 정의보다 예시로 감을 준다.
 export const ISSUE_TYPE_DESC: Record<IssueType, string> = {
-  EPIC: '여러 Story/Task를 묶는 큰 목표 단위',
-  STORY: '사용자 관점의 기능 단위',
-  TASK: '수행할 작업 단위',
-  BUG: '결함·장애 등 고쳐야 할 문제',
-  DOC: '문서 작성·정리 작업',
-  SUBTASK: '상위 항목을 쪼갠 하위 작업',
+  EPIC: '여러 Story를 묶는 큰 목표 · 예: "결제 시스템 구축"',
+  STORY: '사용자가 얻는 기능·가치 · 예: "카드로 결제할 수 있다"',
+  TASK: '개발·실무 작업 한 덩어리 · 예: "PG 연동 API 구현"',
+  BUG: '고쳐야 할 결함·장애 · 예: "결제 후 화면 멈춤"',
+  DOC: '문서 작성·정리 · 예: "결제 연동 가이드 작성"',
+  SUBTASK: '상위 항목을 쪼갠 체크리스트 · 예: "결제 버튼 UI 작업"',
 };
+
+// Story vs Task 구분 도움말 — 둘 다 고를 수 있는 템플릿에서 유형 필드 밑에 노출.
+// 자동 판정은 어떤 툴도 못 함 → 헷갈리는 핵심(왜/무엇 vs 어떻게)만 한 줄로.
+export const STORY_VS_TASK_HINT =
+  'Story는 "사용자가 무엇을 할 수 있는가"(기능·가치), Task는 "그걸 위해 무엇을 만드는가"(개발 작업)입니다.';
 
 export const ISSUE_TYPE_COLOR: Record<IssueType, 'violet' | 'green' | 'blue' | 'red' | 'amber' | 'slate'> = {
   EPIC: 'violet',

@@ -13,7 +13,7 @@ import {
   Button, Input, Spinner, Checkbox, DatePicker,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Lightbulb } from 'lucide-react';
 import { Field } from './field';
 import { RichTextEditor } from './rich-text-editor';
 import { useUiStore } from '@/store/ui-store';
@@ -23,7 +23,7 @@ import { useCreateWorkItem } from '@/features/workitem/hooks';
 import { workItemApi } from '@/features/workitem/api';
 import { TypeOption } from '@/components/badges';
 import {
-  ISSUE_TYPE_LABEL, PRIORITY_LABEL, PROJECT_TEMPLATES,
+  ISSUE_TYPE_LABEL, PRIORITY_LABEL, PROJECT_TEMPLATES, STORY_VS_TASK_HINT,
   type IssueType, type Priority,
 } from '@/types/domain';
 import { ROUTES } from '@/lib/route-paths';
@@ -65,6 +65,8 @@ export function CreateModal() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [keepOpen, setKeepOpen] = useState(false);
+  // "만들기는 가볍게": 선택 필드(담당자·우선순위·Epic·마감·라벨)는 기본 접힘. 필수 3개만 먼저 보인다.
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const { data: projects = [] } = useProjects({});
   const createMut = useCreateWorkItem();
@@ -89,6 +91,7 @@ export function CreateModal() {
         projectId: prefill?.projectId ?? ctxProject?.id,
         dueDate: prefill?.dueDate ?? '',
       });
+      setMoreOpen(false); // 열 때마다 선택 필드는 접힌 상태로 시작.
     } else reset({ ...EMPTY });
     // ctxProject는 projects 로딩 후 채워지므로 id도 의존성에 포함.
   }, [open, ctxProject?.id, prefill?.projectId, prefill?.dueDate, reset]);
@@ -202,7 +205,7 @@ export function CreateModal() {
                     </SelectTrigger>
                     <SelectContent>
                       {allowedTypes.map((t) => (
-                        <SelectItem key={t} value={t}><TypeOption type={t} /></SelectItem>
+                        <SelectItem key={t} value={t}><TypeOption type={t} withDesc /></SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -210,6 +213,14 @@ export function CreateModal() {
               />
             </Field>
           </div>
+
+          {/* Story·Task가 둘 다 선택 가능한 템플릿에서만 구분 힌트(자동 판정은 불가 — 사람이 고르는 기준만 제시). */}
+          {allowedTypes.includes('STORY') && allowedTypes.includes('TASK') && (
+            <p className="-mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+              <Lightbulb className="mt-0.5 size-3.5 shrink-0" />
+              <span>{STORY_VS_TASK_HINT}</span>
+            </p>
+          )}
 
           <Field label="요약" required error={errors.title?.message}>
             <Input placeholder="무엇을 할 일인가요?" autoFocus {...register('title')} />
@@ -229,6 +240,17 @@ export function CreateModal() {
             />
           </Field>
 
+          {/* 추가 정보 — 기본 접힘. "만들기는 가볍게" 원칙: 필수 3개 뒤엔 선택 필드를 숨겨 화면을 라이트하게. */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {moreOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            추가 정보 (담당자·우선순위·Epic·마감일·라벨)
+          </button>
+
+          <div className={moreOpen ? 'space-y-3' : 'hidden'}>
           <div className="grid grid-cols-2 gap-3">
             <Field label="담당자">
               <Controller
@@ -312,6 +334,7 @@ export function CreateModal() {
           <Field label="라벨">
             <Input placeholder="콤마로 구분(예: 긴급, 인프라)" {...register('labels')} />
           </Field>
+          </div>
 
           <DialogFooter className="items-center justify-between sm:justify-between">
             <label className="flex items-center gap-2 text-sm text-muted-foreground">

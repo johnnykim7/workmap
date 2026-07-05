@@ -7,7 +7,9 @@ import { Plus } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { StatusBadge, TypeBadge } from '@/components/badges';
 import { type WorkItemResponse } from '@/types/domain';
+import { useBoard } from '@/features/board/hooks';
 import { useProjectItems, useCreateSubtask, pickSubtasks } from '../hooks';
+import { SubtaskCheckbox } from './SubtaskCheckbox';
 
 interface Props {
   item: WorkItemResponse;
@@ -20,6 +22,12 @@ export function SubtaskList({ item, addRef }: Props) {
   const { data: items, isPending } = useProjectItems(item.projectId);
   const subtasks = pickSubtasks(items, item.id);
   const create = useCreateSubtask(item.id, item.projectId, item.key);
+  // 완료 체크박스 대상 statusId 해소용 — 하위작업은 부모와 같은 프로젝트/워크플로 → 보드 컬럼 재사용.
+  const { data: board } = useBoard(item.projectId);
+  const columns = board?.groups?.[0]?.columns ?? [];
+  const doneStatusId = columns.find((c) => c.isDone)?.statusId;
+  // 되돌리기(체크 해제) 대상 = 첫 미완료(TODO) 컬럼. 없으면 되돌리기 비활성.
+  const todoStatusId = columns.find((c) => !c.isDone && !c.isApproval)?.statusId;
 
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
@@ -50,20 +58,31 @@ export function SubtaskList({ item, addRef }: Props) {
         null
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
-          {subtasks.map((s) => (
-            <li key={s.id}>
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.workItem(s.key))}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/40"
-              >
-                <TypeBadge type={s.issueType} withLabel={false} />
-                <span className="font-mono text-xs text-muted-foreground">{s.key}</span>
-                <span className="flex-1 truncate">{s.title}</span>
-                <StatusBadge status={s.commonStatus} />
-              </button>
-            </li>
-          ))}
+          {subtasks.map((s) => {
+            const done = s.commonStatus === 'DONE' || s.commonStatus === 'OPS_APPLIED';
+            return (
+              <li key={s.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/40">
+                <SubtaskCheckbox
+                  subtask={s}
+                  done={done}
+                  doneStatusId={doneStatusId}
+                  todoStatusId={todoStatusId}
+                />
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.workItem(s.key))}
+                  className="flex flex-1 items-center gap-2 text-left"
+                >
+                  <TypeBadge type={s.issueType} withLabel={false} />
+                  <span className="font-mono text-xs text-muted-foreground">{s.key}</span>
+                  <span className={`flex-1 truncate ${done ? 'text-muted-foreground line-through' : ''}`}>
+                    {s.title}
+                  </span>
+                  <StatusBadge status={s.commonStatus} />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
