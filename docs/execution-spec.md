@@ -257,6 +257,31 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
   - ④ **채널 가드 vs 채팅 예외** — VIEWER 채팅 쓰기 허용(CR-031 예외)은 **메시지/리액션만**. 채널 CRUD는 관리자만(POL-014). 두 정책이 같은 컨트롤러에 공존하므로 메서드별로 가드 구분.
   - ⑤ **보관은 동결** — archive가 하위 프로젝트/채널을 건드리지 않는지 확인(cascade 금지, BIZ-113). 보관 WS의 하위 데이터는 보존.
 
+### CR-047 — 사용자 아바타·프로필 카드 전역 공통화 + 프로필 사진 (횡단, 대규모)
+> 배경: 시스템 전반 사용자 아이콘(약 20곳)이 "누구인지" 식별 불가 + 렌더 구현 3중 제각각. 정공 = **공통 UserAvatar/UserProfileCard 1쌍 + GET /users/{id} 신설 + avatar_url 사진 업로드**. 기준 = T1-1 WMP-USER-001 · T3-1 V19 users.avatar_url · T3-2 GET /users/{id}·PATCH /users/me/avatar · T3-3 §공통 사용자 아바타 + /account/profile.
+
+- **(A) BE — 사용자 상세·아바타 풀스택 신규**:
+  - **V19**: `users`에 `avatar_url VARCHAR(500) NULL`. 기존 행 null(이니셜 폴백). 인덱스 없음(PK 단건 조회).
+  - `User` 도메인에 `avatarUrl` 필드(+ MyBatis resultMap·INSERT/SELECT 반영). **⚠️ @NoArgsConstructor 확인** — users에 컬럼 추가 = SELECT * 순서 변동([[workmap-mybatis-builder-trap]], CR-040 재현 방지). User 도메인에 이미 있으면 유지.
+  - `UserController`: `GET /users/{id}`(인증 누구나 — @PreAuthorize 없음, VIEWER 포함 읽기) → `UserDetailResponse`. `PATCH /users/me/avatar`(`@AuthUserInfo("userId")`, path param 없음 → 남의 아바타 변경 불가).
+  - `UserService.getDetail(id)` — `UserMapper.findDetailById`(users LEFT JOIN departments로 departmentName) → 없으면 `USER_NOT_FOUND`(7850). `updateMyAvatar(userId, url)` — `UserMapper.updateAvatar`(url null 허용=제거).
+  - `UserResponse`·`MemberDtos.Response`에 `avatarUrl` 추가 + 각 매퍼 SELECT/resultMap에 `avatar_url` 컬럼. 목록·멤버 조회 쿼리 보정.
+  - WmpErrorCode **7850**(USER_NOT_FOUND) 추가.
+  - **⚠️ @WebMvcTest 슬라이스**: 신규 매퍼 없음(UserMapper 확장만) → MockBean 추가 불요. UserServiceTest에 getDetail(존재/부재)·updateMyAvatar 케이스. UserControllerTest에 GET /{id} 200.
+- **(B) FE — 공통 컴포넌트 + 20곳 교체**:
+  - **`components/common/user-avatar/`**: `UserAvatar`({userId?, name, avatarUrl?, size?}) — avatarUrl 있으면 이미지, 없으면 이니셜(공통 `initialOf`). userId 있으면 클릭 시 `UserProfileCard` Popover. `UserProfileCard`({userId}) — `useUser(userId)`(TanStack Query, `GET /users/{id}`)로 상세 → 아바타·이름·이메일·역할(RoleBadge)·부서명·가입일. 로딩=스켈레톤.
+  - **user api/hooks**: `features/users`(또는 기존 위치)에 `getUser(id)`·`updateMyAvatar(url)` + `useUser`·`useUpdateMyAvatar`.
+  - **`/account/profile`**: 큰 UserAvatar + [사진 변경](공통 첨부 업로드 재사용 → URL → PATCH)/[사진 제거] + 이름·이메일·역할·부서(읽기). 계정 드롭다운(HeaderActions)에 "내 프로필" 진입 추가.
+  - **약 20곳 교체**: `Avatar2`(badges.tsx) 4곳(WorkItemCard·BacklogRow·WorkItemTable·ApprovalsView) + 인라인 ds-ui Avatar 13곳(AppShell 계정메뉴·채팅 MessageItem/ThreadPane/ChannelDialogs·members MembersPanel/MemberPicker/InviteMemberDialog·workitem CommentThread/ActivityTabs/ActivityFeed) → UserAvatar. 죽은 `AssigneeAvatar`(DetailSidePanel) 제거.
+  - **userId 배선**: 칸반카드(WorkItemCard)·백로그(BacklogRow)는 현재 assigneeName만 → 상위에서 assigneeId도 넘겨 UserAvatar userId로. 나머지는 이미 userId/authorId/actorId 보유.
+- **핵심 함정**:
+  - ① **아바타 배경 = 중립색**(§레이아웃·색상 절제). 역할만 신호색(RoleBadge 재사용). 카드에 색 남발 금지.
+  - ② **avatarUrl 서빙 경로** — 사진 URL은 `/files/serve/*`(무인증 서빙 화이트리스트, CR-024). `<img src>` 무인증 접근 OK. 업로드 POST는 인증 유지.
+  - ③ **Tailwind v4 트랩**([[workmap-tailwind-lnb-trap]]) — Popover·이미지 추가로 유틸 정렬 흔들릴 수 있음. 배포 후 LNB 확인.
+  - ④ **MyBatis @Builder 트랩**([[workmap-mybatis-builder-trap]]) — users에 avatar_url 추가 = SELECT * 순서 변동. User 도메인 @NoArgsConstructor 확인.
+  - ⑤ **N+1 방지** — 목록/멤버 응답에 avatarUrl 이미 실림 → 아바타 이미지는 추가 fetch 없이 렌더. `GET /users/{id}`는 카드 열 때만 1회(TanStack Query 캐시로 중복 억제).
+  - ⑥ **본인만 사진 변경** — `/users/me/avatar`는 path param 없이 JWT userId로만. 남의 id로 아바타 변경 경로 없음.
+
 ---
 
 ## 5-A. Sprint 완료 게이트

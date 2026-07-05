@@ -1017,6 +1017,38 @@
 - **FE**: `/admin/*`를 별도 레이아웃(SystemAdminShell)으로 이전 + 라우터(App.tsx) 재편 + 계정 드롭다운 "시스템 관리" 진입점 + `WorkspaceSettingsPage`(4탭, 멤버/일반 재사용 + 채널 관리 + 보관) + LNB "설정" 경로 변경(`ROUTES.workspaceSettings`) + `menuItems` deps에 currentWorkspaceId 추가 + 스위처 "멤버 관리" 제거(설정 탭 통합) + Workspace 타입/api/hook에 status·archive.
 - **요청자/승인자**: 사용자(2026-07-06, "설정이 시스템 전체적인 설정인데 워크스페이스 안쪽에 있는 것부터가 이상함" · "만드는 것에 대한 부담으로 접근하면 안 되고 정공으로 가야죠" · "지금 있는 설정 자리에 워크스페이스만의 설정할 것이 있으면 그쪽으로" → 3계층 완전분리 + WS 설정 4탭 + 보관=동결 + 권한=전사 OWNER/ADMIN 확정) | **변경 일자**: 2026-07-06
 
+### CR-047 — 사용자 아바타·프로필 카드 전역 공통화 + 프로필 사진 (WMP-USER-001)
+
+- **대상 기능 ID**: WMP-USER-001(신규), 모듈 A(인증/사용자)
+- **변경 타입**: 신규
+- **영향도**: High (스키마 V19 + 신규 API + 신규 화면 + 전역 공통 컴포넌트 2종 + 약 20곳 호출부 교체 = 횡단·다수 모듈)
+- **적용 버전**: v2.8
+
+- **배경**: 운영 화면 점검 중 사용자 지적 — "시스템 전반적으로 사용자에 대한 아이콘이 나오는 부분에 대해서 저 사용자가 누구인지 알 수가 없습니다. 아이콘을 클릭하면 사용자 상세정보 카드가 뜨게 할 수 있나요? 전역적으로 카드는 공통으로 만들고 저 아이콘도 공통이 되면 될 듯". 채팅 메시지 작성자 아바타가 대표 사례.
+- **실측 근거**:
+  - 아바타 렌더 지점 약 20곳이 **3중으로 제각각**: ds-ui `Avatar`+이니셜 인라인(약 13곳 — 헤더 계정메뉴·채팅·멤버·댓글·활동피드), 자체 `Avatar2`(`badges.tsx:144`, 칸반카드·백로그·테이블·승인 4곳), 죽은 `AssigneeAvatar`(`DetailSidePanel.tsx:288`, 호출부 없음). 이니셜 추출도 `initialOf`/`name[0]`/`name?.[0]`로 갈림.
+  - **단일 공통 아바타 컴포넌트 없음.** 클릭 시 상세를 여는 인터랙션 전무.
+  - **`GET /api/v1/users/{id}` 단건 상세 API 없음**(`UserController` 실측 — 목록 검색·PATCH·deactivate만). `GET /auth/me`는 본인만.
+  - **프로필 이미지 필드가 도메인·DTO 어디에도 없음**(User 엔티티·UserResponse·MemberDtos.Response 전부). 모두 이니셜 폴백만 표시. 부서도 `departmentId`만 노출·부서명 없음.
+  - 대부분의 렌더 지점은 최소 이름, 담당자·댓글·활동·멤버·계정 계열은 숫자 userId(authorId/actorId/assigneeId)까지 확보. 칸반카드·백로그만 이름 문자열만 보유 → userId 배선 필요.
+- **핵심 결정(사용자 2026-07-06)**:
+  - 아바타·프로필 카드를 **전역 공통 컴포넌트 1쌍**(`UserAvatar`/`UserProfileCard`)으로 통일. 기존 3중 구현 전부 흡수.
+  - 카드는 **`GET /users/{id}` 신설**로 채운다(목록 우회 아님). 인증 사용자 누구나 조회(VIEWER 포함 읽기).
+  - **프로필 사진 업로드까지 포함**(1CR 일괄). `users.avatar_url` 추가, 기존 파일 업로드(CR-024/037 이미지 화이트리스트) 재사용. 사진 없으면 이니셜 폴백.
+  - 부서명은 카드 표시용으로 `departments` 조인해 노출(스키마 무변경).
+- **비즈니스 규칙/정책 (T1-3/T1-4)**: 신규 규칙 없음(프로필 사진은 표시·본인 편집 기능이라 도메인 불변식 무영향). 카드 조회 권한=인증 사용자 누구나(POL-004 읽기 허용 범위 내), 사진 변경=본인만.
+- **FSM (T1-5)**: 무변경(상태 전이 없음).
+- **이벤트 (T1-6)**: 무변경(알림 트리거 아님).
+- **데이터 모델 (T3-1)**: `users.avatar_url VARCHAR(500) NULL` 추가. **V19** 마이그레이션(기존 행 null=이니셜 폴백). 인덱스 추가 없음(단건 PK 조회).
+- **API (T3-2)**:
+  - `GET /users/{id}` — 단건 상세(프로필 카드용). 반환 `{ id, email, name, role, departmentId, departmentName, avatarUrl, active, createdAt }`. `departments` LEFT JOIN. 없는 id=`USER_NOT_FOUND`(**WMP-7850**). 인증 누구나.
+  - `PATCH /users/me/avatar` body `{ avatarUrl }` — 본인 사진 URL 저장(`@AuthUserInfo("userId")`, path param 없음). null 허용(제거). 파일 업로드는 기존 `POST /files/upload` 재사용.
+  - `UserResponse`·`MemberDtos.Response`에 `avatarUrl` 추가 → 목록·멤버 응답에 실려 추가 fetch 없이 렌더.
+- **화면 (T3-3)**: 공통 `UserAvatar`/`UserProfileCard`(§공통 사용자 아바타) + `/account/profile` 내 프로필 편집 화면(사진 변경/제거) + 계정 드롭다운 "내 프로필" 진입. 약 20곳 호출부를 UserAvatar로 교체.
+- **BE**: users 스키마(V19) + User 도메인 avatarUrl + UserController `GET /{id}`·`PATCH /me/avatar` + UserService 상세조회(부서명 조인)·아바타 저장 + UserResponse/MemberDtos.Response avatarUrl + UserMapper findById(부서조인)·updateAvatar + 에러코드 WMP-7850.
+- **FE**: 공통 `UserAvatar`·`UserProfileCard`(components/common) + user api `getUser`·`updateMyAvatar` + TanStack Query hook + `/account/profile` 화면 + 계정 드롭다운 진입점 + `Avatar2`/인라인/`AssigneeAvatar` → UserAvatar 교체(약 20곳) + 칸반카드·백로그 userId 배선.
+- **요청자/승인자**: 사용자(2026-07-06, "아이콘 클릭 시 사용자 상세정보 카드" + "카드·아이콘 전역 공통화" 요청 → 프로필 사진 업로드 포함·GET /users/{id} 신설·1CR 일괄 확정) | **변경 일자**: 2026-07-06
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

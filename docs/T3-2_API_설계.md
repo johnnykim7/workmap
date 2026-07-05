@@ -66,6 +66,8 @@
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
 | GET | /users | 사용자 목록(검색·페이징) | 🔒 | P1 | WMP-AUTH-005 |
+| GET | /users/{id} | 사용자 단건 상세(프로필 카드용 — 이름·이메일·역할·부서명·아바타·상태·가입일). 인증 사용자 누구나 조회(CR-047) | 🔒 | P1 | WMP-USER-001 |
+| PATCH | /users/me/avatar | 본인 프로필 사진 URL 저장(`{avatarUrl}` — /files/upload 결과 URL). 인증 본인만(CR-047) | 🔒 | P1 | WMP-USER-001 |
 | POST | /users | 사용자 직접 생성(이름·역할·부서·비밀번호 — 시드/마이그레이션용, Admin) | 🔒 Admin | P2 | WMP-AUTH-005 |
 | POST | /invitations | 사용자 초대(이메일·이름·역할·부서·**workspaceId(CR-033)** → invitations 생성 + 링크 발송. 수락 시 그 WS 자동 합류) | 🔒 Admin | P1 | WMP-AUTH-004 |
 | GET | /invitations | 초대 목록(상태 필터: PENDING/ACCEPTED/EXPIRED) | 🔒 Admin | P2 | WMP-AUTH-004 |
@@ -78,6 +80,10 @@
 | PATCH | /users/{id}/deactivate | 비활성화(소프트 삭제) | 🔒 Admin | P1 | WMP-AUTH-005 |
 
 > **CR-027 변경**: 기존 `POST /users`의 "초대" 역할은 `POST /invitations`로 분리. `POST /users`는 비밀번호를 직접 지정하는 직접 생성(시드/관리 목적)으로 남기되 권장 가입 경로는 초대다. invitations는 user를 즉시 만들지 않고 수락 시점에 생성한다.
+> **CR-047 사용자 상세·프로필 사진(WMP-USER-001)**:
+> - `GET /users/{id}`: 프로필 카드용 단건 상세. 반환 `{ id, email, name, role, departmentId, departmentName, avatarUrl, active, createdAt }`. `departmentName`은 `departments` LEFT JOIN. 없는 id는 `USER_NOT_FOUND`(WMP-7850). **인증 사용자 누구나 조회 가능**(전역 아바타 클릭 → 카드). VIEWER 포함 읽기 허용.
+> - `PATCH /users/me/avatar` body `{ avatarUrl }`: 본인 프로필 사진 URL 저장(`@AuthUserInfo("userId")`, path param 없음 — 남의 아바타 변경 불가). 사진 파일 자체는 기존 `POST /files/upload`(CR-024)로 업로드하고 반환 URL을 여기 저장. `avatarUrl=null` 허용(사진 제거).
+> - `UserResponse`·`MemberDtos.Response`에 `avatarUrl` 필드 추가 → 목록·멤버 응답에서도 사진 표시(추가 fetch 없이 즉시 렌더).
 
 ## C. 워크스페이스 (Workspaces)
 
