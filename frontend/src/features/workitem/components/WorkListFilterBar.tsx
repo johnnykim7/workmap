@@ -29,18 +29,21 @@ interface Props {
 export function WorkListFilterBar({ params, members, onChange }: Props) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <SearchInput
-        className="w-60"
-        placeholder="제목·키 검색"
-        value={params.keyword ?? ''}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
-      />
+      {/* 검색창은 고정폭 래퍼로 감싸 좌측에 붙임(SearchInput 내부 w-full 방지). 셀렉트가 바로 옆에 온다 */}
+      <div className="w-60 shrink-0">
+        <SearchInput
+          className="w-full"
+          placeholder="제목·키 검색"
+          value={params.keyword ?? ''}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
+        />
+      </div>
 
       <Select
         value={params.issueType ?? ALL}
         onValueChange={(v) => onChange({ issueType: v === ALL ? undefined : (v as IssueType) })}
       >
-        <SelectTrigger className="w-28"><SelectValue placeholder="유형" /></SelectTrigger>
+        <SelectTrigger className="w-28 shrink-0"><SelectValue placeholder="유형" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 유형</SelectItem>
           {(['EPIC', 'STORY', 'TASK', 'BUG', 'SUBTASK'] as IssueType[]).map((t) => (
@@ -53,7 +56,7 @@ export function WorkListFilterBar({ params, members, onChange }: Props) {
         value={params.commonStatus ?? ALL}
         onValueChange={(v) => onChange({ commonStatus: v === ALL ? undefined : (v as WorkStatus) })}
       >
-        <SelectTrigger className="w-32"><SelectValue placeholder="상태" /></SelectTrigger>
+        <SelectTrigger className="w-32 shrink-0"><SelectValue placeholder="상태" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 상태</SelectItem>
           {STATUS_OPTIONS.map((s) => (
@@ -66,7 +69,7 @@ export function WorkListFilterBar({ params, members, onChange }: Props) {
         value={params.priority ?? ALL}
         onValueChange={(v) => onChange({ priority: v === ALL ? undefined : (v as Priority) })}
       >
-        <SelectTrigger className="w-28"><SelectValue placeholder="우선순위" /></SelectTrigger>
+        <SelectTrigger className="w-28 shrink-0"><SelectValue placeholder="우선순위" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 우선순위</SelectItem>
           {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
@@ -79,7 +82,7 @@ export function WorkListFilterBar({ params, members, onChange }: Props) {
         value={params.assigneeId != null ? String(params.assigneeId) : ALL}
         onValueChange={(v) => onChange({ assigneeId: v === ALL ? undefined : Number(v) })}
       >
-        <SelectTrigger className="w-36"><SelectValue placeholder="담당자" /></SelectTrigger>
+        <SelectTrigger className="w-36 shrink-0"><SelectValue placeholder="담당자" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 담당자</SelectItem>
           {members.map((m) => (
