@@ -83,11 +83,13 @@
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|
-| GET | /workspaces | 워크스페이스 목록 — **내가 속한 WS만**(BIZ-112). Admin도 멤버 WS만 | 🔒 | P1 | WMP-WS-001·008 |
-| POST | /workspaces | 워크스페이스 생성(생성자 자동 멤버 추가) | 🔒 Admin | P1 | WMP-WS-001 |
+| GET | /workspaces | 워크스페이스 목록 — **내가 속한 WS만**(BIZ-112) + **기본 ACTIVE만**(보관 제외, BIZ-113). Admin도 멤버 WS만 | 🔒 | P1 | WMP-WS-001·008 |
+| POST | /workspaces | 워크스페이스 생성(생성자 자동 멤버 추가, status=ACTIVE) | 🔒 Admin | P1 | WMP-WS-001 |
 | GET | /workspaces/{id} | 워크스페이스 상세 — **비멤버 403**(WMP-7803) | 🔒 | P1 | WMP-WS-001 |
-| PATCH | /workspaces/{id} | 워크스페이스 수정 | 🔒 Admin | P1 | WMP-WS-001 |
-| GET | /workspaces/{id}/members | WS 멤버 목록 | 🔒 | P1 | WMP-WS-007 |
+| PATCH | /workspaces/{id} | 워크스페이스 수정(이름·설명, name 필수) | 🔒 Admin | P1 | WMP-WS-001·010 |
+| PATCH | /workspaces/{id}/archive | **WS 보관**(ACTIVE→ARCHIVED, FSM 가드). 이미 보관이면 WMP-7848 | 🔒 Admin | P1 | WMP-WS-011 (CR-046) |
+| PATCH | /workspaces/{id}/unarchive | **WS 보관 해제**(ARCHIVED→ACTIVE, FSM 가드). 잘못된 전이면 WMP-7847 | 🔒 Admin | P1 | WMP-WS-011 (CR-046) |
+| GET | /workspaces/{id}/members | WS 멤버 목록 | 🔒 | P1 | WMP-WS-007·010 |
 | POST | /workspaces/{id}/members | WS 멤버 추가(전사 Admin만) | 🔒 Admin | P1 | WMP-WS-007 |
 | DELETE | /workspaces/{id}/members/{userId} | WS 멤버 제거(전사 Admin만) | 🔒 Admin | P1 | WMP-WS-007 |
 
@@ -95,6 +97,9 @@
 > **WS 선택/전환(WMP-WS-008)은 별도 API 없음** — 선택은 클라이언트 상태(localStorage), 진입 시 위 가드가 멤버십을 서버에서 재검증한다. 선택 가능 목록 = `GET /workspaces`(내 WS만).
 >
 > **신규 에러코드(CR-018, WMP-7803~7805)**: `WORKSPACE_ACCESS_DENIED`(WMP-7803, 비멤버 접근 403), `WORKSPACE_MEMBER_NOT_FOUND`(WMP-7804, 제거 대상 없음 404), `WORKSPACE_MEMBER_DUPLICATED`(WMP-7805, 이미 멤버 409). WS 미존재는 기존 `WORKSPACE_NOT_FOUND`(WMP-7722) 재사용. (실측 정정: 코드 마지막은 WMP-7799가 아니라 **WMP-7802** — 7800~7802는 CR-012 현장검증/저장필터가 선점. WS는 7803부터.)
+>
+> **신규 에러코드(CR-046, WMP-7847~7848)**: `WORKSPACE_ARCHIVE_INVALID_TRANSITION`(WMP-7847, FSM 화이트리스트 위반 전이 — 예: ACTIVE가 아닌데 unarchive), `WORKSPACE_ALREADY_ARCHIVED`(WMP-7848, 이미 보관된 WS를 재보관). WS 미존재·비멤버는 기존 재사용(WMP-7722/7803). (최신 코드 = WMP-7846(CR-037 첨부) → WS 보관은 7847부터.)
+> **WS 보관/해제(WMP-WS-011)**: `PATCH /archive`·`/unarchive`는 전사 OWNER/ADMIN(`@PreAuthorize`, POL-014) + FSM 가드 경유(직접 status UPDATE 금지, BIZ-010). 보관은 동결이라 하위 리소스 무변경(BIZ-113). 보관 후 `GET /workspaces`에서 자동 제외.
 
 ## D. 프로젝트 (Projects)
 
@@ -130,7 +135,8 @@
 ## F. 업무 항목 (Work Items)
 
 > 핵심 단일 테이블. Epic/Story/Task/Bug/Sub-task는 `issue_type` + `parent_id`/`epic_id` 계층(BIZ-106). 백로그·보드·목록·타임라인·이슈는 모두 work_item의 파생 뷰.
-> **VIEWER 읽기전용 가드(POL-004, CR-031).** 쓰기(POST/PATCH/DELETE — 생성·수정·삭제·상태·담당자·유형전환·측정·스프린트·하위작업·댓글·첨부·링크·스프린트 시작/완료·현장검증·백로그전환·승인결정)는 `@PreAuthorize` `hasAnyRole('OWNER','ADMIN','MANAGER','MEMBER')`로 VIEWER 차단(403). 조회(GET)는 VIEWER 포함 전원 허용. 저장필터·채팅은 개인/소통 영역이라 VIEWER도 쓰기 허용(예외). 가드 SpEL은 `WmpAuthz.WRITER` 상수로 통일 관리.
+> **VIEWER 읽기전용 가드(POL-004, CR-031).** 쓰기(POST/PATCH/DELETE — 생성·수정·삭제·상태·담당자·유형전환·측정·스프린트·하위작업·댓글·첨부·링크·스프린트 시작/완료·현장검증·백로그전환·승인결정)는 `@PreAuthorize` `hasAnyRole('OWNER','ADMIN','MANAGER','MEMBER')`로 VIEWER 차단(403). 조회(GET)는 VIEWER 포함 전원 허용. 저장필터·채팅 **메시지/리액션/스레드**(소통 행위)는 개인/소통 영역이라 VIEWER도 쓰기 허용(예외). 가드 SpEL은 `WmpAuthz.WRITER` 상수로 통일 관리.
+> **채널 CRUD 가드(POL-014, CR-046).** 위 "채팅 예외"는 **메시지/리액션 등 소통 행위**에만 적용된다. **채널 생성·수정·삭제(`POST·PUT·DELETE /chat/channels`)는 WS 설정 성격**이므로 전사 OWNER/ADMIN만(`@PreAuthorize` `hasAnyRole('OWNER','ADMIN')`). CR-026 구현 시 채널 CRUD에 가드가 없었던 것을 CR-046에서 보강한다(FE 게이팅만으로는 403 미보장). 채널 접근·메시지 송수신은 WS 멤버 전원.
 
 | 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
 |--------|------|------|------|----------|-------------|

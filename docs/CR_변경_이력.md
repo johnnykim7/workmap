@@ -50,6 +50,7 @@
 | CR-043 | 프로젝트 건강 지표 체계(5축+AI) — "잘 됨" 다축 증명. 업계표준(애자일·Flow·품질·팀·EVM) 망라→우리 조직 매핑. 보고서 [건강] 서브탭. DORA 제외(FlowGuard 경계). 1차(예외축) 구현 | 신규 | High | v2.5 |
 | CR-044 | 프로젝트 첨부 집계 탭(WMP-VIEW-007) — Jira "첨부 파일" 탭 유사. 프로젝트 전체 업무의 첨부를 한 화면에 모아보기(파일 관점). view 모듈 조회 엔드포인트 1개 + 탭 1개. 모든 유형 기본 ON. 스키마·에러코드 무변경 | 신규 | Medium | v2.6 |
 | CR-045 | 전체 워크스페이스 프로젝트 보기(WMP-WS-009) — WS가 많을 때 내 모든 WS 프로젝트를 WS별 그룹으로 한 화면에 나열(넓힘 모드). 스위처 "전체 보기"가 진입점. FE 전용(BE 무변경 — 기존 GET /projects workspaceId 미지정 재사용). 격리(BIZ-112) 유지 | 신규 | Medium | v2.6 |
+| CR-046 | 설정 3계층 IA 재편 + WS 설정 화면(WMP-WS-010) + WS 보관(WMP-WS-011) — 전역 시스템 설정(/admin/*)을 WS 셸 밖 별도 레이아웃(시스템 관리)으로 완전분리하고, 비워진 LNB "설정" 자리에 WS 스코프 설정 화면(일반/멤버/채널/보관 4탭)을 배치. WS 보관은 소프트(동결·데이터 보존) FSM 신규 + workspaces status/archived_at 컬럼 V18 + 채널 CRUD @PreAuthorize 가드 보강. 전사 OWNER/ADMIN 권한 | 신규 | High | v2.7 |
 
 ---
 
@@ -977,6 +978,44 @@
 - **BE**: 변경 없음. 기존 `GET /projects`(workspaceId 미지정) 재사용.
 - **FE**: `ProjectsPage`에 전체 모드(쿼리파라미터 `all`) 분기 — 전체 모드면 `workspaceId` 미주입으로 조회 후 WS별 그룹핑 렌더. `AppShell` 스위처 "전체 보기" 배선 변경(`/select-workspace` → `/projects?all=1`). 각 WS 이름은 `useWorkspaces()`로 해소해 그룹 헤더·카드 배지에 표시.
 - **요청자/승인자**: 사용자(2026-07-05, "워크스페이스가 많다보니, 전체 프로젝트를 한꺼번에 볼 니즈가 생기네요" · "거기에 프로젝트가 나온다고요" 확인 · "평상시엔 지금처럼 보이는건가요" → 넓힘 모드 확정 · LNB=직전 WS 유지) | **변경 일자**: 2026-07-05
+
+### CR-046 — 설정 3계층 IA 재편 + WS 설정 화면(WMP-WS-010) + WS 보관(WMP-WS-011)
+
+- **대상 기능 ID**: WMP-WS-001(WS 관리), WMP-WS-007(WS 멤버), WMP-WS-010(신규·WS 설정 화면), WMP-WS-011(신규·WS 보관), 모듈 B
+- **변경 타입**: 신규
+- **영향도**: High (셸/라우팅 재편 + 스키마/FSM/API 신규 = 다수 모듈·아키텍처)
+- **적용 버전**: v2.7
+
+- **배경**: 운영 화면 점검 중 사용자가 지적 — "시스템 전체 사용자인데, 그 설정 메뉴가 특정 WS에 들어와 있는 게 문제"·"설정이 시스템 전체적인 설정인데 워크스페이스 안쪽에 있는 것부터가 이상함". 실측 결과 확인: 전역 시스템 설정 6종(`/admin/measure-units·field-schemes·workflows·issue-types·forms·users`)이 전부 WS 컨텍스트에 묶인 `AppShell`(WS 미선택 시 `/select-workspace` 강제 리다이렉트, `AppShell.tsx:264`)의 LNB "설정" 항목(`AppShell.tsx:259`)에 걸려 있고, WS 프로젝트·워크룸과 같은 사이드바에 나열됨. 즉 **전역 설정이 특정 WS를 골라야만 보이고, 그 WS의 설정처럼 오인**됨.
+- **실측 근거**:
+  - 전역 화면(`UsersPage` 등 `/admin/*` 6종)은 API가 WS 비의존(전역) — 페이지 자체는 재배치만 하면 됨.
+  - `/admin/*`로 가는 **유일한 링크가 LNB "설정"**(`AppShell.tsx:259`) — 이걸 WS 설정으로 바꾸면 admin 진입로가 사라지므로 대체 진입점 필수.
+  - WS 멤버 화면(`WorkspaceMembersPage.tsx:58-124`)·WS 이름/설명 수정(`WorkspaceDialog` 폼 + `PATCH /workspaces/{id}`)은 기존 자산 재사용 가능.
+  - 채널 CRUD API는 존재(`chat/api.ts:21-25`, BE `ChatChannelController`)하나 **BE에 `@PreAuthorize` 가드 0개** — WS 설정=관리자 기능 UX와 어긋나 가드 보강 필요.
+  - **WS 보관은 BE에 전무** — `Workspace` 도메인에 status/archivedAt 없고 엔드포인트·DTO·FE 타입 모두 신규. project ARCHIVED FSM(`T1-5`, ACTIVE↔ARCHIVED 소프트·목록 숨김)이 참고 모델.
+- **핵심 결정(사용자 2026-07-06)**:
+  - **정공 = 3계층 완전분리.** "만드는 부담"으로 절충하지 않음.
+    - **전역(시스템 관리)**: `/admin/*` 6종을 AppShell(WS 셸) **밖 별도 레이아웃**으로 이전. WS 사이드바가 아닌 시스템 관리 전용 화면. 진입 = 계정 드롭다운 "시스템 관리"(canAdmin). 라벨을 "설정"→"시스템 관리"로 정정(중복 해소).
+    - **WS 스코프(워크스페이스 설정)**: 비워진 LNB "설정" 자리 = `/workspaces/{id}/settings`, 4탭 = **일반(이름·설명 수정) / 멤버 / 채널 관리 / 보관**. 기존 WS 멤버 화면·WorkspaceDialog 폼 재사용. 스위처 드롭다운 "멤버 관리" 진입점은 이 설정 화면의 멤버 탭으로 통합(중복 진입점 제거).
+    - **개인(계정)**: `/account/*`(알림/테마/비번) — 현행 유지.
+  - **WS 보관 = 동결(freeze).** project ARCHIVED와 동형 — WS를 목록/스위처에서 숨기고 진입 차단만, 하위 프로젝트·채널·멤버십은 **그대로 보존**(cascade 안 함). 보관 해제 시 원상 복구. `WorkspaceService.list(viewerId)`가 보관 WS를 걸러냄.
+  - **권한 = 전사 OWNER/ADMIN만**(WMP-WS-001 제약과 일치 — "WS별 Admin 두지 않음", CR-018). WS 설정 화면·보관·멤버관리 모두 `canAdmin`. 기존 헬퍼 그대로.
+- **비즈니스 규칙/정책 (T1-3/T1-4)**:
+  - **BIZ-113(신규)**: WS 보관은 소프트(동결). 보관된 WS는 목록·스위처·진입에서 제외되나 하위 리소스(프로젝트/채널/멤버십/업무)는 물리 삭제·상태 변경 없이 보존. 보관 해제로 원복.
+  - **POL-014(신규)**: WS 설정·보관·멤버 관리는 전사 OWNER/ADMIN만(WS별 관리 역할 없음, CR-018 재확인).
+- **FSM (T1-5)**: workspace 상태 = `ACTIVE ⇄ ARCHIVED`(소프트). ACTIVE→ARCHIVED(보관), ARCHIVED→ACTIVE(보관 해제). 신규 WS는 ACTIVE. (project와 달리 PLANNING/DONE 없음 — WS는 컨테이너.)
+- **데이터 모델 (T3-1)**: `workspaces` 테이블에 `status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'` + `archived_at TIMESTAMPTZ NULL` 추가. **V18** 마이그레이션(기존 행 전부 ACTIVE 백필). `idx_workspaces_status` 추가.
+- **API (T3-2)**:
+  - `PATCH /workspaces/{id}` — 이름/설명 수정(기존, name 필수 유지).
+  - `PATCH /workspaces/{id}/archive` — 보관(ACTIVE→ARCHIVED, FSM 가드). 신규.
+  - `PATCH /workspaces/{id}/unarchive` — 보관 해제(ARCHIVED→ACTIVE). 신규.
+  - `GET /workspaces` — 보관 WS 제외(기본). 목록 필터 보정.
+  - 채널 CRUD(`POST·PUT·DELETE /chat/channels`)에 `@PreAuthorize(canAdmin)` 가드 보강.
+  - 에러코드 신규: `WORKSPACE_NOT_FOUND`(기존 재사용 확인 후), `WORKSPACE_ARCHIVE_INVALID_TRANSITION`(**WMP-7847**), `WORKSPACE_ALREADY_ARCHIVED`(**WMP-7848**). (번호는 구현 시 최종 확정 — 7846 다음.)
+- **화면 (T3-3)**: 3계층 IA 재편(전역 시스템 관리 셸 / WS 설정 4탭 / 계정). LNB "설정"→WS 설정, 계정 드롭다운에 "시스템 관리" 추가, 스위처 "멤버 관리"→WS 설정 멤버 탭 통합.
+- **BE**: workspaces 스키마(V18) + Workspace 도메인 status/archivedAt + WorkspaceService archive/unarchive + list 보관 제외 + WorkspaceController 엔드포인트 2종 + FSM 가드 + ChatChannelController @PreAuthorize + 에러코드 2종.
+- **FE**: `/admin/*`를 별도 레이아웃(SystemAdminShell)으로 이전 + 라우터(App.tsx) 재편 + 계정 드롭다운 "시스템 관리" 진입점 + `WorkspaceSettingsPage`(4탭, 멤버/일반 재사용 + 채널 관리 + 보관) + LNB "설정" 경로 변경(`ROUTES.workspaceSettings`) + `menuItems` deps에 currentWorkspaceId 추가 + 스위처 "멤버 관리" 제거(설정 탭 통합) + Workspace 타입/api/hook에 status·archive.
+- **요청자/승인자**: 사용자(2026-07-06, "설정이 시스템 전체적인 설정인데 워크스페이스 안쪽에 있는 것부터가 이상함" · "만드는 것에 대한 부담으로 접근하면 안 되고 정공으로 가야죠" · "지금 있는 설정 자리에 워크스페이스만의 설정할 것이 있으면 그쪽으로" → 3계층 완전분리 + WS 설정 4탭 + 보관=동결 + 권한=전사 OWNER/ADMIN 확정) | **변경 일자**: 2026-07-06
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 

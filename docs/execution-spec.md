@@ -231,6 +231,32 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **B. 회사홈 프로젝트별 미니 링 (별도 트랙, 미구현)**: 전사/WS 건강 집계 API 신규(`/health`는 프로젝트 단건뿐) + WS IA 재편 얽힘 → 이번 범위 밖. 착수 시 재판단.
 - **핵심 함정**: ① 요약은 **신호만** — 예외축 상세 카드·차트를 복제하지 말 것(경계 붕괴). ② 공통 컴포넌트 추출 시 보고서 [건강]탭 상단이 회귀 없이 동일 렌더되는지 확인. ③ Tailwind v4 LNB 트랙([[workmap-tailwind-lnb-trap]]) — 요약 화면 변경 배포 후 사이드바 재확인.
 
+### CR-046 — 설정 3계층 IA 재편 + WS 설정 화면 + WS 보관 (횡단, 대규모)
+> 배경: 전역 시스템 설정(`/admin/*`)이 WS 컨텍스트 셸에 갇혀 "특정 WS의 설정"처럼 오인. 정공 = **전역/WS/개인 3계층 완전분리** + 비워진 LNB "설정" 자리에 WS 자신의 설정. 기준 = T1-1 WMP-WS-010/011 · T1-3 BIZ-113 · T1-4 POL-014 · T1-5 workspace FSM · T3-1 V18 · T3-2 archive API · T3-3 3계층 IA.
+
+- **(A) BE — WS 보관 풀스택 신규**:
+  - **V18**: `workspaces`에 `status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'` + `archived_at TIMESTAMPTZ NULL` + `idx_workspaces_status`. 기존 행 ACTIVE 백필.
+  - `Workspace` 도메인에 `status`·`archivedAt` 필드(+ MyBatis resultMap·INSERT/SELECT 반영). **⚠️ `@NoArgsConstructor` 필수** — SELECT * 컬럼 순서 변동 시 조회 500([[workmap-mybatis-builder-trap]], CR-040 재현 방지). WorkspaceMapper의 `findVisible`/`list`에 컬럼 추가.
+  - `WorkspaceService.archive(id)`/`unarchive(id)` — **FSM 가드 경유**(ACTIVE→ARCHIVED, ARCHIVED→ACTIVE만. 그 외 `WORKSPACE_ARCHIVE_INVALID_TRANSITION` 7847·`WORKSPACE_ALREADY_ARCHIVED` 7848). 직접 status UPDATE 금지(BIZ-010).
+  - `WorkspaceService.list(viewerId)` — 기본 `status='ACTIVE'` 필터(보관 제외, BIZ-113). 하위 프로젝트/채널/멤버십 **무변경**(cascade 안 함, 동결).
+  - `WorkspaceController`: `PATCH /workspaces/{id}/archive`·`/unarchive`(`@PreAuthorize hasAnyRole('OWNER','ADMIN')`, POL-014).
+  - **채널 CRUD 가드 보강**: `ChatChannelController`의 `POST·PUT·DELETE /chat/channels`에 `@PreAuthorize hasAnyRole('OWNER','ADMIN')`(CR-026 때 가드 0개였음). 메시지/리액션은 무가드 유지(WS 멤버 전원).
+  - WmpErrorCode 7847·7848 추가. WS 미존재는 기존 7722, 비멤버는 7803 재사용.
+  - **⚠️ @WebMvcTest 슬라이스**: 신규 매퍼 없으므로 MockBean 추가 불요(스키마만 확장). WorkspaceServiceTest에 archive/unarchive FSM 케이스(허용·금지 전이) 추가.
+- **(B) FE — 셸 재편(가장 위험)**:
+  - **전역 `/admin/*`를 AppShell 밖 별도 레이아웃(SystemAdminShell)으로 이전** + `App.tsx` 라우터 재편. admin 라우트를 AppShell children에서 꺼냄. SystemAdminShell은 `currentWorkspaceId` 리다이렉트 없음(전역).
+  - **진입점 이동**: AppShell 계정 드롭다운(HeaderActions)에 "시스템 관리"(`canAdmin` 게이트) 추가 → `/admin/measure-units`. LNB "설정" 항목(`AppShell.tsx:259`)은 **WS 설정로 교체**(`ROUTES.workspaceSettings(currentWorkspaceId)`). ⚠️ `menuItems` useMemo deps에 `currentWorkspaceId` 추가(현재 `[projects, channels]`).
+  - **WS 설정 화면 신규**(`WorkspaceSettingsPage`, `/workspaces/:wsId/settings`): 상단 탭(일반/멤버/채널/보관). 자체 `PageHead`(헤더 prefix 매칭 "워크스페이스" 덮음). 멤버 탭=기존 `WorkspaceMembersPage` 본문 재사용, 일반 탭=WorkspaceDialog 폼 로직 인라인화, 채널 탭=chat 채널 CRUD, 보관 탭=archive/unarchive + ConfirmDialog(destructive).
+  - **스위처 드롭다운 "멤버 관리" 제거**(`AppShell.tsx:108-112`) — 설정 멤버 탭으로 통합.
+  - `Workspace` 타입/api/hook에 `status`·`archived_at` + `useArchiveWorkspace`/`useUnarchiveWorkspace`. `ROUTES.workspaceSettings(wsId)` 헬퍼 추가.
+  - "설정" LNB 라벨은 유지(WS 설정 진입)하되 HEADER_MENU의 `{ path:'/admin', label:'설정' }`을 **"시스템 관리"**로 정정(헤더 타이틀 중복 해소).
+- **핵심 함정**:
+  - ① **admin 진입로 소멸 주의** — LNB "설정"을 WS로 바꾸면 `/admin/*` 유일 링크가 사라짐. 계정 드롭다운 "시스템 관리"를 **반드시 같은 커밋에** 넣어야 함(안 그러면 URL 직타로만 접근).
+  - ② **Tailwind v4 LNB 트랩**([[workmap-tailwind-lnb-trap]]) — 셸/라우터 대규모 변경이라 배포 후 LNB 사라짐·클릭 막힘 재확인 필수.
+  - ③ **MyBatis @Builder 트랩**([[workmap-mybatis-builder-trap]]) — workspaces에 컬럼 2개 추가 = SELECT * 순서 변동 → Workspace 도메인 `@NoArgsConstructor` 없으면 WS 목록 조회 500. V18 배포 전 도메인 보강 확인.
+  - ④ **채널 가드 vs 채팅 예외** — VIEWER 채팅 쓰기 허용(CR-031 예외)은 **메시지/리액션만**. 채널 CRUD는 관리자만(POL-014). 두 정책이 같은 컨트롤러에 공존하므로 메서드별로 가드 구분.
+  - ⑤ **보관은 동결** — archive가 하위 프로젝트/채널을 건드리지 않는지 확인(cascade 금지, BIZ-113). 보관 WS의 하위 데이터는 보존.
+
 ---
 
 ## 5-A. Sprint 완료 게이트

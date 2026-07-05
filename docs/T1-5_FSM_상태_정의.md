@@ -32,6 +32,7 @@
 | approval (승인 게이트, work_item 결합) | PENDING → APPROVED / REJECTED (게이트 상태의 전진 전이 조건) |
 | sprint (스프린트) | FUTURE → ACTIVE → COMPLETED |
 | project (프로젝트) | PLANNING → ACTIVE → DONE / ARCHIVED |
+| workspace (워크스페이스, CR-046) | ACTIVE ⇄ ARCHIVED (소프트 보관·해제) |
 | UI: 보드 카드 드래그 | idle → dragging → validating → committing → settled / reverted |
 | UI: 백로그↔스프린트 드래그 | idle → dragging → committing → settled / reverted |
 
@@ -298,6 +299,32 @@ stateDiagram-v2
 - **진입 조건**: 보관 처리(소프트)
 - **허용 다음 상태**: ACTIVE (보관 해제)
 - **관련 기능 ID**: WMP-WS-004
+
+---
+
+## workspace (워크스페이스) — CR-046
+
+```mermaid
+stateDiagram-v2
+    [*] --> ACTIVE : 워크스페이스 생성
+    ACTIVE --> ARCHIVED : 보관
+    ARCHIVED --> ACTIVE : 보관 해제
+```
+
+> project와 달리 PLANNING/DONE이 없다 — WS는 사람·프로젝트를 담는 **컨테이너**라 "계획→완료" 생애주기가 아니라 "활성/보관" 2상태만 갖는다. 보관은 **동결(freeze)**: 하위 프로젝트·채널·멤버십·업무를 변경하지 않고 컨테이너만 숨긴다(BIZ-113).
+
+### ACTIVE | 활성
+- **설명**: 정상 사용 중인 워크스페이스. 목록·스위처·진입에 노출.
+- **진입 조건**: WS 생성 시 기본값, 또는 보관 해제.
+- **허용 다음 상태**: ARCHIVED
+- **관련 기능 ID**: WMP-WS-001, WMP-WS-011
+
+### ARCHIVED | 보관
+- **설명**: 소프트 보관(동결). 목록·스위처·진입에서 제외되나 하위 리소스는 그대로 보존(BIZ-113). `GET /workspaces` 기본 조회에서 제외.
+- **진입 조건**: 보관 처리(전사 OWNER/ADMIN, POL-014).
+- **허용 다음 상태**: ACTIVE (보관 해제)
+- **가드**: 전이는 FSM 화이트리스트 경유(BIZ-010). ACTIVE→ARCHIVED, ARCHIVED→ACTIVE만 허용. 그 외(같은 상태로 재전이 등)는 거부 — `WORKSPACE_ARCHIVE_INVALID_TRANSITION`/`WORKSPACE_ALREADY_ARCHIVED`.
+- **관련 기능 ID**: WMP-WS-011
 
 ---
 
