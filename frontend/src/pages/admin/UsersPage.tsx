@@ -97,9 +97,10 @@ export function UsersPage() {
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="mb-4 w-72">
+        {/* 고정폭 래퍼(SearchInput 내부 w-full이 w-72 무시 방지 — 검색창이 폭 전체로 늘어나지 않게) */}
         <SearchInput
-          className="w-72"
+          className="w-full"
           placeholder="이름·이메일 검색"
           value={keyword}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setKeyword(e.target.value); setPage(0); }}

@@ -132,15 +132,18 @@ export function SearchPage() {
 
       {/* 검색 바 + 필터 */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <SearchInput
-          className="w-80"
-          placeholder="제목·설명·댓글 검색"
-          value={keyword}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setKeyword(e.target.value); setPage(0); }}
-        />
+        {/* 고정폭 래퍼로 감싸 좌측에 붙임(SearchInput 내부 w-full이 w-80 무시 방지) */}
+        <div className="w-80 shrink-0">
+          <SearchInput
+            className="w-full"
+            placeholder="제목·설명·댓글 검색"
+            value={keyword}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setKeyword(e.target.value); setPage(0); }}
+          />
+        </div>
         <Select value={filter.issueType ?? ALL}
           onValueChange={(v) => patchFilter({ issueType: v === ALL ? undefined : (v as IssueType) })}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="유형" /></SelectTrigger>
+          <SelectTrigger className="w-32 shrink-0"><SelectValue placeholder="유형" /></SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>모든 유형</SelectItem>
             {(Object.keys(ISSUE_TYPE_LABEL) as IssueType[]).map((t) => (
@@ -150,7 +153,7 @@ export function SearchPage() {
         </Select>
         <Select value={filter.commonStatus ?? ALL}
           onValueChange={(v) => patchFilter({ commonStatus: v === ALL ? undefined : (v as WorkStatus) })}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="상태" /></SelectTrigger>
+          <SelectTrigger className="w-32 shrink-0"><SelectValue placeholder="상태" /></SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>모든 상태</SelectItem>
             {STATUS_OPTIONS.map((s) => (
@@ -160,7 +163,7 @@ export function SearchPage() {
         </Select>
         <Select value={filter.priority ?? ALL}
           onValueChange={(v) => patchFilter({ priority: v === ALL ? undefined : (v as Priority) })}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="우선순위" /></SelectTrigger>
+          <SelectTrigger className="w-32 shrink-0"><SelectValue placeholder="우선순위" /></SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>모든 우선순위</SelectItem>
             {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
@@ -168,13 +171,15 @@ export function SearchPage() {
             ))}
           </SelectContent>
         </Select>
-        <SearchInput
-          className="w-40"
-          placeholder="라벨"
-          value={filter.label ?? ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            patchFilter({ label: e.target.value || undefined })}
-        />
+        <div className="w-40 shrink-0">
+          <SearchInput
+            className="w-full"
+            placeholder="라벨"
+            value={filter.label ?? ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              patchFilter({ label: e.target.value || undefined })}
+          />
+        </div>
       </div>
 
       {/* 저장 필터 (WMP-VIEW-004) */}
