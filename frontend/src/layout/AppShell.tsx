@@ -97,9 +97,13 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        {/* 전체 보기(CR-045) — 내 모든 WS 프로젝트를 WS별 그룹으로 한 화면에. WS가 많을 때 훑기용 */}
+        <DropdownMenuItem onSelect={() => navigate(`${ROUTES.projects}?all=1`)}>
+          <LayoutGrid className="size-4" /> 워크스페이스 전체 보기
+        </DropdownMenuItem>
         {/* WS를 만들고·고르고·수정하는 레이어로 진입(만들기는 거기 있음, CR-018) */}
         <DropdownMenuItem onSelect={() => navigate(ROUTES.selectWorkspace)}>
-          <LayoutGrid className="size-4" /> 워크스페이스 전체 보기
+          <Settings className="size-4" /> 워크스페이스 관리
         </DropdownMenuItem>
         {canManage && currentId && (
           <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>

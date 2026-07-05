@@ -15,11 +15,29 @@ import { useAuthStore } from '@/store/auth-store';
 import { ProjectTypeBadge } from './ProjectTypeBadge';
 import { ProjectSettingsDialog } from './ProjectSettingsDialog';
 
-export function ProjectCard({ project }: { project: Project }) {
+/**
+ * @param wsName 전체 보기 모드(CR-045)에서 소속 WS 이름 배지. 단일 WS 스코프에선 미전달(배지 없음).
+ * @param onNavigate 카드 본문 클릭 훅. 전체 모드는 이 훅으로 그 WS로 진입(setWorkspace) 후 이동.
+ *                   미전달 시 기본 동작(그 프로젝트 요약으로 바로 이동).
+ */
+export function ProjectCard({
+  project,
+  wsName,
+  onNavigate,
+}: {
+  project: Project;
+  wsName?: string;
+  onNavigate?: (project: Project) => void;
+}) {
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const role = useAuthStore((s) => s.user?.role);
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MANAGER';
+
+  const handleOpen = () => {
+    if (onNavigate) onNavigate(project);
+    else navigate(ROUTES.project(project.key));
+  };
 
   return (
     <div className="relative rounded-lg border border-border bg-background transition-colors hover:border-primary/40 hover:bg-muted/30">
@@ -42,7 +60,7 @@ export function ProjectCard({ project }: { project: Project }) {
 
       <button
         type="button"
-        onClick={() => navigate(ROUTES.project(project.key))}
+        onClick={handleOpen}
         className="flex w-full flex-col p-4 text-left"
       >
         <div className="mb-2 flex items-start justify-between gap-2 pr-8">
@@ -59,6 +77,12 @@ export function ProjectCard({ project }: { project: Project }) {
           </span>
           {project.visibility === 'PRIVATE' && (
             <span className="text-muted-foreground">비공개</span>
+          )}
+          {/* 전체 보기 모드(CR-045)에서만 소속 WS 배지 — 여러 WS 카드가 섞이므로 구분용. 중립 톤 */}
+          {wsName && (
+            <span className="ml-auto truncate rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+              {wsName}
+            </span>
           )}
         </div>
       </button>
