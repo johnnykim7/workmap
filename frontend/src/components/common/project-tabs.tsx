@@ -219,7 +219,7 @@ function TabItem(p: TabItemProps) {
       className={`group relative flex items-center gap-1 px-3 py-2 text-sm font-medium border-b-2 ${
         p.active
           ? 'border-primary text-foreground'
-          : 'border-transparent text-muted-foreground hover:text-foreground'
+          : 'border-transparent text-foreground/70 hover:text-foreground'
       }`}
     >
       {/* 라벨/아이콘 영역 = 클릭 이동 + (summary 외) 드래그 핸들 */}
