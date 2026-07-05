@@ -21,6 +21,10 @@ public class Workspace {
     private Long id;
     private String name;
     private String description;
+    /** ACTIVE / ARCHIVED (workspace FSM, T1-5). 보관은 소프트 동결(BIZ-113, CR-046). */
+    private String status;
+    /** 보관 시점. 해제 시 null 복원. status=ARCHIVED와 정합. */
+    private OffsetDateTime archivedAt;
     private Long createdBy;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

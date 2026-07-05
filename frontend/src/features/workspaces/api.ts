@@ -26,6 +26,10 @@ export const workspaceApi = {
   update: (id: number, body: WorkspaceRequest) =>
     api.patch<Workspace>(`/workspaces/${id}`, body),
 
+  // ── WS 보관/해제 (WMP-WS-011, CR-046) — 전사 Admin만. 소프트 동결(BIZ-113) ──
+  archive: (id: number) => api.patch<Workspace>(`/workspaces/${id}/archive`, {}),
+  unarchive: (id: number) => api.patch<Workspace>(`/workspaces/${id}/unarchive`, {}),
+
   // ── WS 멤버 관리 (WMP-WS-007) — 전사 Admin만(BE @PreAuthorize) ──
   members: (id: number) => api.get<WorkspaceMember[]>(`/workspaces/${id}/members`),
   addMember: (id: number, userId: number) =>

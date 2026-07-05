@@ -22,3 +22,8 @@ export function canManageProject(role: UserRole | null | undefined): boolean {
 export function useCanWrite(): boolean {
   return canWrite(useAuthStore((s) => s.user?.role));
 }
+
+/** 현재 로그인 사용자가 전역/WS 관리자인가(시스템 관리·WS 설정 진입). OWNER/ADMIN(CR-046, POL-014). */
+export function useCanAdmin(): boolean {
+  return canAdmin(useAuthStore((s) => s.user?.role));
+}

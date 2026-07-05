@@ -28,11 +28,14 @@ public final class WorkspaceDtos {
             Long id,
             String name,
             String description,
+            String status,
+            OffsetDateTime archivedAt,
             Long createdBy,
             OffsetDateTime createdAt
     ) {
         public static Response from(Workspace w) {
-            return new Response(w.getId(), w.getName(), w.getDescription(), w.getCreatedBy(), w.getCreatedAt());
+            return new Response(w.getId(), w.getName(), w.getDescription(),
+                    w.getStatus(), w.getArchivedAt(), w.getCreatedBy(), w.getCreatedAt());
         }
     }
 

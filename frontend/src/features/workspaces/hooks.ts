@@ -40,6 +40,32 @@ export function useProjectTemplates() {
   return PROJECT_TEMPLATES;
 }
 
+/** WS 보관(WMP-WS-011) — 전사 Admin. 성공 시 목록에서 사라짐(BIZ-113). */
+export function useArchiveWorkspace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => workspaceApi.archive(id),
+    onSuccess: (ws) => {
+      qc.invalidateQueries({ queryKey: ['workspaces'] });
+      toast.success(`워크스페이스 "${ws.name}"를 보관했습니다.`);
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : '워크스페이스 보관에 실패했습니다.'),
+  });
+}
+
+/** WS 보관 해제(WMP-WS-011) — 전사 Admin. */
+export function useUnarchiveWorkspace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => workspaceApi.unarchive(id),
+    onSuccess: (ws) => {
+      qc.invalidateQueries({ queryKey: ['workspaces'] });
+      toast.success(`워크스페이스 "${ws.name}" 보관을 해제했습니다.`);
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : '보관 해제에 실패했습니다.'),
+  });
+}
+
 // ── WS 멤버 관리 (WMP-WS-007, CR-018) ──
 
 export function useWorkspaceMembers(workspaceId: number | undefined) {

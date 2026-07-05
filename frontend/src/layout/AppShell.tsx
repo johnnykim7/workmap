@@ -26,7 +26,6 @@ import {
   Building2,
   ChevronsUpDown,
   Check,
-  Users,
   LayoutGrid,
   KeyRound,
   Bell,
@@ -35,7 +34,7 @@ import {
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { UserAvatar } from '@/components/common/user-avatar';
-import { useCanWrite } from '@/lib/permissions';
+import { useCanWrite, useCanAdmin } from '@/lib/permissions';
 import { useUiStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useWorkspaceStore } from '@/store/workspace-store';
@@ -60,8 +59,8 @@ const HEADER_MENU = [
   ...FIXED_MENU,
   { path: ROUTES.chat, label: '워크룸' },
   { path: ROUTES.projects, label: '프로젝트' },
-  { path: '/admin', label: '설정' },
-  { path: '/workspaces', label: '워크스페이스' },
+  { path: '/workspaces', label: '워크스페이스' },  // /workspaces/{id}/settings·members 포함(prefix)
+  { path: '/admin', label: '시스템 관리' },   // CR-046 — 전역 설정(WS 셸 밖). WS 설정과 명칭 구분.
 ];
 
 /** LNB 최상단 WS 스위처 (CR-018). 내가 속한 WS만(BIZ-112). 잘 안 바꿈 → 조용히 고정. */
@@ -111,11 +110,12 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
         </DropdownMenuItem>
         {/* WS를 만들고·고르고·수정하는 레이어로 진입(만들기는 거기 있음, CR-018) */}
         <DropdownMenuItem onSelect={() => navigate(ROUTES.selectWorkspace)}>
-          <Settings className="size-4" /> 워크스페이스 관리
+          <Building2 className="size-4" /> 워크스페이스 관리
         </DropdownMenuItem>
+        {/* WS 설정(일반/멤버/채널/보관, CR-046). 기존 "멤버 관리"는 이 설정의 멤버 탭으로 통합. */}
         {canManage && currentId && (
-          <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceMembers(currentId))}>
-            <Users className="size-4" /> 멤버 관리
+          <DropdownMenuItem onSelect={() => navigate(ROUTES.workspaceSettings(currentId))}>
+            <Settings className="size-4" /> 워크스페이스 설정
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
@@ -159,6 +159,7 @@ function HeaderActions() {
   const logout = useLogout();
   const navigate = useNavigate();
   const canWrite = useCanWrite(); // VIEWER는 만들기 숨김(CR-031, 서버 403과 일치)
+  const canAdmin = useCanAdmin(); // 시스템 관리 진입 = OWNER/ADMIN(CR-046, POL-014)
 
   // 새 알림 도착 시 토스트(전역 1회 마운트 — 헤더에만 둬 중복 방지).
   useNewNotificationToast();
@@ -198,6 +199,16 @@ function HeaderActions() {
             <DropdownMenuItem onSelect={() => navigate(ROUTES.accountPassword)}>
               <KeyRound className="size-4" /> 비밀번호 변경
             </DropdownMenuItem>
+            {/* 시스템 관리 = 전역 설정(WS 셸 밖, CR-046). OWNER/ADMIN만 노출(BE도 403 강제). */}
+            {canAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => navigate(ROUTES.admin.measureUnits)}>
+                  <Settings className="size-4" /> 시스템 관리
+                </DropdownMenuItem>
+              </>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => logout.mutate()}>
               <LogOut className="size-4" /> 로그아웃
             </DropdownMenuItem>

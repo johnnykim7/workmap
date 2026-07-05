@@ -7,6 +7,8 @@
         <id     property="id"          column="id"/>
         <result property="name"        column="name"/>
         <result property="description" column="description"/>
+        <result property="status"      column="status"/>
+        <result property="archivedAt"  column="archived_at"/>
         <result property="createdBy"   column="created_by"/>
         <result property="createdAt"   column="created_at"/>
         <result property="updatedAt"   column="updated_at"/>
@@ -26,11 +28,12 @@
         SELECT * FROM workspaces ORDER BY id
     </select>
 
-    <!-- 내가 속한 WS만 (BIZ-112 격리). 전사 Admin도 멤버 WS만 — 무차별 조회 금지. -->
+    <!-- 내가 속한 WS만 (BIZ-112 격리) + 기본 ACTIVE만(보관 제외, BIZ-113). 전사 Admin도 멤버 WS만. -->
     <select id="findByMember" resultMap="workspaceMap">
         SELECT w.* FROM workspaces w
         JOIN workspace_members wm ON wm.workspace_id = w.id
         WHERE wm.user_id = #{userId}
+          AND w.status = 'ACTIVE'
         ORDER BY w.id
     </select>
 
@@ -38,6 +41,15 @@
         UPDATE workspaces
         SET name        = #{name},
             description = #{description},
+            updated_at  = now()
+        WHERE id = #{id}
+    </update>
+
+    <!-- WS 보관/해제 (WMP-WS-011, CR-046). status는 서비스 FSM 가드 통과 후에만 호출. -->
+    <update id="updateStatus">
+        UPDATE workspaces
+        SET status      = #{status},
+            archived_at = #{archivedAt},
             updated_at  = now()
         WHERE id = #{id}
     </update>

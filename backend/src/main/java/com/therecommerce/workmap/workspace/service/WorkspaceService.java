@@ -5,6 +5,7 @@ import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.user.service.UserService;
 import com.therecommerce.workmap.workspace.domain.Workspace;
 import com.therecommerce.workmap.workspace.domain.WorkspaceMember;
+import com.therecommerce.workmap.workspace.domain.WorkspaceStatus;
 import com.therecommerce.workmap.workspace.dto.WorkspaceDtos;
 import com.therecommerce.workmap.workspace.mapper.WorkspaceMapper;
 import com.therecommerce.workmap.workspace.mapper.WorkspaceMemberMapper;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -34,6 +36,7 @@ public class WorkspaceService {
                 .createdBy(actorId)
                 .build();
         workspaceMapper.insert(ws);
+        ws.setStatus(WorkspaceStatus.ACTIVE.name());   // DB default와 정합 — Response에 반영(CR-046)
         // 생성자를 WS 멤버로 자동 등록 — 생성 직후 본인이 격리에서 튕기지 않도록(BIZ-112)
         memberMapper.insert(WorkspaceMember.builder()
                 .workspaceId(ws.getId())
@@ -72,6 +75,49 @@ public class WorkspaceService {
         ws.setDescription(req.description());
         workspaceMapper.update(ws);
         return WorkspaceDtos.Response.from(ws);
+    }
+
+    /**
+     * WS 보관 (WMP-WS-011, 소프트 동결 BIZ-113). FSM 가드 경유 — ACTIVE→ARCHIVED만.
+     * 하위 프로젝트·채널·멤버십은 건드리지 않는다(동결). 목록에서 자동 제외.
+     */
+    @Transactional
+    public WorkspaceDtos.Response archive(Long id) {
+        Workspace ws = getEntity(id);
+        WorkspaceStatus from = currentStatus(ws);
+        if (from == WorkspaceStatus.ARCHIVED) {
+            throw new BusinessException(WmpErrorCode.WORKSPACE_ALREADY_ARCHIVED);
+        }
+        assertTransition(from, WorkspaceStatus.ARCHIVED);
+        OffsetDateTime now = OffsetDateTime.now();
+        workspaceMapper.updateStatus(id, WorkspaceStatus.ARCHIVED.name(), now);
+        ws.setStatus(WorkspaceStatus.ARCHIVED.name());
+        ws.setArchivedAt(now);
+        return WorkspaceDtos.Response.from(ws);
+    }
+
+    /** WS 보관 해제 (WMP-WS-011). FSM 가드 경유 — ARCHIVED→ACTIVE만. archived_at은 null 복원. */
+    @Transactional
+    public WorkspaceDtos.Response unarchive(Long id) {
+        Workspace ws = getEntity(id);
+        WorkspaceStatus from = currentStatus(ws);
+        assertTransition(from, WorkspaceStatus.ACTIVE);
+        workspaceMapper.updateStatus(id, WorkspaceStatus.ACTIVE.name(), null);
+        ws.setStatus(WorkspaceStatus.ACTIVE.name());
+        ws.setArchivedAt(null);
+        return WorkspaceDtos.Response.from(ws);
+    }
+
+    /** 기존 행이 status null(마이그레이션 전 데이터)일 리 없지만 방어적으로 ACTIVE 취급. */
+    private WorkspaceStatus currentStatus(Workspace ws) {
+        return ws.getStatus() == null ? WorkspaceStatus.ACTIVE : WorkspaceStatus.valueOf(ws.getStatus());
+    }
+
+    /** FSM 화이트리스트 위반이면 거부(BIZ-010). */
+    private void assertTransition(WorkspaceStatus from, WorkspaceStatus to) {
+        if (!from.canTransitionTo(to)) {
+            throw new BusinessException(WmpErrorCode.WORKSPACE_ARCHIVE_INVALID_TRANSITION);
+        }
     }
 
     // ── WS 멤버 관리 (WMP-WS-007) — 전사 Admin만(컨트롤러 가드) ──

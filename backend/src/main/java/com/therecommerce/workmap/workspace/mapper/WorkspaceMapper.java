@@ -4,6 +4,7 @@ import com.therecommerce.workmap.workspace.domain.Workspace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -22,4 +23,9 @@ public interface WorkspaceMapper {
     List<Workspace> findByMember(@Param("userId") Long userId);
 
     void update(Workspace workspace);
+
+    /** WS 보관/해제 (WMP-WS-011, CR-046). status는 서비스 FSM 가드 통과 후 호출. */
+    void updateStatus(@Param("id") Long id,
+                      @Param("status") String status,
+                      @Param("archivedAt") OffsetDateTime archivedAt);
 }

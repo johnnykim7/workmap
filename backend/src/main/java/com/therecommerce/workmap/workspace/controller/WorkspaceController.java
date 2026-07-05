@@ -51,6 +51,20 @@ public class WorkspaceController {
         return ResponseDto.success(workspaceService.update(id, req));
     }
 
+    /** WS 보관 (WMP-WS-011, 소프트 동결). 전사 Admin만(POL-014). FSM 가드 경유. */
+    @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseDto<WorkspaceDtos.Response> archive(@PathVariable Long id) {
+        return ResponseDto.success(workspaceService.archive(id));
+    }
+
+    /** WS 보관 해제 (WMP-WS-011). 전사 Admin만(POL-014). */
+    @PatchMapping("/{id}/unarchive")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseDto<WorkspaceDtos.Response> unarchive(@PathVariable Long id) {
+        return ResponseDto.success(workspaceService.unarchive(id));
+    }
+
     // ── WS 멤버 관리 (WMP-WS-007, CR-018) — 전사 Admin만(POL-004) ──
 
     @GetMapping("/{id}/members")

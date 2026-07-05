@@ -144,7 +144,11 @@ public enum WmpErrorCode implements ErrorCode {
     ATTACHMENT_NOT_FOUND("WMP-7846", "첨부를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
     // 스프린트 편집·삭제 (7847번대, CR-038)
-    SPRINT_DELETE_NOT_FUTURE("WMP-7847", "예정(FUTURE) 스프린트만 삭제할 수 있습니다.", HttpStatus.CONFLICT);
+    SPRINT_DELETE_NOT_FUTURE("WMP-7847", "예정(FUTURE) 스프린트만 삭제할 수 있습니다.", HttpStatus.CONFLICT),
+
+    // 워크스페이스 보관 (7848번대, CR-046 — WS 보관 FSM)
+    WORKSPACE_ARCHIVE_INVALID_TRANSITION("WMP-7848", "워크스페이스 상태 전이가 허용되지 않습니다.", HttpStatus.CONFLICT),
+    WORKSPACE_ALREADY_ARCHIVED("WMP-7849", "이미 보관된 워크스페이스입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
