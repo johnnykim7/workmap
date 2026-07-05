@@ -73,6 +73,14 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
   const role = useAuthStore((s) => s.user?.role);
   const canManage = role === 'OWNER' || role === 'ADMIN';
 
+  // WS 전환 시 그 WS의 회사홈(대시보드)으로 이동. 같은 WS면 이동 생략.
+  // 직전 화면이 이전 WS의 프로젝트 URL이면 남으면 안 되므로(BIZ-112), 홈으로 리셋한다.
+  const switchWorkspace = (id: number) => {
+    if (id === currentId) return;
+    setWorkspace(id);
+    navigate(ROUTES.home);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -90,7 +98,7 @@ function WorkspaceSwitcher({ currentName }: { currentName: string }) {
       <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuLabel className="text-xs text-muted-foreground">워크스페이스 전환</DropdownMenuLabel>
         {workspaces.map((ws) => (
-          <DropdownMenuItem key={ws.id} onSelect={() => setWorkspace(ws.id)}>
+          <DropdownMenuItem key={ws.id} onSelect={() => switchWorkspace(ws.id)}>
             <Building2 className="size-4" />
             <span className="flex-1 truncate">{ws.name}</span>
             {ws.id === currentId && <Check className="size-4 text-primary" />}
