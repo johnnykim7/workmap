@@ -2,11 +2,13 @@
 // 멤버 관리는 요약에서 제거 — 프로젝트 설정으로 이전 예정(전역 사용자=설정>사용자와 별개 레이어).
 // 라우트는 :key, BE는 numeric id 요구 → useProjectByKey로 해소 후 id로 summary 호출.
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Skeleton } from '@therecommerce/ds-ui';
 import { Settings } from 'lucide-react';
 import { useProjectByKey, useProjectSummary } from '@/features/projects/hooks';
 import { ProjectSettingsDialog } from '@/features/projects/components/ProjectSettingsDialog';
+import { useHealth } from '@/features/metrics/hooks';
+import { HealthSummaryStrip } from '@/features/metrics/components/HealthSummaryStrip';
 import { PageShell } from '@/components/common/page-shell';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -22,8 +24,10 @@ function Metric({ label, value, tone }: { label: string; value: number | string;
 
 export function SummaryView() {
   const { key = '' } = useParams();
+  const navigate = useNavigate();
   const { data: project } = useProjectByKey(key);
   const { data: s, isPending } = useProjectSummary(project?.id);
+  const { data: health } = useHealth(project?.id);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const role = useAuthStore((st) => st.user?.role);
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MANAGER';
@@ -36,6 +40,15 @@ export function SummaryView() {
             <Settings className="size-4" /> 설정
           </Button>
         </div>
+      )}
+
+      {/* 건강 신호(CR-043 배치) — 종합 링 + axes 칩. 칩 클릭 → 보고서 [건강]탭에서 자세히. */}
+      {health && (
+        <HealthSummaryStrip
+          health={health}
+          subtitle={`${health.axes.length}개 축 · 자세한 분석은 보고서에서`}
+          onAxisClick={() => navigate('../reports')}
+        />
       )}
 
       {isPending || !s ? (
