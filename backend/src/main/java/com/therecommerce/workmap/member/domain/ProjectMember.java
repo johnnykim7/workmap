@@ -1,6 +1,8 @@
 package com.therecommerce.workmap.member.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +15,8 @@ import java.time.OffsetDateTime;
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProjectMember {
 
     private Long projectId;
