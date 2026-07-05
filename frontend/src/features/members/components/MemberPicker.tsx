@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import type React from 'react';
 import { Search, X } from 'lucide-react';
-import { SearchInput, Avatar, AvatarFallback } from '@therecommerce/ds-ui';
+import { SearchInput } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { useUserSearch } from '../hooks';
 import type { User } from '@/types/domain';
 
@@ -60,7 +61,7 @@ export function MemberPicker({ selected, onChange }: Props) {
               onClick={() => add(u)}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
             >
-              <Avatar className="size-6"><AvatarFallback className="text-[10px]">{u.name[0]}</AvatarFallback></Avatar>
+              <UserAvatar name={u.name} avatarUrl={u.avatarUrl} size="sm" noCard />
               <span className="font-medium text-foreground">{u.name}</span>
               <span className="text-xs text-muted-foreground">{u.email}</span>
             </button>

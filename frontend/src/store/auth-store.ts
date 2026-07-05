@@ -10,6 +10,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   setSession: (p: { user: User; accessToken: string; refreshToken: string }) => void;
+  setUser: (patch: Partial<User>) => void; // 프로필 부분 갱신(CR-047 아바타 등)
   clear: () => void;
 }
 
@@ -22,6 +23,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       setSession: ({ user, accessToken, refreshToken }) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
+      setUser: (patch) =>
+        set((s) => (s.user ? { user: { ...s.user, ...patch } } : {})),
       clear: () =>
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
     }),

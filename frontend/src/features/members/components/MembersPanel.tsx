@@ -1,7 +1,8 @@
 // 멤버 패널 — 목록 + 초대 + 제거. 프로젝트 요약(SummaryView)에서 사용. 경로는 numeric projectId.
 import { useState } from 'react';
 import { UserPlus, Trash2, Users } from 'lucide-react';
-import { Button, Avatar, AvatarFallback } from '@therecommerce/ds-ui';
+import { Button } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { EmptyState } from '@/components/common/empty-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { MemberRowsSkeleton } from '@/components/common/skeletons';
@@ -45,7 +46,7 @@ export function MembersPanel({ projectId }: { projectId?: number }) {
         <div className="flex flex-col gap-2">
           {members.map((m) => (
             <div key={m.userId} className="flex items-center gap-3 rounded-md border border-border p-3">
-              <Avatar className="size-8"><AvatarFallback className="text-xs">{m.name[0]}</AvatarFallback></Avatar>
+              <UserAvatar userId={m.userId} name={m.name} avatarUrl={m.avatarUrl} size="md" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-foreground">{m.name}</div>
                 <div className="truncate text-xs text-muted-foreground">{m.email}</div>

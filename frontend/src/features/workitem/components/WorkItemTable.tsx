@@ -4,7 +4,8 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell, Checkbox,
 } from '@therecommerce/ds-ui';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { StatusBadge, TypeBadge, PriorityBadge, Avatar2 } from '@/components/badges';
+import { StatusBadge, TypeBadge, PriorityBadge } from '@/components/badges';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { fmtDate } from '@/lib/date';
 import { type WorkItemResponse } from '@/types/domain';
 import type { WorkItemSortKey, SortDirection } from '../list-api';
@@ -74,7 +75,7 @@ export function WorkItemTable({
             <TableCell><StatusBadge status={it.commonStatus} /></TableCell>
             <TableCell>
               <span className="flex items-center gap-1.5">
-                <Avatar2 name={assigneeName(it.assigneeId)} />
+                <UserAvatar userId={it.assigneeId} name={assigneeName(it.assigneeId)} size="sm" noCard />
                 <span className="truncate text-xs text-muted-foreground">{assigneeName(it.assigneeId) ?? '미배정'}</span>
               </span>
             </TableCell>

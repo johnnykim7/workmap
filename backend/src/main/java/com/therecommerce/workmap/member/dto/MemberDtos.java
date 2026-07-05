@@ -25,6 +25,7 @@ public final class MemberDtos {
             String name,
             String email,
             String role,
+            String avatarUrl,
             OffsetDateTime createdAt
     ) {}
 }

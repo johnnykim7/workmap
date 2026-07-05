@@ -20,6 +20,7 @@ export const ROUTES = {
   passwordForgot: '/password/forgot',
   passwordReset: '/password/reset',
   signupRequest: '/signup-request',
+  accountProfile: '/account/profile', // CR-047 — 내 프로필(프로필 사진)
   accountPassword: '/account/password',
   accountNotifications: '/account/notifications', // CR-028 — 알림 수신 설정
   accountTheme: '/account/theme', // 개인 화면 테마(프리셋)
@@ -34,6 +35,8 @@ export const ROUTES = {
   project: (key: string, tab: ProjectTab = 'summary') => `/projects/${key}/${tab}`,
   workItem: (key: string) => `/work-items/${key}`,
   workspaceMembers: (wsId: number | string) => `/workspaces/${wsId}/members`,
+  // CR-046 — WS 자신의 설정(일반/멤버/채널/보관). LNB "설정" 자리.
+  workspaceSettings: (wsId: number | string) => `/workspaces/${wsId}/settings`,
 
   admin: {
     measureUnits: '/admin/measure-units',

@@ -14,6 +14,7 @@
                u.name        AS name,
                u.email       AS email,
                pm.role       AS role,
+               u.avatar_url  AS avatarUrl,
                pm.created_at AS createdAt
         FROM project_members pm
         JOIN users u ON u.id = pm.user_id

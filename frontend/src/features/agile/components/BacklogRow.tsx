@@ -7,7 +7,8 @@ import {
 } from '@therecommerce/ds-ui';
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
-import { TypeBadge, PriorityBadge, StatusBadge, Avatar2, EpicChip } from '@/components/badges';
+import { TypeBadge, PriorityBadge, StatusBadge, EpicChip } from '@/components/badges';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { epicColor } from '../epic-color';
 import { GripVertical, CalendarClock, Layers, MoreHorizontal, Inbox, ArrowRight } from 'lucide-react';
 
@@ -106,7 +107,7 @@ export function BacklogRow({ item, assigneeName, onClick, epicName, epicOptions,
       </div>
       <div className="flex w-6 shrink-0 justify-center"><PriorityBadge priority={item.priority} /></div>
       <div className="flex w-20 shrink-0 justify-center"><StatusBadge status={item.commonStatus} /></div>
-      <div className="flex w-6 shrink-0 justify-center"><Avatar2 name={assigneeName} /></div>
+      <div className="flex w-6 shrink-0 justify-center"><UserAvatar userId={item.assigneeId} name={assigneeName} size="sm" noCard /></div>
 
       {/* 행 … 메뉴 — 드래그 대신 클릭으로 스프린트 이동/백로그 되돌리기(드래그 조준 부담 없음). */}
       <div className="flex w-6 shrink-0 justify-center">

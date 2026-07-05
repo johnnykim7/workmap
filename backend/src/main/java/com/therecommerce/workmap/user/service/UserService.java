@@ -7,6 +7,7 @@ import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.user.domain.User;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
 import com.therecommerce.workmap.user.dto.UpdateUserRequest;
+import com.therecommerce.workmap.user.dto.UserDetailResponse;
 import com.therecommerce.workmap.user.dto.UserResponse;
 import com.therecommerce.workmap.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +66,24 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse get(Long id) {
         return UserResponse.from(getEntity(id));
+    }
+
+    /** 프로필 카드용 단건 상세 (부서명 포함, CR-047). 인증 사용자 누구나 조회. */
+    @Transactional(readOnly = true)
+    public UserDetailResponse getDetail(Long id) {
+        UserDetailResponse detail = userMapper.findDetailById(id);
+        if (detail == null) {
+            throw new BusinessException(WmpErrorCode.USER_NOT_FOUND);
+        }
+        return detail;
+    }
+
+    /** 본인 프로필 사진 URL 저장 (CR-047). avatarUrl null이면 사진 제거. */
+    @Transactional
+    public UserResponse updateMyAvatar(Long userId, String avatarUrl) {
+        getEntity(userId); // 존재 확인
+        userMapper.updateAvatar(userId, avatarUrl);
+        return UserResponse.from(getEntity(userId));
     }
 
     @Transactional

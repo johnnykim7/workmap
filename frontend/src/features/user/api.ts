@@ -1,6 +1,6 @@
 // 사용자 관리 API (T3-2 B, WMP-AUTH-004/005) — UserController 계약. 생성/수정/비활성화 Admin 전용.
 import { api, type PageResponse } from '@/lib/api-client';
-import type { User, UserRole } from '@/types/domain';
+import type { User, UserDetail, UserRole } from '@/types/domain';
 
 export interface CreateUserRequest {
   email: string;
@@ -24,4 +24,7 @@ export const userApi = {
   create: (body: CreateUserRequest) => api.post<User>('/users', body),
   update: (id: number, body: UpdateUserRequest) => api.patch<User>(`/users/${id}`, body),
   deactivate: (id: number) => api.patch<void>(`/users/${id}/deactivate`),
+  // CR-047 — 프로필 카드용 단건 상세, 본인 프로필 사진 저장(null=제거)
+  getDetail: (id: number) => api.get<UserDetail>(`/users/${id}`),
+  updateMyAvatar: (avatarUrl: string | null) => api.patch<User>('/users/me/avatar', { avatarUrl }),
 };

@@ -25,6 +25,7 @@ public class User {
     private String name;
     private String role;
     private Long departmentId;
+    private String avatarUrl;
     private boolean isActive;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

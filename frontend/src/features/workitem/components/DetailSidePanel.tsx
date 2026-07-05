@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  DatePicker, Input, Avatar, AvatarFallback,
+  DatePicker, Input,
 } from '@therecommerce/ds-ui';
 import { useMemo } from 'react';
 import { fromIso, toIso, fmtDate } from '@/lib/date';
@@ -285,10 +285,4 @@ function LabelsEditor({ value, onCommit }: { value: string[]; onCommit: (labels:
   );
 }
 
-export function AssigneeAvatar({ name }: { name?: string }) {
-  return (
-    <Avatar className="size-6">
-      <AvatarFallback className="text-xs">{name?.[0] ?? '–'}</AvatarFallback>
-    </Avatar>
-  );
-}
+// (AssigneeAvatar 제거 — 미사용 죽은 코드였음. 담당자 아바타는 공통 UserAvatar 사용, CR-047)

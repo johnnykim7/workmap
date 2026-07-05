@@ -4,6 +4,7 @@ import com.therecommerce.common.exception.BusinessException;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.user.domain.User;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
+import com.therecommerce.workmap.user.dto.UserDetailResponse;
 import com.therecommerce.workmap.user.dto.UserResponse;
 import com.therecommerce.workmap.user.mapper.UserMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -78,5 +79,58 @@ class UserServiceTest {
 
         verify(userMapper).deactivate(7L);
         verify(userMapper, never()).update(any());
+    }
+
+    @Test
+    @DisplayName("USR-4: 프로필상세_존재_부서명포함반환(CR-047)")
+    void 프로필상세_존재_반환() {
+        UserDetailResponse detail = new UserDetailResponse(
+                5L, "u@b.com", "이몽룡", "MEMBER", 3L, "물류팀",
+                "/files/serve/x.png", true, null);
+        when(userMapper.findDetailById(5L)).thenReturn(detail);
+
+        UserDetailResponse res = userService.getDetail(5L);
+
+        assertThat(res.id()).isEqualTo(5L);
+        assertThat(res.departmentName()).isEqualTo("물류팀");
+        assertThat(res.avatarUrl()).isEqualTo("/files/serve/x.png");
+    }
+
+    @Test
+    @DisplayName("USR-5: 프로필상세_없는id_USER_NOT_FOUND(CR-047)")
+    void 프로필상세_없는id_거부() {
+        when(userMapper.findDetailById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> userService.getDetail(999L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("USR-6: 본인아바타저장_URL갱신(CR-047)")
+    void 본인아바타_저장() {
+        User existing = User.builder().id(2L).email("me@b.com").isActive(true).build();
+        User updated = User.builder().id(2L).email("me@b.com").isActive(true)
+                .avatarUrl("/files/serve/new.png").build();
+        when(userMapper.findById(2L)).thenReturn(existing, updated);
+
+        UserResponse res = userService.updateMyAvatar(2L, "/files/serve/new.png");
+
+        verify(userMapper).updateAvatar(2L, "/files/serve/new.png");
+        assertThat(res.avatarUrl()).isEqualTo("/files/serve/new.png");
+    }
+
+    @Test
+    @DisplayName("USR-7: 아바타제거_null저장(CR-047)")
+    void 아바타_제거() {
+        User existing = User.builder().id(2L).email("me@b.com").isActive(true)
+                .avatarUrl("/files/serve/old.png").build();
+        User cleared = User.builder().id(2L).email("me@b.com").isActive(true).build();
+        when(userMapper.findById(2L)).thenReturn(existing, cleared);
+
+        UserResponse res = userService.updateMyAvatar(2L, null);
+
+        verify(userMapper).updateAvatar(2L, null);
+        assertThat(res.avatarUrl()).isNull();
     }
 }

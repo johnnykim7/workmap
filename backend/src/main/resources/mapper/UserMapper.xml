@@ -10,6 +10,7 @@
         <result property="name"         column="name"/>
         <result property="role"         column="role"/>
         <result property="departmentId" column="department_id"/>
+        <result property="avatarUrl"    column="avatar_url"/>
         <result property="isActive"     column="is_active"/>
         <result property="createdAt"    column="created_at"/>
         <result property="updatedAt"    column="updated_at"/>
@@ -23,6 +24,22 @@
 
     <select id="findById" resultMap="userMap">
         SELECT * FROM users WHERE id = #{id}
+    </select>
+
+    <!-- 프로필 카드용 상세: 부서명 조인 (CR-047). password_hash는 SELECT하지 않는다. -->
+    <select id="findDetailById" resultType="com.therecommerce.workmap.user.dto.UserDetailResponse">
+        SELECT u.id            AS id,
+               u.email         AS email,
+               u.name          AS name,
+               u.role          AS role,
+               u.department_id AS departmentId,
+               d.name          AS departmentName,
+               u.avatar_url    AS avatarUrl,
+               u.is_active     AS active,
+               u.created_at    AS createdAt
+        FROM users u
+        LEFT JOIN departments d ON d.id = u.department_id
+        WHERE u.id = #{id}
     </select>
 
     <select id="findByEmail" resultMap="userMap">
@@ -64,6 +81,10 @@
 
     <update id="updatePassword">
         UPDATE users SET password_hash = #{passwordHash}, updated_at = now() WHERE id = #{id}
+    </update>
+
+    <update id="updateAvatar">
+        UPDATE users SET avatar_url = #{avatarUrl}, updated_at = now() WHERE id = #{id}
     </update>
 
     <update id="deactivate">

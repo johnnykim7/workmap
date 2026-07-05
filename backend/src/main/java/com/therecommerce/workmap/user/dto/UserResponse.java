@@ -13,12 +13,13 @@ public record UserResponse(
         String name,
         String role,
         Long departmentId,
+        String avatarUrl,
         boolean active,
         OffsetDateTime createdAt
 ) {
     public static UserResponse from(User u) {
         return new UserResponse(
                 u.getId(), u.getEmail(), u.getName(), u.getRole(),
-                u.getDepartmentId(), u.isActive(), u.getCreatedAt());
+                u.getDepartmentId(), u.getAvatarUrl(), u.isActive(), u.getCreatedAt());
     }
 }

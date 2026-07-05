@@ -1,7 +1,8 @@
 // 댓글(@멘션) — §9.3. GET/POST /work-items/{id}/comments. authorId/mention은 멤버 목록으로 이름 해소.
 // 멘션: 본문의 @이름 토큰을 멤버명과 매칭해 mentionedUserIds로 전송(간이 매칭).
 import { useState } from 'react';
-import { Button, Textarea, Spinner, Avatar, AvatarFallback } from '@therecommerce/ds-ui';
+import { Button, Textarea, Spinner } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { fmtDateTime } from '@/lib/date';
 import { useMembers } from '@/features/members/hooks';
 import { type WorkItemResponse } from '@/types/domain';
@@ -49,7 +50,7 @@ export function CommentThread({ item }: { item: WorkItemResponse }) {
         <ul className="space-y-3">
           {comments.map((c) => (
             <li key={c.id} className="flex gap-2">
-              <Avatar className="size-7 shrink-0"><AvatarFallback className="text-xs">{nameOf(c.authorId)[0]}</AvatarFallback></Avatar>
+              <UserAvatar userId={c.authorId} name={nameOf(c.authorId)} size="md" />
               <div className="flex-1">
                 <div className="flex items-center gap-2 text-xs">
                   <span className="font-medium text-foreground">{nameOf(c.authorId)}</span>

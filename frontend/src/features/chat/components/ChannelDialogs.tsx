@@ -1,8 +1,6 @@
 // 채널 설정 다이얼로그 묶음 — 멤버 / 핀 / 알림설정. ds-ui Dialog 기반.
 import { useEffect, useState } from 'react';
 import {
-  Avatar,
-  AvatarFallback,
   Button,
   Dialog,
   DialogContent,
@@ -21,6 +19,7 @@ import {
 } from '@therecommerce/ds-ui';
 import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
 import { Field } from '@/components/common/field';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { useWorkspaceMembers } from '@/features/workspaces/hooks';
 import {
   useChannelMembers,
@@ -30,7 +29,7 @@ import {
   useUpdateNotificationSettings,
 } from '../hooks';
 import type { ChatMessage, NotifyLevel } from '../types';
-import { formatChatTime, initialOf } from './chat-utils';
+import { formatChatTime } from './chat-utils';
 
 // ── 멤버 관리 ──
 export function MembersDialog({
@@ -78,7 +77,7 @@ export function MembersDialog({
                 <button
                   type="button"
                   disabled={addable.length === 0}
-                  className="flex h-8.5 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-[0.8125rem] text-muted-foreground shadow-xs shadow-black/5 transition-shadow outline-none hover:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:bg-background"
+                  className="flex h-8.5 w-full items-center justify-between rounded-md border border-input bg-card px-3 text-[0.8125rem] text-muted-foreground shadow-xs shadow-black/5 transition-shadow outline-none hover:bg-card focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:bg-card"
                 >
                   {addable.length === 0
                     ? (wsMembers.length === 0 ? '워크스페이스 멤버 없음' : '추가할 멤버 없음')
@@ -112,9 +111,7 @@ export function MembersDialog({
                         }}
                         className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
                       >
-                        <Avatar className="size-6">
-                          <AvatarFallback className="text-xs">{initialOf(u.name)}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar name={u.name} size="sm" noCard />
                         <span className="min-w-0 flex-1 truncate">{u.name}</span>
                         <span className="truncate text-xs text-muted-foreground">{u.email}</span>
                         <UserPlus className="size-4 shrink-0 text-muted-foreground" />
@@ -136,9 +133,7 @@ export function MembersDialog({
               ) : (
                 members.map((m) => (
                   <div key={m.userId} className="flex items-center gap-2 rounded-md px-1 py-1">
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-xs">{initialOf(m.userName)}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar userId={m.userId} name={m.userName} size="md" />
                     <div className="min-w-0 flex-1">
                       {/* 채널 멤버 응답엔 email이 없음(BE MemberResponse) — 이름만 표시. */}
                       <div className="truncate text-sm text-foreground">{m.userName}</div>

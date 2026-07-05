@@ -6,8 +6,6 @@ import { Link, Outlet, useLocation, useNavigate, useParams, Navigate } from 'rea
 import {
   AdminShell,
   Button,
-  Avatar,
-  AvatarFallback,
   Skeleton,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,8 +31,10 @@ import {
   KeyRound,
   Bell,
   Palette,
+  UserRound,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { useCanWrite } from '@/lib/permissions';
 import { useUiStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
@@ -177,9 +177,7 @@ function HeaderActions() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring" aria-label="계정 메뉴">
-              <Avatar className="size-7">
-                <AvatarFallback className="text-xs">{user?.name?.[0] ?? '?'}</AvatarFallback>
-              </Avatar>
+              <UserAvatar name={user?.name} avatarUrl={user?.avatarUrl} size="md" noCard />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -188,6 +186,9 @@ function HeaderActions() {
               <div className="text-xs font-normal text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => navigate(ROUTES.accountProfile)}>
+              <UserRound className="size-4" /> 내 프로필
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate(ROUTES.accountNotifications)}>
               <Bell className="size-4" /> 알림 설정
             </DropdownMenuItem>
@@ -264,9 +265,13 @@ export function AppShell() {
         icon: <FolderKanban className="size-4" />,
         children: projectChildren,
       },
-      { path: ROUTES.admin.measureUnits, label: '설정', icon: <Settings className="size-4" /> },
+      // 설정 = 이 WS 자신의 설정(일반/멤버/채널/보관, CR-046). 전역 시스템 설정은 계정 메뉴 › 시스템 관리로 분리.
+      // WS 미선택 시엔 경로가 WS id에 의존하므로 항목을 감춘다.
+      ...(currentWorkspaceId
+        ? [{ path: ROUTES.workspaceSettings(currentWorkspaceId), label: '설정', icon: <Settings className="size-4" /> }]
+        : []),
     ];
-  }, [projects, channels]);
+  }, [projects, channels, currentWorkspaceId]);
 
   // WS 미선택이면 선택 화면으로(WMP-WS-008).
   if (!wsLoading && !currentWorkspaceId) {

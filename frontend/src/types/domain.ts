@@ -143,14 +143,32 @@ export interface User {
   email: string;
   role: UserRole;
   departmentId?: number;
+  avatarUrl?: string | null; // CR-047 프로필 사진(없으면 이니셜 폴백)
   active: boolean;
+}
+
+// 프로필 카드용 단건 상세(CR-047, GET /users/{id}) — 부서명 포함
+export interface UserDetail {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  departmentId?: number;
+  departmentName?: string | null;
+  avatarUrl?: string | null;
+  active: boolean;
+  createdAt: string;
 }
 
 export interface Workspace {
   id: number;
   name: string;
   description?: string; // BE Response 포함(WMP-WS-001 생성/수정에서 편집)
+  status?: WorkspaceStatus; // CR-046 — ACTIVE / ARCHIVED. 목록은 ACTIVE만 반환
+  archivedAt?: string | null; // 보관 시점
 }
+
+export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED';
 
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'DONE' | 'ARCHIVED';
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -192,6 +210,7 @@ export interface ProjectMember {
   name: string;
   email: string;
   role: UserRole; // 프로젝트 내 역할(POL-004)
+  avatarUrl?: string | null; // CR-047 프로필 사진
   createdAt?: string;
 }
 

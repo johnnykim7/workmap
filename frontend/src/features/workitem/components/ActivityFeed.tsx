@@ -1,5 +1,5 @@
 // 활동 이력 — §9.3. GET /work-items/{id}/activities. actor는 멤버 이름 해소, action별 한 줄 표기.
-import { Avatar, AvatarFallback } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { fmtDateTime } from '@/lib/date';
 import { useMembers } from '@/features/members/hooks';
 import { type WorkItemResponse } from '@/types/domain';
@@ -34,7 +34,7 @@ export function ActivityFeed({ item }: { item: WorkItemResponse }) {
         <ul className="space-y-2.5">
           {activities.map((a) => (
             <li key={a.id} className="flex items-start gap-2 text-sm">
-              <Avatar className="size-6 shrink-0"><AvatarFallback className="text-[10px]">{nameOf(a.actorId)[0]}</AvatarFallback></Avatar>
+              <UserAvatar userId={a.actorId} name={nameOf(a.actorId)} size="sm" />
               <div className="flex-1">
                 <span className="font-medium text-foreground">{nameOf(a.actorId)}</span>{' '}
                 <span className="text-muted-foreground">{ACTION_LABEL[a.action] ?? a.action}</span>

@@ -3,8 +3,11 @@ package com.therecommerce.workmap.user.controller;
 import com.therecommerce.common.paging.PageRequest;
 import com.therecommerce.common.paging.PageResponse;
 import com.therecommerce.common.response.ResponseDto;
+import com.therecommerce.common.security.auth.AuthUserInfo;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
+import com.therecommerce.workmap.user.dto.UpdateAvatarRequest;
 import com.therecommerce.workmap.user.dto.UpdateUserRequest;
+import com.therecommerce.workmap.user.dto.UserDetailResponse;
 import com.therecommerce.workmap.user.dto.UserResponse;
 import com.therecommerce.workmap.user.service.UserService;
 import jakarta.validation.Valid;
@@ -30,6 +33,20 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseDto.success(userService.search(keyword, new PageRequest(page, size)));
+    }
+
+    /** 사용자 단건 상세(프로필 카드용, CR-047). 인증 사용자 누구나 조회(VIEWER 포함). */
+    @GetMapping("/{id}")
+    public ResponseDto<UserDetailResponse> getDetail(@PathVariable Long id) {
+        return ResponseDto.success(userService.getDetail(id));
+    }
+
+    /** 본인 프로필 사진 URL 저장(CR-047). path param 없이 JWT userId로만 — 남의 아바타 변경 불가. */
+    @PatchMapping("/me/avatar")
+    public ResponseDto<UserResponse> updateMyAvatar(
+            @AuthUserInfo("userId") Long userId,
+            @Valid @RequestBody UpdateAvatarRequest req) {
+        return ResponseDto.success(userService.updateMyAvatar(userId, req.avatarUrl()));
     }
 
     @PostMapping

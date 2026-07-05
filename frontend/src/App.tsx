@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AppShell } from '@/layout/AppShell';
+import { SystemAdminShell } from '@/layout/SystemAdminShell';
 import { ProjectLayout } from '@/layout/ProjectLayout';
 import { RequireAuth } from '@/components/common/require-auth';
 
@@ -8,11 +9,13 @@ import { InviteAcceptPage } from '@/pages/InviteAcceptPage';
 import { PasswordForgotPage } from '@/pages/PasswordForgotPage';
 import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { SignupRequestPage } from '@/pages/SignupRequestPage';
+import { AccountProfilePage } from '@/pages/AccountProfilePage';
 import { AccountPasswordPage } from '@/pages/AccountPasswordPage';
 import { AccountNotificationsPage } from '@/pages/AccountNotificationsPage';
 import { AccountThemePage } from '@/pages/AccountThemePage';
 import { SelectWorkspacePage } from '@/pages/SelectWorkspacePage';
 import { WorkspaceMembersPage } from '@/pages/WorkspaceMembersPage';
+import { WorkspaceSettingsPage } from '@/pages/WorkspaceSettingsPage';
 import { HomePage } from '@/pages/HomePage';
 import { InboxPage } from '@/pages/InboxPage';
 import { SearchPage } from '@/pages/SearchPage';
@@ -63,7 +66,12 @@ const router = createBrowserRouter([
           { path: 'chat', element: <ChatPage /> },
           { path: 'chat/:channelId', element: <ChatPage /> },
           { path: 'projects', element: <ProjectsPage /> },
+          // CR-046 — WS 자신의 설정(일반/멤버/채널/보관). LNB "설정" 자리.
+          { path: 'workspaces/:wsId/settings', element: <WorkspaceSettingsPage /> },
+          // 하위호환 — 기존 멤버 URL/링크는 설정 화면(멤버 탭 기본)으로 흡수.
           { path: 'workspaces/:wsId/members', element: <WorkspaceMembersPage /> },
+          // CR-047 — 내 프로필(프로필 사진 편집)
+          { path: 'account/profile', element: <AccountProfilePage /> },
           // CR-027 — 로그인 상태 비밀번호 변경(2차 인증)
           { path: 'account/password', element: <AccountPasswordPage /> },
           // CR-028 — 알림 수신 설정(종류 × 채널)
@@ -92,15 +100,21 @@ const router = createBrowserRouter([
           // ── 업무 상세 ──
           { path: 'work-items/:key', element: <WorkItemDetail /> },
 
-          // ── 관리자 ──
-          { path: 'admin/measure-units', element: <MeasureUnitsPage /> },
-          { path: 'admin/field-schemes', element: <FieldSchemesPage /> },
-          { path: 'admin/workflows', element: <WorkflowsPage /> },
-          { path: 'admin/issue-types', element: <IssueTypesPage /> },
-          { path: 'admin/forms', element: <FormsPage /> },
-          { path: 'admin/users', element: <UsersPage /> },
-
           { path: '*', element: <Navigate to="/" replace /> },
+        ],
+      },
+      // ── 시스템 관리 (CR-046) — WS 컨텍스트 셸(AppShell) 밖 별도 레이아웃. 전역 설정. ──
+      {
+        path: '/admin',
+        element: <SystemAdminShell />,
+        children: [
+          { index: true, element: <Navigate to="measure-units" replace /> },
+          { path: 'measure-units', element: <MeasureUnitsPage /> },
+          { path: 'field-schemes', element: <FieldSchemesPage /> },
+          { path: 'workflows', element: <WorkflowsPage /> },
+          { path: 'issue-types', element: <IssueTypesPage /> },
+          { path: 'forms', element: <FormsPage /> },
+          { path: 'users', element: <UsersPage /> },
         ],
       },
     ],

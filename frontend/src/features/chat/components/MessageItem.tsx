@@ -2,7 +2,8 @@
 // hover 액션: 리액션·북마크·스레드 열기·(본인) 수정/삭제·핀.
 // contentHtml은 BE 화이트리스트 + Tiptap 생성 HTML이므로 dangerouslySetInnerHTML 허용(CR-024).
 import { useState } from 'react';
-import { Avatar, AvatarFallback, Button, cn } from '@therecommerce/ds-ui';
+import { Button, cn } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import {
   MessageSquareText,
   Bookmark,
@@ -17,7 +18,7 @@ import {
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import type { ChatMessage } from '../types';
 import { ReactionChips, EmojiPicker } from './ReactionBar';
-import { formatChatTime, initialOf, isEmptyHtml } from './chat-utils';
+import { formatChatTime, isEmptyHtml } from './chat-utils';
 
 interface Props {
   message: ChatMessage;
@@ -69,9 +70,7 @@ export function MessageItem({
       {grouped ? (
         <div className="w-8 shrink-0" aria-hidden />
       ) : (
-        <Avatar className="mt-0.5 size-8 shrink-0">
-          <AvatarFallback className="text-xs">{initialOf(message.authorName)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar userId={message.authorId} name={message.authorName} size="md" className="mt-0.5" />
       )}
 
       <div className="min-w-0 flex-1">

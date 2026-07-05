@@ -2,7 +2,8 @@
 // 색은 신호에만(상태/우선순위/막힘 배지). 본문은 중립 톤(CLAUDE.md 색 절제).
 import type { WorkItemResponse } from '@/types/domain';
 import { isWorkItemDelayed } from '@/types/domain';
-import { TypeBadge, PriorityBadge, Avatar2 } from '@/components/badges';
+import { TypeBadge, PriorityBadge } from '@/components/badges';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { Flag, CalendarClock } from 'lucide-react';
 
 interface Props {
@@ -61,7 +62,8 @@ export function WorkItemCard({ item, assigneeName, dragHandleProps, onClick }: P
             </span>
           )}
         </div>
-        <Avatar2 name={assigneeName} />
+        {/* 카드 내부는 DnD 리스너와 겹쳐 클릭 카드 비활성(noCard) — 이름 툴팁만 */}
+        <UserAvatar userId={item.assigneeId} name={assigneeName} size="sm" noCard />
       </div>
     </div>
   );

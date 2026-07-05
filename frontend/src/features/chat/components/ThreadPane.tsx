@@ -1,13 +1,14 @@
 // 우측 스레드 패널 — 부모 메시지 + 답글 목록(5s 폴링) + 답글 작성기.
 import { useState } from 'react';
-import { Avatar, AvatarFallback, Button, Skeleton, cn } from '@therecommerce/ds-ui';
+import { Button, Skeleton, cn } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { X, Check, Pencil, Trash2 } from 'lucide-react';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import type { ChatMessage, ChatReply } from '../types';
 import { useReplies, useReplyMutations } from '../hooks';
 import { ReactionChips, EmojiPicker } from './ReactionBar';
 import { MessageComposer } from './MessageComposer';
-import { formatChatTime, initialOf, isEmptyHtml } from './chat-utils';
+import { formatChatTime, isEmptyHtml } from './chat-utils';
 
 interface Props {
   channelId: number;
@@ -107,9 +108,7 @@ function ReplyItem({
 
   return (
     <div className="group relative flex gap-2 rounded-md px-1.5 py-1.5 hover:bg-muted/40">
-      <Avatar className="mt-0.5 size-6 shrink-0">
-        <AvatarFallback className="text-[10px]">{initialOf(reply.authorName)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar userId={reply.authorId} name={reply.authorName} size="sm" className="mt-0.5" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="text-xs font-semibold text-foreground">{reply.authorName}</span>

@@ -2,6 +2,7 @@ package com.therecommerce.workmap.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
+import com.therecommerce.workmap.user.dto.UserDetailResponse;
 import com.therecommerce.workmap.user.dto.UserResponse;
 import com.therecommerce.workmap.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,7 @@ import java.time.OffsetDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -91,7 +93,7 @@ class UserControllerTest {
     @DisplayName("C-USR: POST /users 201 + id 생성")
     void POST_users_201() throws Exception {
         CreateUserRequest req = new CreateUserRequest("new@therecommerce.com", "rawPassword123", "신규", "MEMBER", null);
-        UserResponse created = new UserResponse(1L, "new@therecommerce.com", "신규", "MEMBER", null, true, OffsetDateTime.now());
+        UserResponse created = new UserResponse(1L, "new@therecommerce.com", "신규", "MEMBER", null, null, true, OffsetDateTime.now());
         when(userService.create(any())).thenReturn(created);
 
         mockMvc.perform(post("/api/v1/users").with(csrf())
@@ -101,6 +103,24 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.email").value("new@therecommerce.com"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("C-USR: GET /users/{id} 200 + 프로필 상세(CR-047)")
+    void GET_users_id_200() throws Exception {
+        UserDetailResponse detail = new UserDetailResponse(
+                9L, "u@b.com", "성춘향", "MEMBER", 2L, "운영팀",
+                "/files/serve/a.png", true, OffsetDateTime.now());
+        when(userService.getDetail(9L)).thenReturn(detail);
+
+        mockMvc.perform(get("/api/v1/users/9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(9))
+                .andExpect(jsonPath("$.data.name").value("성춘향"))
+                .andExpect(jsonPath("$.data.departmentName").value("운영팀"))
+                .andExpect(jsonPath("$.data.avatarUrl").value("/files/serve/a.png"));
     }
 
     @Test

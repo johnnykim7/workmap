@@ -1,7 +1,8 @@
 // 활동 영역 탭(§9.3, Jira 정합) — [전체 / 댓글 / 이력]. 기본=댓글.
 // 전체=댓글+활동이력을 시간순 병합해 한 줄씩. 댓글=CommentThread, 이력=ActivityFeed 재사용.
 import { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent, Avatar, AvatarFallback } from '@therecommerce/ds-ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@therecommerce/ds-ui';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { fmtDateTime } from '@/lib/date';
 import { useMembers } from '@/features/members/hooks';
 import { type WorkItemResponse } from '@/types/domain';
@@ -59,7 +60,7 @@ function AllTimeline({ item }: { item: WorkItemResponse }) {
     <ul className="space-y-3">
       {rows.map((r) => (
         <li key={r.id} className="flex items-start gap-2 text-sm">
-          <Avatar className="size-6 shrink-0"><AvatarFallback className="text-[10px]">{nameOf(r.actorId)[0]}</AvatarFallback></Avatar>
+          <UserAvatar userId={r.actorId} name={nameOf(r.actorId)} size="sm" />
           <div className="flex-1">
             <div className="flex items-center gap-2 text-xs">
               <span className="font-medium text-foreground">{nameOf(r.actorId)}</span>

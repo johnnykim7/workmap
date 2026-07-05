@@ -15,7 +15,8 @@ import { useProjectItems } from '@/features/workitem/hooks';
 import { useProjectApprovals, useDecideProjectApproval } from '@/features/approval/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { ROUTES } from '@/lib/route-paths';
-import { PageHead, StatusBadge, TypeBadge, Avatar2 } from '@/components/badges';
+import { PageHead, StatusBadge, TypeBadge } from '@/components/badges';
+import { UserAvatar } from '@/components/common/user-avatar';
 import { WorkListTableSkeleton } from '@/components/common/skeletons';
 import { EmptyState } from '@/components/common/empty-state';
 import { PageShell } from '@/components/common/page-shell';
@@ -141,7 +142,7 @@ export function ApprovalsView() {
                   <TableCell>{wi ? <StatusBadge status={wi.commonStatus} /> : '–'}</TableCell>
                   <TableCell>
                     <span className="flex items-center gap-1.5">
-                      <Avatar2 name={nameOf(wi?.assigneeId)} />
+                      <UserAvatar userId={wi?.assigneeId} name={nameOf(wi?.assigneeId)} size="sm" noCard />
                       <span className="truncate text-xs text-muted-foreground">{nameOf(wi?.assigneeId) ?? '미배정'}</span>
                     </span>
                   </TableCell>

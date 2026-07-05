@@ -141,22 +141,7 @@ export function PriorityBadge({ priority, withLabel = false }: { priority: Prior
   );
 }
 
-export function Avatar2({ name }: { name?: string }) {
-  if (!name) {
-    return (
-      <HintTip title="담당자 없음">
-        <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-400">–</span>
-      </HintTip>
-    );
-  }
-  return (
-    <HintTip title={name} desc="담당자">
-      <span className="inline-flex size-6 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-700">
-        {name[0]}
-      </span>
-    </HintTip>
-  );
-}
+// (Avatar2 제거 — 공통 UserAvatar(components/common/user-avatar)로 통합, CR-047)
 
 // 페이지 헤더
 // title은 GNB 헤더가 이미 화면명을 표시하므로 본문 h1로 중복 렌더하지 않는다(desc/actions만).
