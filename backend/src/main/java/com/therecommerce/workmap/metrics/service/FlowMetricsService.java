@@ -111,7 +111,7 @@ public class FlowMetricsService {
         List<Sprint> sprints = sprintMapper.findByProject(projectId);
         List<FlowMetricsDtos.SayDoSprint> out = new ArrayList<>();
         for (Sprint sp : sprints) {
-            FlowMetricsDtos.SayDoSprint c = metricsMapper.doneAmongCommitted(sp.getId());
+            FlowMetricsDtos.SayDoCommitment c = metricsMapper.doneAmongCommitted(sp.getId());
             if (c == null) continue;  // 동결 커밋 없음(시작 전 or 구 스프린트) → 제외
             int committedPts = c.committedPoints();
             int donePts = c.donePoints();

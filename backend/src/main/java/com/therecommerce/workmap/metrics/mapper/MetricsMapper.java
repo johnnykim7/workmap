@@ -50,7 +50,7 @@ public interface MetricsMapper {
     List<Integer> dailyThroughput(@Param("projectId") Long projectId, @Param("historyDays") int historyDays);
 
     // Say-Do (WMP-HOME-008)
-    FlowMetricsDtos.SayDoSprint doneAmongCommitted(@Param("sprintId") Long sprintId);
+    FlowMetricsDtos.SayDoCommitment doneAmongCommitted(@Param("sprintId") Long sprintId);
     void insertCommitment(@Param("sprintId") Long sprintId,
                           @Param("committedItemCount") int committedItemCount,
                           @Param("committedPoints") int committedPoints,

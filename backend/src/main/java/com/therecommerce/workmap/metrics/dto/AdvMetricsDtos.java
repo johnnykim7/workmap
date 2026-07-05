@@ -29,7 +29,7 @@ public final class AdvMetricsDtos {
             String key,
             String title,
             String blockReason,
-            long waitDays
+            Long waitDays   // ::bigint → Long (MyBatis constructor 매핑, primitive면 생성자 미검색)
     ) {}
 
     /** 팀 간 대기 응답. structured=false면 사유 구조화 미도입(block_reason 자유텍스트만). */

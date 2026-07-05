@@ -65,6 +65,18 @@ public final class FlowMetricsDtos {
             int sayDoPct,          // 0~ (80~110 건강)
             int scopeChangePct     // 스코프 변경률(시작후 추가/제거 ÷ 약속)
     ) {}
+
+    /**
+     * Say-Do 매퍼 전용 집계 결과(doneAmongCommitted). SELECT 컬럼과 1:1.
+     * 응답용 SayDoSprint(8필드)와 분리 — 자동매핑 인덱스 초과 방지.
+     */
+    public record SayDoCommitment(
+            Long sprintId,
+            int committedPoints,
+            int committedItems,
+            int donePoints,
+            int doneItems
+    ) {}
     public record SayDo(
             List<SayDoSprint> sprints
     ) {}

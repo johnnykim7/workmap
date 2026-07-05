@@ -65,7 +65,7 @@
         SELECT count(DISTINCT al.work_item_id)
         FROM activity_logs al
         JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
-        JOIN workflow_status ws ON ws.code = al.to_value
+        JOIN workflow_status ws ON ws.code = al.to_value AND ws.workflow_id = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
           AND ws.common_status = 'DONE'
     </select>
@@ -88,8 +88,8 @@
                count(*) AS reopen_count
         FROM activity_logs al
         JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
-        JOIN workflow_status wf_from ON wf_from.code = al.from_value
-        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value
+        JOIN workflow_status wf_from ON wf_from.code = al.from_value AND wf_from.workflow_id = wi.workflow_id
+        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value   AND wf_to.workflow_id   = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
           AND wf_from.common_status = 'DONE'
           AND wf_to.common_status &lt;&gt; 'DONE'
@@ -103,8 +103,8 @@
         SELECT count(DISTINCT al.work_item_id)
         FROM activity_logs al
         JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
-        JOIN workflow_status wf_from ON wf_from.code = al.from_value
-        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value
+        JOIN workflow_status wf_from ON wf_from.code = al.from_value AND wf_from.workflow_id = wi.workflow_id
+        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value   AND wf_to.workflow_id   = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
           AND wf_from.common_status = 'DONE'
           AND wf_to.common_status &lt;&gt; 'DONE'
@@ -157,9 +157,9 @@
                    MIN(al_done.created_at) AS first_done
             FROM work_items wi
             JOIN activity_logs al_ip ON al_ip.work_item_id = wi.id AND al_ip.action = 'STATUS_CHANGE'
-            JOIN workflow_status ws_ip ON ws_ip.code = al_ip.to_value AND ws_ip.common_status = 'IN_PROGRESS'
+            JOIN workflow_status ws_ip ON ws_ip.code = al_ip.to_value AND ws_ip.workflow_id = wi.workflow_id AND ws_ip.common_status = 'IN_PROGRESS'
             JOIN activity_logs al_done ON al_done.work_item_id = wi.id AND al_done.action = 'STATUS_CHANGE'
-            JOIN workflow_status ws_dn ON ws_dn.code = al_done.to_value AND ws_dn.common_status = 'DONE'
+            JOIN workflow_status ws_dn ON ws_dn.code = al_done.to_value AND ws_dn.workflow_id = wi.workflow_id AND ws_dn.common_status = 'DONE'
             WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL
             GROUP BY wi.id, wi.key
         ) t
@@ -225,7 +225,7 @@
 
     <!-- ── Say-Do 완료 측정: 커밋 동결 항목 中 현재 DONE 수/포인트 ──────
          committed_item_ids(JSONB)를 풀어 현재 상태와 조인. -->
-    <select id="doneAmongCommitted" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$SayDoSprint">
+    <select id="doneAmongCommitted" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$SayDoCommitment">
         SELECT sc.sprint_id                                          AS sprintId,
                sc.committed_points                                  AS committedPoints,
                sc.committed_item_count                              AS committedItems,
@@ -274,7 +274,7 @@
             <arg    column="key"          javaType="java.lang.String"/>
             <arg    column="title"        javaType="java.lang.String"/>
             <arg    column="block_reason" javaType="java.lang.String"/>
-            <arg    column="wait_days"    javaType="long"/>
+            <arg    column="wait_days"    javaType="java.lang.Long"/>
         </constructor>
     </resultMap>
 
