@@ -251,12 +251,24 @@
 | GET | /work-items | 목록 뷰(표/분할, 검색·필터·퀵필터) — F 모듈 공유 | 🔒 | P1 | WMP-VIEW-001·004 |
 | GET | /projects/{id}/timeline | 타임라인/로드맵(start~due 막대) + **의존성 링크 병기(CR-037)** | 🔒 | P2 | WMP-VIEW-002·005·006 |
 | GET | /projects/{id}/calendar | 캘린더(기한 기준 월별) | 🔒 | P2 | WMP-VIEW-003 |
+| GET | /projects/{id}/attachments | 프로젝트 첨부 집계(전체 업무 첨부 모아보기, CR-044) | 🔒 | P2 | WMP-VIEW-007 |
 | GET | /saved-filters | 저장 필터 목록(내 것 + 공유된 것) | 🔒 | P2 | WMP-VIEW-004 |
 | POST | /saved-filters | 저장 필터 생성(name, query, isShared) | 🔒 | P2 | WMP-VIEW-004 |
 | PUT | /saved-filters/{id} | 저장 필터 수정(소유자만) | 🔒 | P2 | WMP-VIEW-004 |
 | DELETE | /saved-filters/{id} | 저장 필터 삭제(소유자만) | 🔒 | P2 | WMP-VIEW-004 |
 
 > **저장 필터(WMP-VIEW-004, CR-012)**: `saved_filters`(T3-1) CRUD. `query`(JSONB)는 목록 필터 조건(유형·상태·담당자·우선순위·라벨·스프린트·Epic·기한·막힘·검색어)을 그대로 저장. `is_shared=true`면 전 사용자 목록에 노출, false면 owner만. 수정·삭제는 **소유자만**(owner_id 일치 검증). Phase 1의 기본/전문/퀵필터(WMP-VIEW-001·004)는 이미 `/work-items`에서 제공 — 저장/공유 부분만 여기서 추가.
+
+> **프로젝트 첨부 집계(WMP-VIEW-007, CR-044)**: `GET /projects/{id}/attachments` — 프로젝트 안 **모든 업무의 첨부**를 한 목록으로 집계(Jira "첨부 파일" 탭). 첨부의 소속지는 개별 업무(WMP-WI-012)이고 본 엔드포인트는 **조회 전용**(업로드 없음 — 업로드는 업무 하위 `/work-items/{id}/attachments`).
+> - **응답 형태**:
+>   ```
+>   ProjectAttachmentsResponse { projectId, items: ProjectAttachmentItem[] }
+>   ProjectAttachmentItem { id, fileName, filePath, fileSize, contentType, createdAt,
+>                           workItemId, workItemKey, workItemSummary, uploaderName }
+>   ```
+> - **매퍼**: `ViewMapper.projectAttachments(projectId)` 신규 — `attachments a JOIN work_items wi ON a.work_item_id = wi.id LEFT JOIN users u ON a.uploaded_by = u.id WHERE wi.project_id = #{id} AND wi.deleted_at IS NULL ORDER BY a.created_at DESC, a.id DESC`. `workItemKey`는 `{프로젝트키}-{seq}` 규약(목록/상세와 동일 조합).
+> - **가시성 가드(BIZ-108)**: 타임라인/캘린더와 동일한 `ViewService.assertVisible(projectId, viewerId)` 재사용(볼 수 없는 프로젝트 차단·존재 없으면 `PROJECT_NOT_FOUND`). VIEWER도 조회 허용(GET).
+> - **신규 스키마/에러코드 없음**: `attachments` 테이블 그대로 조회만. 파일 서빙·다운로드·미리보기는 기존 `/files/serve/*`(CR-024) 재사용.
 
 > **타임라인 간트 고도화(WMP-VIEW-005·006, CR-037)**: `GET /projects/{id}/timeline` 응답을 `{ projectId, items[] }` → `{ projectId, items[], links[] }`로 확장(신규 엔드포인트 없음, 응답 형태만 추가). `links[]` = 프로젝트 내 work_item_links 중 **의존성 방향(BLOCKS/BLOCKED_BY)** 링크를 조인한 목록.
 > - **응답 형태(신규 `TimelineLink`)**:

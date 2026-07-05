@@ -48,6 +48,7 @@
 | CR-041 | 백로그에 완료 스프린트 보기 토글 (기본 제외 → includeCompleted 옵션 복원, 맨 위·읽기전용·접힘) | 신규/설계보정 | Low | v2.4 |
 | CR-042 | 만들기 라이트화 + 하위작업 완료 체크박스 + 유형 선택 예시 가이드 (Jira 무거움 피드백 반영, FE 전용) | 변경 | Low | v2.4 |
 | CR-043 | 프로젝트 건강 지표 체계(5축+AI) — "잘 됨" 다축 증명. 업계표준(애자일·Flow·품질·팀·EVM) 망라→우리 조직 매핑. 보고서 [건강] 서브탭. DORA 제외(FlowGuard 경계). 1차(예외축) 구현 | 신규 | High | v2.5 |
+| CR-044 | 프로젝트 첨부 집계 탭(WMP-VIEW-007) — Jira "첨부 파일" 탭 유사. 프로젝트 전체 업무의 첨부를 한 화면에 모아보기(파일 관점). view 모듈 조회 엔드포인트 1개 + 탭 1개. 모든 유형 기본 ON. 스키마·에러코드 무변경 | 신규 | Medium | v2.6 |
 
 ---
 
@@ -941,6 +942,22 @@
 - **⚠️ 미검증 항목(다음 세션)**: ① MetricsMapper 재작업 쿼리의 workflow_status.code 조인이 워크플로 다중일 때 reopen_count 부풀림 가능(같은 프로젝트=같은 워크플로 전제라 실무 영향 적음, 정확성 검증 필요) ② 종합 판정 스코어 가중치·SLE 임계(기본 10일)·재작업 임계(10%)는 초기값, 운영 데이터로 조정 ③ 예측·일정 축은 2·3차 지표 완성 전까지 종합 판정에서 미평가.
 - **요청자/승인자**: 사용자(2026-07-05, "아주 좋습니다" 목업 승인 · "이 세션에서 전부 완주" · "구현만 밀어붙이고 검증은 다음 세션") | **변경 일자**: 2026-07-05
 - **참조**: 설계 골격 `docs/origins/2026-07-05_지표체계_5축_설계골격.md`
+
+### CR-044 — 프로젝트 첨부 집계 탭 (파일 뷰, WMP-VIEW-007)
+
+- **배경**: 사용자가 Jira를 테스트하며 스페이스별 "첨부 파일" 탭을 관찰 — 프로젝트 안 모든 업무의 첨부를 한 화면에 모아 보는 파일 관점 뷰. WorkMap에는 이 집계 탭이 없어(첨부는 업무 상세 안에만 존재) "한번에 볼 수 있다"는 효용이 빠져 있었음. 사용자 결정으로 추가.
+- **핵심 결정(사용자 2026-07-05)**:
+  - 레이아웃은 **Jira와 유사** — 썸네일 카드 그리드 + 상단 필터바(파일명 검색·업로더·유형·추가일), 카드에 소속 업무 키·요약 병기.
+  - **조회 전용** — 이 탭에서 직접 업로드하지 않음. 첨부의 소속지는 개별 업무 상세(WMP-WI-012)이고, 본 탭은 그것을 모아 보는 read 중심 뷰(Jira 동작과 일치).
+  - **모든 프로젝트 유형에 기본 ON** — `active_tabs`로 프로젝트별 끄기 가능.
+- **BE(view 모듈, 타임라인/캘린더와 동형)**:
+  - `GET /api/v1/projects/{id}/attachments` — 프로젝트 내 전체 업무 첨부 집계. `ViewController`에 엔드포인트, `ViewService.attachments(projectId, viewerId)`(기존 `assertVisible` 가시성 가드 재사용), `ViewMapper.projectAttachments`(attachments JOIN work_items + LEFT JOIN users, `deleted_at IS NULL`, 최신순), DTO `ProjectAttachmentsResponse`·`ProjectAttachmentItem`(파일 메타 + workItemId/Key/Summary + uploaderName).
+  - **스키마 무변경**(attachments 그대로 조회), **에러코드 신규 0**(PROJECT_NOT_FOUND·NOT_PROJECT_MEMBER 재사용). 파일 서빙은 기존 `/files/serve/*`(CR-024) 재사용.
+- **FE**:
+  - `KNOWN_TABS`·`ALL_TABS`·`PROJECT_TAB_LABEL`에 `attachments`('첨부 파일', Paperclip) 추가, 모든 프리셋(DEV/OPS/PLAN/DEFAULT)에 편입.
+  - 라우트 `/projects/:key/attachments` + `AttachmentsView` 화면 1개 — 기존 공통 file-viewer(줌 라이트박스)·FileTypeIcon 재사용, 카드/썸네일 클릭=미리보기, 업무 키 클릭=상세 이동. 필터는 FE 클라이언트 필터.
+  - `features/view`에 api·hook 추가.
+- **요청자/승인자**: 사용자(2026-07-05, "한번에 볼 수 있다는 게 좋은 거네요. 이거 구현하시죠" · "Layout은 지라와 유사" · "모든 유형 기본 ON") | **변경 일자**: 2026-07-05
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
