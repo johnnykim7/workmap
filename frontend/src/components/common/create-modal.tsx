@@ -201,7 +201,11 @@ export function CreateModal() {
                     disabled={!selectedProjectId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedProjectId ? '유형 선택' : '먼저 프로젝트 선택'} />
+                      {/* 트리거는 라벨만 한 줄(withDesc 금지) — 설명은 아래 드롭다운 목록에서만.
+                          SelectValue에 자식을 주면 Radix가 선택된 SelectItem children(설명 포함)을 복제하지 않는다. */}
+                      <SelectValue placeholder={selectedProjectId ? '유형 선택' : '먼저 프로젝트 선택'}>
+                        {field.value && <TypeOption type={field.value as IssueType} />}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {allowedTypes.map((t) => (
