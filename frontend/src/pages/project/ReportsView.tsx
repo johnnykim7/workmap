@@ -6,7 +6,10 @@ import { AlertTriangle, BarChart3 } from 'lucide-react';
 import {
   Skeleton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@therecommerce/ds-ui';
+import { HeartPulse, BarChartBig } from 'lucide-react';
+import { HealthDashboard } from '@/features/metrics/components/HealthDashboard';
 import { useProjectByKey } from '@/features/projects/hooks';
 import { useProjectReport } from '@/features/dashboard/hooks';
 import { useSprints } from '@/features/agile/hooks';
@@ -81,9 +84,26 @@ export function ReportsView() {
 
   return (
     <PageShell
-      header={<PageHead title="보고서" desc={`${report.projectName} · 진행률·지연·막힘·담당자 부하`} />}
+      header={<PageHead title="보고서" desc={`${report.projectName} · 건강 지표 + Jira 차트`} />}
       bodyClassName="flex flex-col gap-5"
     >
+      <Tabs defaultValue="health">
+        <TabsList>
+          <TabsTrigger value="health" className="gap-1.5">
+            <HeartPulse className="size-4" /> 건강
+          </TabsTrigger>
+          <TabsTrigger value="charts" className="gap-1.5">
+            <BarChartBig className="size-4" /> Jira 차트
+          </TabsTrigger>
+        </TabsList>
+
+        {/* 건강 서브탭 — CR-043 종합 판정 + 예외축(막힘·재작업·과부하) */}
+        <TabsContent value="health" className="mt-5">
+          <HealthDashboard projectId={projectId} />
+        </TabsContent>
+
+        {/* Jira 차트 서브탭 — 기존 분포·번다운·벨로시티·처리량 */}
+        <TabsContent value="charts" className="mt-5 flex flex-col gap-5">
       {/* 요약 지표 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MetricCard label="전체 항목" value={s.total} icon={<BarChart3 className="size-3.5" />} />
@@ -169,6 +189,8 @@ export function ReportsView() {
           )}
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </PageShell>
   );
 }

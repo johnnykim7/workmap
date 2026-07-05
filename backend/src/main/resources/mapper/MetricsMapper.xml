@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.therecommerce.workmap.metrics.mapper.MetricsMapper">
+
+    <!--
+      프로젝트 건강 지표 1차 집계 (CR-043, WMP-HOME-004~011).
+      전제: 프로젝트 단건(projectId). 가시성은 서비스가 사전 검증.
+      막힘 = flagged = true (CR-040), 지연 = due_date < CURRENT_DATE AND common_status NOT IN ('DONE','HOLD').
+      신규 테이블 없음 — work_items + activity_logs 집계.
+    -->
+
+    <!-- ── Work Item Age · 멈춘 일 (WMP-HOME-005) ──────────────────────
+         진행 중(미완료) 항목의 status_changed_at 경과일. 막힘(flagged) 우선.
+         SLE(임계일) 이상 or 근접(80%) 항목만. 정렬 경과일 DESC. -->
+    <resultMap id="agingMap" type="com.therecommerce.workmap.metrics.dto.MetricsDtos$AgingItem">
+        <id     property="id"           column="id"/>
+        <result property="key"          column="key"/>
+        <result property="title"        column="title"/>
+        <result property="commonStatus" column="common_status"/>
+        <result property="flagged"      column="flagged"/>
+        <result property="blockReason"  column="block_reason"/>
+        <result property="assigneeId"   column="assignee_id"/>
+        <result property="ageDays"      column="age_days"/>
+    </resultMap>
+
+    <select id="agingItems" resultMap="agingMap">
+        SELECT wi.id, wi.key, wi.title, wi.common_status, wi.flagged,
+               wi.block_reason, wi.assignee_id,
+               FLOOR(EXTRACT(EPOCH FROM (now() - wi.status_changed_at)) / 86400)::bigint AS age_days
+        FROM work_items wi
+        WHERE wi.project_id = #{projectId}
+          AND wi.deleted_at IS NULL
+          AND wi.common_status NOT IN ('DONE', 'HOLD')
+          AND (
+                wi.flagged = true
+                OR wi.status_changed_at &lt; now() - ((#{sleDays} * 0.8) || ' day')::interval
+              )
+        ORDER BY wi.flagged DESC, age_days DESC
+        LIMIT 50
+    </select>
+
+    <!-- 막힘 전체 카운트 -->
+    <select id="blockedCount" resultType="long">
+        SELECT count(*) FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND flagged = true
+    </select>
+
+    <!-- SLE 초과 항목 수(막힘/정체 무관, 진행 중 & SLE 초과) -->
+    <select id="overSleCount" resultType="long">
+        SELECT count(*) FROM work_items wi
+        WHERE wi.project_id = #{projectId}
+          AND wi.deleted_at IS NULL
+          AND wi.common_status NOT IN ('DONE', 'HOLD')
+          AND wi.status_changed_at &lt; now() - (#{sleDays} || ' day')::interval
+    </select>
+
+    <!-- ── 재작업 · Reopen Rate (WMP-HOME-009) ─────────────────────────
+         activity_logs STATUS_CHANGE 중 to_value가 DONE그룹 상태 code인 이력이
+         work_item별로 있으면 "한 번이라도 DONE 도달". 그 뒤 다시 non-DONE으로 나간 이력이 있으면 재오픈.
+         to_value/from_value = 워크플로 상태 code → workflow_status.common_status로 DONE 그룹 판정. -->
+
+    <!-- 완료(DONE) 이력이 한 번이라도 있는 항목 수 = 재작업률 분모 -->
+    <select id="everDoneCount" resultType="long">
+        SELECT count(DISTINCT al.work_item_id)
+        FROM activity_logs al
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN workflow_status ws ON ws.code = al.to_value
+        WHERE al.action = 'STATUS_CHANGE'
+          AND ws.common_status = 'DONE'
+    </select>
+
+    <resultMap id="reopenMap" type="com.therecommerce.workmap.metrics.dto.MetricsDtos$ReopenItem">
+        <id     property="id"          column="id"/>
+        <result property="key"         column="key"/>
+        <result property="title"       column="title"/>
+        <result property="reopenCount" column="reopen_count"/>
+        <result property="assigneeId"  column="assignee_id"/>
+    </resultMap>
+
+    <!--
+      재오픈 = 어떤 항목이 DONE에 도달한 시점(al_done) 이후에
+      DONE에서 non-DONE으로 나가는 전이(from=DONE그룹, to≠DONE그룹)가 존재.
+      항목별 그런 전이 건수 = reopen_count. count>0 이면 재오픈된 항목.
+    -->
+    <select id="reopenItems" resultMap="reopenMap">
+        SELECT wi.id, wi.key, wi.title, wi.assignee_id,
+               count(*) AS reopen_count
+        FROM activity_logs al
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN workflow_status wf_from ON wf_from.code = al.from_value
+        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value
+        WHERE al.action = 'STATUS_CHANGE'
+          AND wf_from.common_status = 'DONE'
+          AND wf_to.common_status &lt;&gt; 'DONE'
+        GROUP BY wi.id, wi.key, wi.title, wi.assignee_id
+        ORDER BY reopen_count DESC, wi.id DESC
+        LIMIT 50
+    </select>
+
+    <!-- 재오픈된 항목 수(분자) -->
+    <select id="reopenedCount" resultType="long">
+        SELECT count(DISTINCT al.work_item_id)
+        FROM activity_logs al
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN workflow_status wf_from ON wf_from.code = al.from_value
+        JOIN workflow_status wf_to   ON wf_to.code   = al.to_value
+        WHERE al.action = 'STATUS_CHANGE'
+          AND wf_from.common_status = 'DONE'
+          AND wf_to.common_status &lt;&gt; 'DONE'
+    </select>
+
+    <!-- ── 담당자 과부하 (WMP-HOME-011) ────────────────────────────────
+         담당자별 진행중/지연/막힘 교차 집계. 미완료 항목만. 미배정 제외. -->
+    <resultMap id="workloadMap" type="com.therecommerce.workmap.metrics.dto.MetricsDtos$WorkloadRow">
+        <result property="assigneeId" column="assignee_id"/>
+        <result property="inProgress" column="in_progress"/>
+        <result property="delayed"    column="delayed"/>
+        <result property="blocked"    column="blocked"/>
+    </resultMap>
+
+    <select id="workload" resultMap="workloadMap">
+        SELECT wi.assignee_id,
+               count(*) FILTER (WHERE wi.common_status NOT IN ('DONE','HOLD'))                       AS in_progress,
+               count(*) FILTER (WHERE wi.due_date &lt; CURRENT_DATE
+                                 AND wi.common_status NOT IN ('DONE','HOLD'))                        AS delayed,
+               count(*) FILTER (WHERE wi.flagged = true)                                             AS blocked
+        FROM work_items wi
+        WHERE wi.project_id = #{projectId}
+          AND wi.deleted_at IS NULL
+          AND wi.assignee_id IS NOT NULL
+          AND wi.common_status &lt;&gt; 'DONE'
+        GROUP BY wi.assignee_id
+        HAVING count(*) FILTER (WHERE wi.common_status NOT IN ('DONE','HOLD')) > 0
+        ORDER BY blocked DESC, delayed DESC, in_progress DESC
+    </select>
+
+</mapper>

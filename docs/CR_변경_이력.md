@@ -47,6 +47,7 @@
 | CR-040 | 막힘(BLOCKED)을 Jira Flag 방식으로 전환 — 상태 전이 폐기, flagged 깃발 | 변경 | Medium | v2.3 |
 | CR-041 | 백로그에 완료 스프린트 보기 토글 (기본 제외 → includeCompleted 옵션 복원, 맨 위·읽기전용·접힘) | 신규/설계보정 | Low | v2.4 |
 | CR-042 | 만들기 라이트화 + 하위작업 완료 체크박스 + 유형 선택 예시 가이드 (Jira 무거움 피드백 반영, FE 전용) | 변경 | Low | v2.4 |
+| CR-043 | 프로젝트 건강 지표 체계(5축+AI) — "잘 됨" 다축 증명. 업계표준(애자일·Flow·품질·팀·EVM) 망라→우리 조직 매핑. 보고서 [건강] 서브탭. DORA 제외(FlowGuard 경계). 1차(예외축) 구현 | 신규 | High | v2.5 |
 
 ---
 
@@ -909,6 +910,37 @@
 - **테스트/검증**: `tsc -b` + `vite build`(3550 modules) 통과. 해당 코드에 직접 걸린 단위테스트 없음(SSoT 문구 교체·UI 접기라 대상 아님). 운영배포 후 서버 자산 갱신·LNB 보호규칙 잔존 확인.
 - **요청자**: 외부 피드백 → 사용자 | **승인자**: 사용자(2026-07-05, "예 진행하세요", "예시가 들어가도록") | **적용 버전**: v2.4
 - **변경 일자**: 2026-07-05
+
+### CR-043 — 프로젝트 건강 지표 체계(5축 + AI 진단)
+
+- **변경 타입**: 신규 | **영향도**: High(다수 모듈 — 신규 metrics 모듈·보고서 IA·데이터모델) | **적용 버전**: v2.5
+- **배경**: Jira 요약/보고서 대비 검토 중, 사용자 질문 "이 프로젝트가 진짜 잘 굴러간다를 확실히 알 수 있는 지표는?" → 목표(잘 됨의 증명)에서 역산. **업계 표준 망라 우선**(deep-research로 애자일·칸반Flow·DORA·EVM·품질·팀건강·예측 검증) → 우리 조직(물류·개발·운영 혼성) 매핑.
+- **핵심 원칙**:
+  - "잘 됨 증명"이 1차 기준. 데이터 제약으로 지표를 빼지 않는다(없으면 만든다).
+  - 예외기반(E)=비면 건강(뜨면 그것만 처리) / 흐름기반(F)=추세·형태로 판단. **순조로움 = 예외 0 + 속도 유지** 둘 다.
+  - 평균 아님, **백분위**(Cycle Time 85%p SLE). 막힘=**flagged**(CR-040, BLOCKED 상태 아님).
+  - **DORA 제외** — 배포·CI/CD는 FlowGuard 축(관리·계획=WorkMap / 개발통제=FlowGuard, 안 섞음). T3-3 기존 경계 존중.
+- **5축 + AI**(WMP-HOME-004~015):
+  - A 흐름(칸반·Lean): Work Item Age(E)·Cycle Time 백분위(F)·Throughput(F)·CFD(F)
+  - B 예측가능성: Say-Do Ratio(F)·번다운(기존)·스코프변경률(F)
+  - D 품질: 재작업률·Reopen(E)·현장검증 escaped defect(E)·운영적용률(F, 우리 개념)
+  - E 팀 부하: 담당자 과부하(E)·팀간 대기 Flow Efficiency(E)
+  - F 일정·예측: SPI/CPI EVM(F)·Monte Carlo(F)
+  - AI 진단(aimbase): 건강 진단·주간요약·조기경보(서술). 통계(Monte Carlo)=BE / 서술=aimbase 역할 분리.
+- **3단 범위**: 프로젝트 < WS < 전사. 화면·데이터 단일, 합산만 다름(권한 따라). 1차=프로젝트 고정. ⚠️전사는 BIZ-112 격리 우회 필요(현재 불가·실측) → 2차 이후.
+- **구현 순서**:
+  - **1차(신규 테이블 0, 이번 세션 구현)**: Work Item Age·재작업률·담당자 과부하 + 종합 건강 판정 골격. work_items.flagged + activity_logs 집계.
+    - 신규 모듈 `metrics`: `MetricsDtos`·`MetricsMapper`(XML+IF)·`MetricsService`·`MetricsController`. 엔드포인트 `GET /projects/{id}/health`·`/metrics/aging`·`/metrics/rework`·`/metrics/workload`. 가시성=DashboardService.report와 동일(findVisible+NOT_PROJECT_MEMBER).
+    - FE `features/metrics`(api·hooks) + `HealthDashboard`(종합 링+축 신호등+예외축 3카드, 비면 긍정 EmptyState) + 보고서 [건강]/[Jira 차트] 서브탭.
+  - **1.5차**: Throughput·운영적용률 확장 + Health Score에 편입.
+  - **2차(신설 집계)**: Cycle Time 백분위·CFD(**V15 flow_snapshots** 스케줄러)·Say-Do(**V16 sprint_commitments** 동결)·Monte Carlo(BE 통계)·스코프변경률.
+  - **3차(신설 개념)**: EVM(**V17 project_baselines**)·팀간 대기(막힘 사유 구조화).
+  - **AI 트랙(병행)**: aimbase 워크플로 3종. 가이드=aimbase-api-guide.md, 워크플로 POST /api/v1/workflows(LLM_CALL, response_schema), 인증 X-Api-Key, domainApp=workmap.
+- **에러코드**: 신규 없음(기존 PROJECT_NOT_FOUND 7720·NOT_PROJECT_MEMBER 7723 재사용). 필요 시 다음 블록 WMP-7848~.
+- **테스트/검증**: **이 세션은 구현+빌드 통과까지**(BE `compileJava` 통과 · FE `tsc -b`+`vite build` 통과). **단위테스트 실행·운영배포·화면 E2E는 다음 세션**(사용자 결정 2026-07-05). ⚠️ 신규 매퍼 `MetricsMapper` → 기존 `@WebMvcTest` 슬라이스에 `@MockBean` 추가 필요(CR-009 함정) — 단위테스트 실행 시 반영.
+- **⚠️ 미검증 항목(다음 세션)**: ① MetricsMapper 재작업 쿼리의 workflow_status.code 조인이 워크플로 다중일 때 reopen_count 부풀림 가능(같은 프로젝트=같은 워크플로 전제라 실무 영향 적음, 정확성 검증 필요) ② 종합 판정 스코어 가중치·SLE 임계(기본 10일)·재작업 임계(10%)는 초기값, 운영 데이터로 조정 ③ 예측·일정 축은 2·3차 지표 완성 전까지 종합 판정에서 미평가.
+- **요청자/승인자**: 사용자(2026-07-05, "아주 좋습니다" 목업 승인 · "이 세션에서 전부 완주" · "구현만 밀어붙이고 검증은 다음 세션") | **변경 일자**: 2026-07-05
+- **참조**: 설계 골격 `docs/origins/2026-07-05_지표체계_5축_설계골격.md`
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 

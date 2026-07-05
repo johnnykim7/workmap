@@ -280,6 +280,30 @@
 
 > 회사홈 집계는 가시성(WMP-WS-006/BIZ-108) 반영 — 볼 수 있는 프로젝트만 집계.
 
+### I1. 건강 지표 (Metrics, CR-043)
+
+> **프로젝트 건강 지표 체계**(모듈 G, WMP-HOME-004~014). "이 프로젝트가 건강하게 굴러간다"를 5축(흐름·예측가능성·품질·팀부하·일정)으로 증명. 단일 진실원: `docs/origins/2026-07-05_지표체계_5축_설계골격.md`. 예외기반(E) 지표는 빈 결과가 "건강"(긍정 EmptyState), 흐름기반(F) 지표는 추세·형태로 판단. **평균 아닌 백분위**(Cycle Time은 85%p SLE). **막힘 = flagged**(CR-040/V14). 인증은 모두 🔒(GET, VIEWER 조회 허용). 각 행 뒤 `[N차]`는 구현 차수.
+
+| 메서드 | 경로 | 설명 | 인증 | 우선순위 | 관련 기능ID |
+|--------|------|------|------|----------|-------------|
+| GET | /projects/{id}/health | 종합 건강 판정(스코어 0~100 + 5축 신호등 요약) `[1.5차]` | 🔒 | P1 | WMP-HOME-004 |
+| GET | /projects/{id}/metrics/aging | Work Item Age(SLE 초과/근접 멈춘 항목 목록, E) `[1차]` | 🔒 | P1 | WMP-HOME-005 |
+| GET | /projects/{id}/metrics/rework | 재작업률·Reopen Rate(DONE→non-DONE 전이 집계, E) `[1차]` | 🔒 | P1 | WMP-HOME-009 |
+| GET | /projects/{id}/metrics/workload | 담당자 과부하(지연·막힘 동시 보유 교차집계, E) `[1차]` | 🔒 | P1 | WMP-HOME-011 |
+| GET | /projects/{id}/metrics/field-verification | 현장검증 실패·미검증 목록(escaped defect, E) `[1.5차]` | 🔒 | P2 | WMP-HOME-010 |
+| GET | /projects/{id}/metrics/ops-apply | 운영 적용률(개발완료 中 운영적용 비율, F) `[1.5차]` | 🔒 | P2 | WMP-HOME-010 |
+| GET | /projects/{id}/metrics/cycle-time | Cycle Time 백분위 SLE(85%p) + 산점도 데이터(F) `[2차]` | 🔒 | P2 | WMP-HOME-006 |
+| GET | /projects/{id}/metrics/cfd?from=&to= | CFD 누적 흐름도 밴드 시계열(F) `[2차]` | 🔒 | P2 | WMP-HOME-007 |
+| GET | /projects/{id}/metrics/say-do | Say-Do Ratio(스프린트별 약속÷완료, F) `[2차]` | 🔒 | P2 | WMP-HOME-008 |
+| GET | /projects/{id}/metrics/forecast | Monte Carlo 완료 예측("85% 확률 N건", F) `[2차]` | 🔒 | P2 | WMP-HOME-014 |
+| GET | /projects/{id}/metrics/team-wait | 팀 간 대기 / Flow Efficiency(대기 0 건강, E) `[3차]` | 🔒 | P3 | WMP-HOME-012 |
+| GET | /projects/{id}/metrics/evm | SPI/CPI 획득가치(1.0 기준, F) `[3차]` | 🔒 | P3 | WMP-HOME-013 |
+
+> **범위 확장(2차)**: 각 metrics API에 `?workspaceId=` 옵션 예약(집계 대상 `project_id IN (visibleProjectIds)`). 전사 집계는 BIZ-112 격리 정책 확정 후.
+> **데이터 신설**: CFD=`flow_snapshots`(V15, 일별 상태 스냅샷·스케줄러), Say-Do=`sprint_commitments`(V16, 스프린트 시작 시 커밋 동결값), EVM=`project_baselines`(V17, PV/계획 포인트). Age·재작업률·현장검증·과부하·운영적용률은 신규 테이블 없이 기존 컬럼·activity_logs 집계.
+> **DORA/배포빈도 제외**: 배포·CI/CD 지표는 FlowGuard 축(경계 존중, T3-3·CLAUDE.md). 본 지표 체계에 포함하지 않는다.
+> **AI 진단(WMP-HOME-015, AI트랙)**: 지표 종합→서술 판정·주간요약·조기경보는 aimbase 워크플로로 별도 처리(본 metrics API 범위 밖).
+
 ## K. 관리자 마스터 (Admin)
 
 > 마스터 데이터로 관리(하드코딩 금지). 시스템 시드 제공. `is_system=true`는 삭제 불가.
