@@ -121,6 +121,9 @@ export function applyTheme(id: string): void {
   const preset = getPreset(id);
   const root = document.documentElement;
   for (const [key, value] of Object.entries(preset.vars)) {
+    // --background는 테마로 바꾸지 않는다(주석 §3 의도) → ds-ui 기본 흰색 유지.
+    // 회색 틴트를 주입하면 본문(--card로 덮음)은 괜찮아도 Dialog(bg-background)가 회색으로 샌다.
+    if (key === 'background') continue;
     root.style.setProperty(`--${key}`, value);
   }
   if (preset.darkSidebar) {
