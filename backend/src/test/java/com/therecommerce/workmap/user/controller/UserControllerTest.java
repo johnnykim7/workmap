@@ -84,6 +84,7 @@ class UserControllerTest {
     @MockBean com.therecommerce.workmap.invitation.mapper.SignupRequestMapper signupRequestMapper;  // CR-032
     @MockBean com.therecommerce.workmap.notification.mapper.NotificationPreferenceMapper notificationPreferenceMapper;  // CR-028
     @MockBean com.therecommerce.workmap.notification.mapper.FcmTokenMapper fcmTokenMapper;  // CR-028
+    @MockBean com.therecommerce.workmap.metrics.mapper.MetricsMapper metricsMapper;  // CR-043
 
     @Test
     @WithMockUser(roles = "ADMIN")

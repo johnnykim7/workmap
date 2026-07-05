@@ -9,6 +9,7 @@ import {
   useHealth, useAging, useRework, useWorkload,
 } from '../hooks';
 import type { AxisStatus } from '../api';
+import { FlowMetricsSection } from './FlowMetricsSection';
 
 // 심각도 → Tailwind 토큰(테마 대응). accent와 분리된 의미색만.
 const TONE: Record<AxisStatus, { text: string; bg: string; dot: string }> = {
@@ -180,6 +181,9 @@ export function HealthDashboard({ projectId }: { projectId?: number }) {
           )}
         </MetricPanel>
       </div>
+
+      {/* 2·3차 흐름·예측·일정 지표 */}
+      <FlowMetricsSection projectId={projectId} />
     </div>
   );
 }

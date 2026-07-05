@@ -54,6 +54,14 @@ workmap:
   # 장기 미변경(정체) 기준 일수(POL-003). 회사홈 지표/검토 정체 판정 기준. 기본 7.
   stale:
     threshold-days: ${WORKMAP_STALE_DAYS:7}
+  # 프로젝트 건강 지표(CR-043, WMP-HOME-004~014).
+  metrics:
+    # Work Item Age SLE(임계일). 초과 시 위험 신호. 기본 10.
+    sle-days: ${WORKMAP_METRICS_SLE_DAYS:10}
+    # 재작업률 위험 임계(%). 이 이상이면 품질축 경고. 기본 10.
+    rework-threshold-pct: ${WORKMAP_METRICS_REWORK_PCT:10}
+    # Monte Carlo 예측 참조 이력(일). 기본 30.
+    forecast-history-days: ${WORKMAP_METRICS_FORECAST_DAYS:30}
   # 파일 업로드(CR-024 — 리치 에디터 인라인 이미지). 로컬 디스크 저장.
   upload:
     dir: ${WORKMAP_UPLOAD_DIR:/home/therecommerce/workmap/uploads}

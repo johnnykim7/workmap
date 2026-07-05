@@ -135,4 +135,167 @@
         ORDER BY blocked DESC, delayed DESC, in_progress DESC
     </select>
 
+    <!-- ═══════════════════ 2차 지표 (CR-043) ═══════════════════════ -->
+
+    <!-- ── Cycle Time (WMP-HOME-006) ───────────────────────────────────
+         완료 항목별: 첫 IN_PROGRESS 진입 ~ 첫 DONE 도달(일). activity_logs STATUS_CHANGE.
+         to_value=워크플로 상태 code → workflow_status.common_status로 그룹 판정.
+         백분위(p50/p85)는 서비스에서 정렬로 계산(소표본 대응). -->
+    <resultMap id="cyclePointMap" type="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$CycleTimePoint">
+        <id     property="id"        column="id"/>
+        <result property="key"       column="key"/>
+        <result property="firstDone" column="first_done"/>
+        <result property="days"      column="days"/>
+    </resultMap>
+
+    <select id="cycleTimePoints" resultMap="cyclePointMap">
+        SELECT t.id, t.key, t.first_done,
+               EXTRACT(EPOCH FROM (t.first_done - t.first_ip)) / 86400.0 AS days
+        FROM (
+            SELECT wi.id, wi.key,
+                   MIN(al_ip.created_at)   AS first_ip,
+                   MIN(al_done.created_at) AS first_done
+            FROM work_items wi
+            JOIN activity_logs al_ip ON al_ip.work_item_id = wi.id AND al_ip.action = 'STATUS_CHANGE'
+            JOIN workflow_status ws_ip ON ws_ip.code = al_ip.to_value AND ws_ip.common_status = 'IN_PROGRESS'
+            JOIN activity_logs al_done ON al_done.work_item_id = wi.id AND al_done.action = 'STATUS_CHANGE'
+            JOIN workflow_status ws_dn ON ws_dn.code = al_done.to_value AND ws_dn.common_status = 'DONE'
+            WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL
+            GROUP BY wi.id, wi.key
+        ) t
+        WHERE t.first_done >= t.first_ip
+        ORDER BY t.first_done DESC
+        LIMIT 200
+    </select>
+
+    <!-- ── CFD 밴드 (WMP-HOME-007) ─────────────────────────────────────
+         flow_snapshots(V15, 일배치 적재)에서 기간 내 프로젝트의 상태별 밴드 시계열. -->
+    <select id="cfdBands" resultType="map">
+        SELECT snapshot_date AS "date", common_status AS "commonStatus", item_count AS "count"
+        FROM flow_snapshots
+        WHERE project_id = #{projectId}
+          AND snapshot_date >= #{from} AND snapshot_date &lt;= #{to}
+        ORDER BY snapshot_date, common_status
+    </select>
+
+    <!-- CFD 일배치 적재용: 현재 프로젝트의 상태별 카운트(미완료+완료 전부). -->
+    <select id="currentStatusCounts" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$StatusCount">
+        SELECT common_status AS commonStatus, count(*) AS count
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        GROUP BY common_status
+    </select>
+
+    <!-- CFD 스냅샷 upsert(멱등) — burndown_snapshots 패턴. -->
+    <insert id="upsertFlowSnapshot">
+        INSERT INTO flow_snapshots (project_id, snapshot_date, common_status, item_count)
+        VALUES (#{projectId}, #{snapshotDate}, #{commonStatus}, #{itemCount})
+        ON CONFLICT (project_id, snapshot_date, common_status)
+        DO UPDATE SET item_count = EXCLUDED.item_count
+    </insert>
+
+    <!-- 스냅샷 대상 프로젝트 목록(삭제 안 된 것). -->
+    <select id="allActiveProjectIds" resultType="long">
+        SELECT id FROM projects WHERE deleted_at IS NULL
+    </select>
+
+    <!-- ── 현장 검증률 (WMP-HOME-010) ──────────────────────────────────
+         field_verifications.result(PASS/FAIL/PARTIAL) 프로젝트 집계. -->
+    <select id="fieldVerificationStats" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$FieldVerification">
+        SELECT count(*)                                          AS total,
+               count(*) FILTER (WHERE fv.result = 'PASS')        AS passed,
+               count(*) FILTER (WHERE fv.result = 'FAIL')        AS failed,
+               count(*) FILTER (WHERE fv.result = 'PARTIAL')     AS partial,
+               0                                                 AS passRatePct
+        FROM field_verifications fv
+        JOIN work_items wi ON wi.id = fv.work_item_id AND wi.deleted_at IS NULL
+        WHERE wi.project_id = #{projectId}
+    </select>
+
+    <!-- ── Monte Carlo 소스 (WMP-HOME-014) ─────────────────────────────
+         최근 N일 일별 완료 건수(completed_at 버킷). 시뮬레이션은 서비스. -->
+    <select id="dailyThroughput" resultType="int">
+        SELECT count(*)::int
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+          AND completed_at IS NOT NULL
+          AND completed_at >= now() - (#{historyDays} || ' day')::interval
+        GROUP BY date_trunc('day', completed_at)
+    </select>
+
+    <!-- ── Say-Do 완료 측정: 커밋 동결 항목 中 현재 DONE 수/포인트 ──────
+         committed_item_ids(JSONB)를 풀어 현재 상태와 조인. -->
+    <select id="doneAmongCommitted" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$SayDoSprint">
+        SELECT sc.sprint_id                                          AS sprintId,
+               sc.committed_points                                  AS committedPoints,
+               sc.committed_item_count                              AS committedItems,
+               COALESCE(SUM(wi.story_points) FILTER (WHERE wi.common_status = 'DONE'), 0)::int AS donePoints,
+               count(*) FILTER (WHERE wi.common_status = 'DONE')::int                          AS doneItems
+        FROM sprint_commitments sc
+        LEFT JOIN work_items wi
+               ON wi.id IN (SELECT jsonb_array_elements_text(sc.committed_item_ids)::bigint)
+              AND wi.deleted_at IS NULL
+        WHERE sc.sprint_id = #{sprintId}
+        GROUP BY sc.sprint_id, sc.committed_points, sc.committed_item_count
+    </select>
+
+    <!-- Say-Do 동결 insert(멱등) — SprintStarted 리스너. -->
+    <insert id="insertCommitment">
+        INSERT INTO sprint_commitments (sprint_id, committed_item_count, committed_points, committed_item_ids)
+        VALUES (#{sprintId}, #{committedItemCount}, #{committedPoints},
+                #{committedItemIds, typeHandler=com.therecommerce.workmap.common.mybatis.scalar.LongListJsonTypeHandler})
+        ON CONFLICT (sprint_id) DO NOTHING
+    </insert>
+
+    <!-- ═══════════════════ 3차 지표 (CR-043) ═══════════════════════ -->
+
+    <!-- ── EVM baseline 조회 (WMP-HOME-013) ────────────────────────────
+         활성 baseline(PV). 없으면 null → 서비스가 configured=false 반환. -->
+    <select id="activeBaseline" resultType="map">
+        SELECT planned_points AS "plannedPoints", planned_start AS "plannedStart", planned_end AS "plannedEnd"
+        FROM project_baselines
+        WHERE project_id = #{projectId} AND is_active = true
+        LIMIT 1
+    </select>
+
+    <!-- EV = 완료(DONE) 포인트 합. -->
+    <select id="earnedPoints" resultType="int">
+        SELECT COALESCE(SUM(story_points), 0)::int
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND common_status = 'DONE'
+    </select>
+
+    <!-- ── 팀 간 대기 (WMP-HOME-012) ───────────────────────────────────
+         현재는 사유 구조화 전 — 막힘(flagged) 항목의 block_reason + 막힌 경과일만.
+         "어느 팀 대기"는 사유 구조화(후속) 전까지 blockReason 원문으로 대체. -->
+    <resultMap id="teamWaitMap" type="com.therecommerce.workmap.metrics.dto.AdvMetricsDtos$TeamWaitItem">
+        <constructor>
+            <idArg  column="id"           javaType="java.lang.Long"/>
+            <arg    column="key"          javaType="java.lang.String"/>
+            <arg    column="title"        javaType="java.lang.String"/>
+            <arg    column="block_reason" javaType="java.lang.String"/>
+            <arg    column="wait_days"    javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <select id="teamWaitItems" resultMap="teamWaitMap">
+        SELECT wi.id, wi.key, wi.title, wi.block_reason,
+               FLOOR(EXTRACT(EPOCH FROM (now() - wi.status_changed_at)) / 86400)::bigint AS wait_days
+        FROM work_items wi
+        WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL AND wi.flagged = true
+        ORDER BY wait_days DESC
+        LIMIT 50
+    </select>
+
+    <!-- ── 운영 적용률 (WMP-HOME-010) ──────────────────────────────────
+         ops_apply_status는 현재 값이 기록되지 않는 미사용 컬럼 → 대부분 null.
+         개발완료(DONE) 건 中 ops_apply_status='APPLIED' 비율. 데이터 없으면 0. -->
+    <select id="opsApplyStats" resultType="map">
+        SELECT count(*) FILTER (WHERE common_status = 'DONE')                            AS "devDone",
+               count(*) FILTER (WHERE ops_apply_status = 'APPLIED')                      AS "opsApplied",
+               count(*) FILTER (WHERE ops_apply_status IS NOT NULL)                      AS "anyOpsStatus"
+        FROM work_items
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+    </select>
+
 </mapper>

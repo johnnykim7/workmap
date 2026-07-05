@@ -37,3 +37,61 @@ export function useWorkload(projectId?: number) {
     enabled: !!projectId,
   });
 }
+
+// ── 2·3차 훅 ────────────────────────────────────────────────────
+export function useCycleTime(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'cycleTime', projectId] as const,
+    queryFn: () => metricsApi.cycleTime(projectId!),
+    enabled: !!projectId,
+  });
+}
+export function useCfd(projectId?: number, from?: string, to?: string) {
+  return useQuery({
+    queryKey: ['metrics', 'cfd', projectId, from, to] as const,
+    queryFn: () => metricsApi.cfd(projectId!, from, to),
+    enabled: !!projectId,
+  });
+}
+export function useSayDo(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'sayDo', projectId] as const,
+    queryFn: () => metricsApi.sayDo(projectId!),
+    enabled: !!projectId,
+  });
+}
+export function useFieldVerification(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'fieldVerification', projectId] as const,
+    queryFn: () => metricsApi.fieldVerification(projectId!),
+    enabled: !!projectId,
+  });
+}
+export function useForecast(projectId?: number, targetDays = 14) {
+  return useQuery({
+    queryKey: ['metrics', 'forecast', projectId, targetDays] as const,
+    queryFn: () => metricsApi.forecast(projectId!, targetDays),
+    enabled: !!projectId,
+  });
+}
+export function useEvm(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'evm', projectId] as const,
+    queryFn: () => metricsApi.evm(projectId!),
+    enabled: !!projectId,
+  });
+}
+export function useTeamWait(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'teamWait', projectId] as const,
+    queryFn: () => metricsApi.teamWait(projectId!),
+    enabled: !!projectId,
+  });
+}
+export function useOpsApply(projectId?: number) {
+  return useQuery({
+    queryKey: ['metrics', 'opsApply', projectId] as const,
+    queryFn: () => metricsApi.opsApply(projectId!),
+    enabled: !!projectId,
+  });
+}
