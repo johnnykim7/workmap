@@ -21,9 +21,9 @@ interface Props {
 
 export function ProjectFilterBar({ filter, onChange }: Props) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className="mb-4 flex items-center gap-2">
       <SearchInput
-        className="w-64"
+        className="min-w-0 flex-1"
         placeholder="프로젝트명·키 검색"
         value={filter.keyword ?? ''}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
@@ -33,7 +33,7 @@ export function ProjectFilterBar({ filter, onChange }: Props) {
         value={filter.templateId ? String(filter.templateId) : ALL}
         onValueChange={(v) => onChange({ templateId: v === ALL ? undefined : Number(v) })}
       >
-        <SelectTrigger className="w-32"><SelectValue placeholder="유형" /></SelectTrigger>
+        <SelectTrigger className="w-32 shrink-0"><SelectValue placeholder="유형" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 유형</SelectItem>
           {PROJECT_TEMPLATES.map((t) => (
@@ -46,7 +46,7 @@ export function ProjectFilterBar({ filter, onChange }: Props) {
         value={filter.status ?? ALL}
         onValueChange={(v) => onChange({ status: v === ALL ? undefined : (v as ProjectStatus) })}
       >
-        <SelectTrigger className="w-28"><SelectValue placeholder="상태" /></SelectTrigger>
+        <SelectTrigger className="w-28 shrink-0"><SelectValue placeholder="상태" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>전체 상태</SelectItem>
           {/* 보관(ARCHIVED)은 기본 목록에서 제외(includeArchived=false) → 옵션에서도 뺀다 */}
