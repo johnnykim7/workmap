@@ -75,16 +75,16 @@ export function MembersDialog({
             {/* 드롭다운(콤보박스) — 평소엔 닫혀있고, 열면 검색 + 워크스페이스 멤버 목록. 멤버 많아도 깔끔. */}
             <Popover open={pickerOpen} onOpenChange={(v) => { setPickerOpen(v); if (!v) setQuery(''); }}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between font-normal text-muted-foreground bg-background shadow-xs shadow-black/5 hover:bg-background data-[state=open]:bg-background disabled:bg-background disabled:opacity-100 disabled:text-muted-foreground/70 disabled:cursor-not-allowed"
+                <button
+                  type="button"
                   disabled={addable.length === 0}
+                  className="flex h-8.5 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-[0.8125rem] text-muted-foreground shadow-xs shadow-black/5 transition-shadow outline-none hover:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:bg-background"
                 >
                   {addable.length === 0
                     ? (wsMembers.length === 0 ? '워크스페이스 멤버 없음' : '추가할 멤버 없음')
                     : '멤버 선택…'}
                   <ChevronDown className="size-4 shrink-0 opacity-60" />
-                </Button>
+                </button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
                 <div className="relative border-b border-border">
