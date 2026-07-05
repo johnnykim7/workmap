@@ -21,13 +21,16 @@ interface Props {
 
 export function ProjectFilterBar({ filter, onChange }: Props) {
   return (
-    <div className="mb-4 flex items-center gap-2">
-      <SearchInput
-        className="w-64 shrink-0"
-        placeholder="프로젝트명·키 검색"
-        value={filter.keyword ?? ''}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
-      />
+    <div className="mb-4 flex items-center justify-start gap-2">
+      {/* 검색창은 고정폭 래퍼로 감싸 좌측에 붙임(SearchInput 내부 w-full 방지). 나머지 공간은 뒤에 남김 */}
+      <div className="w-64 shrink-0">
+        <SearchInput
+          className="w-full"
+          placeholder="프로젝트명·키 검색"
+          value={filter.keyword ?? ''}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ keyword: e.target.value })}
+        />
+      </div>
 
       <Select
         value={filter.templateId ? String(filter.templateId) : ALL}
