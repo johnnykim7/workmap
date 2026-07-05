@@ -53,7 +53,15 @@
     --wx-gantt-summary-color: color-mix(in srgb, var(--primary) 30%, white);
     --wx-gantt-link-color: var(--muted-foreground);
     --wx-gantt-border: 1px solid var(--border);
+    height: 100%;   /* grid 트랙 높이를 채워 SVAR가 자체 스크롤+헤더 고정하게 함 */
+    overflow: hidden;
   }
+  /* SVAR 루트 체인(.wx-theme 중첩)이 부모 높이를 안 받고 콘텐츠 높이로 폭발하면(실측 h=3568),
+   * 내부 스크롤러(ovY:auto)가 스크롤을 못 만들어 바깥이 스크롤되고 헤더가 밀린다.
+   * → SVAR가 쓰는 실제 루트 wrapper(.wx-theme)와 그 하위 레이아웃 체인에 height:100%를 강제해
+   *   부모(grid 트랙) 높이 안에 가둔다. 그러면 내부 auto 컨테이너가 스크롤+헤더 고정한다. */
+  .wmp-gantt > .wx-theme,
+  .wmp-gantt > .wx-theme > .wx-theme { height: 100%; min-height: 0; }
   /* 크리티컬 패스 막대·링크선 강조(어댑터가 task/link에 critical=true 주입 → SVAR가 클래스 부여할 수 없어
    * 데이터 속성 기반 셀렉터는 미지원. 대신 크리티컬 노드는 진행 톤 대비로 구분 — 현재는 링크선 색만 강조).
    * SVAR가 링크에 커스텀 클래스를 붙이지 않으므로, 강조는 우선 오버레이/색 토큰으로 처리하고
@@ -242,4 +250,13 @@ html, body, #root {
     transform: translateX(-50%) !important;
     cursor: col-resize !important;
   }
+}
+
+/* SearchInput 아이콘·텍스트 겹침 방지([[workmap-tailwind-lnb-trap]]와 동일 계열).
+ * ds-ui SearchInput은 아이콘을 `absolute left-3`, input에 `pl-9`로 자리를 비운다. 하지만
+ * Tailwind v4 유틸 정렬이 흔들리면 base Input의 `.px-3`(빌드 CSS 뒤쪽)가 `.pl-9`(앞쪽)를 이겨
+ * padding-left가 0.75rem으로 눌려 돋보기 아이콘이 placeholder/입력값과 겹친다.
+ * 최후 cascade + !important로 아이콘 폭(2.25rem)을 항상 확보(SearchInput만 타겟). */
+input[type="search"].pl-9 {
+  padding-left: 2.25rem !important;
 }

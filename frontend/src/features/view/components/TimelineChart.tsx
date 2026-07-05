@@ -137,9 +137,9 @@ export function TimelineChart({ items, links, projectId, epicNames, sprints = []
     // grid[minmax(0,1fr) auto]: 간트=1fr(넘치면 자체 스크롤, 트랙 폭 못 넘음), 토글=auto(항상 보임).
     // minmax(0,·)이 핵심 — grid 아이템 기본 min-width:auto라 자식이 넘치면 트랙이 늘어나는데, 0으로 막는다.
     <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-lg border border-border">
-      {/* 간트 영역 — 가로/세로 스크롤을 이 안에 가둔다(일 단위 '오늘'에서 폭이 넓어져도
-          바깥 폭·하단 토글을 밀지 않도록 격리). */}
-      <div className="wmp-gantt min-w-0 overflow-auto">
+      {/* 간트 영역 — grid 트랙(minmax(0,1fr))으로 폭·높이만 격리하고, 스크롤(+헤더 고정)은 SVAR 자체에 맡긴다.
+          여기에 overflow-auto를 주면 SVAR의 내부 스크롤을 뺏어 헤더가 static이 되어 같이 밀린다(스크롤 시 헤더 고정 깨짐). */}
+      <div className="wmp-gantt min-h-0 min-w-0">
         <Willow>
           <Gantt
             // key로 scale 변경 시 재마운트 — SVAR가 scales 변경을 안정적으로 반영.
