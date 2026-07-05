@@ -1,6 +1,7 @@
 package com.therecommerce.workmap.view.dto;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -58,5 +59,28 @@ public final class ViewDtos {
             int year,
             int month,
             List<CalendarDay> days
+    ) {}
+
+    /**
+     * 프로젝트 첨부 집계 한 행(WMP-VIEW-007, CR-044). 파일 메타 + 소속 업무(키·요약) + 업로더 이름.
+     * 첨부의 소속지는 개별 업무(WMP-WI-012)이고, 본 항목은 그것을 파일 관점으로 모아 보기 위한 조인 결과다.
+     */
+    public record ProjectAttachmentItem(
+            Long id,
+            String fileName,
+            String filePath,
+            Long fileSize,
+            String contentType,
+            OffsetDateTime createdAt,
+            Long workItemId,
+            String workItemKey,
+            String workItemSummary,
+            String uploaderName
+    ) {}
+
+    /** 프로젝트 첨부 집계 응답(WMP-VIEW-007): 프로젝트 내 전체 업무 첨부를 최신순으로 모은 목록. */
+    public record ProjectAttachmentsResponse(
+            Long projectId,
+            List<ProjectAttachmentItem> items
     ) {}
 }

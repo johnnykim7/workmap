@@ -67,6 +67,18 @@ public class ViewService {
         return new ViewDtos.CalendarResponse(projectId, year, month, days);
     }
 
+    /**
+     * 프로젝트 첨부 집계(WMP-VIEW-007, CR-044): 프로젝트 내 전체 업무의 첨부를 파일 관점으로 모아 본다.
+     * 조회 전용(업로드는 업무 하위 /work-items/{id}/attachments). 가시성은 타임라인/캘린더와 동일 가드.
+     */
+    @Transactional(readOnly = true)
+    public ViewDtos.ProjectAttachmentsResponse attachments(Long projectId, Long viewerId) {
+        assertVisible(projectId, viewerId);
+        return new ViewDtos.ProjectAttachmentsResponse(
+                projectId,
+                viewMapper.projectAttachments(projectId));
+    }
+
     /** 가시성 가드(BIZ-108): 프로젝트 존재 + viewer가 볼 수 있는지(대시보드와 동일). */
     private void assertVisible(Long projectId, Long viewerId) {
         if (projectMapper.findById(projectId) == null) {

@@ -46,6 +46,27 @@ export interface CalendarResponse {
   days: CalendarDay[];
 }
 
+// BE ViewDtos.ProjectAttachmentItem — 프로젝트 첨부 집계 한 행(WMP-VIEW-007, CR-044).
+// 파일 메타 + 소속 업무(키·요약) + 업로더 이름. 첨부의 소속지는 개별 업무(WMP-WI-012).
+export interface ProjectAttachmentItem {
+  id: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number | null;
+  contentType: string | null;
+  createdAt: string; // ISO
+  workItemId: number;
+  workItemKey: string;
+  workItemSummary: string;
+  uploaderName: string | null;
+}
+
+// BE ViewDtos.ProjectAttachmentsResponse.
+export interface ProjectAttachmentsResponse {
+  projectId: number;
+  items: ProjectAttachmentItem[];
+}
+
 export const viewApi = {
   timeline: (projectId: number) =>
     api.get<TimelineResponse>(`/projects/${projectId}/timeline`),
@@ -57,4 +78,7 @@ export const viewApi = {
     const qs = q.toString();
     return api.get<CalendarResponse>(`/projects/${projectId}/calendar${qs ? `?${qs}` : ''}`);
   },
+  // 프로젝트 첨부 집계(WMP-VIEW-007, CR-044) — 조회 전용.
+  attachments: (projectId: number) =>
+    api.get<ProjectAttachmentsResponse>(`/projects/${projectId}/attachments`),
 };

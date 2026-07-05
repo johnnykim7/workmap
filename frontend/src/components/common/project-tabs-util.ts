@@ -1,9 +1,10 @@
 // 프로젝트 탭 순수 로직 (CR-019) — react/ds-ui 무의존, 단위 테스트 친화.
 import type { ProjectTab } from '@/lib/route-paths';
 
-// 켜고 끌 수 있는 탭 전체(route-paths 실존 8탭). summary는 항상 노출(끄기 불가).
+// 켜고 끌 수 있는 탭 전체(route-paths 실존 9탭). summary는 항상 노출(끄기 불가).
+// 이 순서 = 탭 정렬 기준(추가·재정렬 시 route 순서로 맞춘다). 첨부 파일(CR-044)은 승인 앞.
 export const ALL_TABS: ProjectTab[] = [
-  'summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports',
+  'summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'attachments', 'approvals', 'reports',
 ];
 
 // [+] 탭 추가 시 다음 activeTabs 계산 — summary 항상 포함, 중복 제거, route 순서 정렬,

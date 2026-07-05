@@ -27,4 +27,10 @@ public interface ViewMapper {
     List<ViewDtos.TimelineItem> calendar(@Param("projectId") Long projectId,
                                          @Param("from") LocalDate from,
                                          @Param("to") LocalDate to);
+
+    /**
+     * 프로젝트 첨부 집계(WMP-VIEW-007, CR-044): 프로젝트 내 전체 업무의 첨부를 최신순으로.
+     * attachments JOIN work_items(+LEFT JOIN users) — 삭제된 업무의 첨부는 제외(BIZ-009).
+     */
+    List<ViewDtos.ProjectAttachmentItem> projectAttachments(@Param("projectId") Long projectId);
 }

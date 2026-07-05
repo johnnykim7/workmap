@@ -113,11 +113,12 @@ export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
 // 유형별 본문 가로 탭 프리셋 (T3-3 §9.1). 값은 route-paths.ts ProjectTab 키와 일치.
 // BE 시드 project_template.default_tabs와 일치(CR-019 정합 — BE가 정본).
 export const PROJECT_TAB_PRESET: Record<ProjectType, string[]> = {
-  DEV: ['summary', 'backlog', 'board', 'timeline', 'reports'],
-  OPS: ['summary', 'board', 'list', 'calendar', 'approvals', 'reports'],
-  PLAN: ['summary', 'timeline', 'reports'],
-  // 기본형(Jira "빈 스페이스") — 8탭 전부, 생성 후 불필요 탭은 끔.
-  DEFAULT: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports'],
+  // 첨부 파일(attachments, CR-044)은 모든 유형 기본 ON(사용자 결정 2026-07-05).
+  DEV: ['summary', 'backlog', 'board', 'timeline', 'attachments', 'reports'],
+  OPS: ['summary', 'board', 'list', 'calendar', 'approvals', 'attachments', 'reports'],
+  PLAN: ['summary', 'timeline', 'attachments', 'reports'],
+  // 기본형(Jira "빈 스페이스") — 9탭 전부, 생성 후 불필요 탭은 끔.
+  DEFAULT: ['summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'attachments', 'approvals', 'reports'],
 };
 
 export const PROJECT_TAB_LABEL: Record<string, string> = {
@@ -127,6 +128,7 @@ export const PROJECT_TAB_LABEL: Record<string, string> = {
   backlog: '백로그',
   timeline: '타임라인',
   calendar: '캘린더',
+  attachments: '첨부 파일',
   approvals: '승인',
   reports: '보고서',
 };

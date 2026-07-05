@@ -40,4 +40,15 @@ public class ViewController {
         int m = month == null ? today.getMonthValue() : month;
         return ResponseDto.success(viewService.calendar(projectId, y, m, userId));
     }
+
+    /**
+     * 프로젝트 첨부 집계(WMP-VIEW-007, CR-044): 프로젝트 내 전체 업무의 첨부를 파일 관점으로 모아 본다.
+     * 조회 전용(GET) — VIEWER 포함 볼 수 있는 사용자 전원 허용. 가시성은 ViewService가 강제.
+     */
+    @GetMapping("/api/v1/projects/{projectId}/attachments")
+    public ResponseDto<ViewDtos.ProjectAttachmentsResponse> attachments(
+            @PathVariable Long projectId,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(viewService.attachments(projectId, userId));
+    }
 }

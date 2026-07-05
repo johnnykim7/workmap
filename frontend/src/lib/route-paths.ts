@@ -9,6 +9,7 @@ export type ProjectTab =
   | 'backlog'
   | 'timeline'
   | 'calendar'
+  | 'attachments'
   | 'approvals'
   | 'reports';
 

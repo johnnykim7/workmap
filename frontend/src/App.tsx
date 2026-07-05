@@ -27,6 +27,7 @@ import { BoardView } from '@/pages/project/BoardView';
 import { BacklogView } from '@/pages/project/BacklogView';
 import { TimelineView } from '@/pages/project/TimelineView';
 import { CalendarView } from '@/pages/project/CalendarView';
+import { AttachmentsView } from '@/pages/project/AttachmentsView';
 import { ApprovalsView } from '@/pages/project/ApprovalsView';
 import { ReportsView } from '@/pages/project/ReportsView';
 
@@ -82,6 +83,7 @@ const router = createBrowserRouter([
               { path: 'backlog', element: <BacklogView /> },
               { path: 'timeline', element: <TimelineView /> },
               { path: 'calendar', element: <CalendarView /> },
+              { path: 'attachments', element: <AttachmentsView /> },
               { path: 'approvals', element: <ApprovalsView /> },
               { path: 'reports', element: <ReportsView /> },
             ],

@@ -26,6 +26,18 @@ export function useCalendar(projectId?: number, year?: number, month?: number) {
   });
 }
 
+// 프로젝트 첨부 집계(WMP-VIEW-007, CR-044) — 조회 전용.
+export const projectAttachmentsKey = (projectId?: number) =>
+  ['project-attachments', projectId] as const;
+export function useProjectAttachments(projectId?: number) {
+  return useQuery({
+    queryKey: projectAttachmentsKey(projectId),
+    queryFn: () => viewApi.attachments(projectId!),
+    enabled: !!projectId,
+    select: (res) => res.items,
+  });
+}
+
 // 타임라인 에픽 그룹/필터용 에픽 목록(CR-023) — issueType=EPIC work_item 조회. id→title 매핑에 사용.
 export const projectEpicsKey = (projectId?: number) => ['project-epics', projectId] as const;
 export function useProjectEpics(projectId?: number) {

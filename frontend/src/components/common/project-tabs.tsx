@@ -18,7 +18,7 @@ import {
 } from '@therecommerce/ds-ui';
 import {
   Plus, MoreHorizontal,
-  LayoutDashboard, List, Columns3, ListTodo, GanttChartSquare, Calendar, CheckCircle2, BarChart3,
+  LayoutDashboard, List, Columns3, ListTodo, GanttChartSquare, Calendar, Paperclip, CheckCircle2, BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 import { ROUTES, type ProjectTab } from '@/lib/route-paths';
@@ -36,6 +36,7 @@ const TAB_ICON: Record<string, LucideIcon> = {
   backlog: ListTodo,
   timeline: GanttChartSquare,
   calendar: Calendar,
+  attachments: Paperclip,
   approvals: CheckCircle2,
   reports: BarChart3,
 };

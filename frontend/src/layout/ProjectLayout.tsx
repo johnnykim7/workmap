@@ -9,7 +9,7 @@ import { useProjectByKey } from '@/features/projects/hooks';
 // 라우트/화면이 실제 존재하는 탭만(route-paths ProjectTab과 일치).
 // active_tabs에 모르는 값이 섞여도 렌더/네비에서 걸러 튕김 방지(예: 과거 'issues' 유령 탭).
 const KNOWN_TABS: ProjectTab[] = [
-  'summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'approvals', 'reports',
+  'summary', 'list', 'board', 'backlog', 'timeline', 'calendar', 'attachments', 'approvals', 'reports',
 ];
 const isKnownTab = (t: string): t is ProjectTab => (KNOWN_TABS as string[]).includes(t);
 

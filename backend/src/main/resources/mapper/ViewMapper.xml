@@ -54,4 +54,26 @@
         ORDER BY due_date ASC, id ASC
     </select>
 
+    <!-- 프로젝트 첨부 집계(WMP-VIEW-007, CR-044): 프로젝트 내 전체 업무의 첨부 + 소속 업무(키·요약) + 업로더.
+         삭제된 업무의 첨부는 제외(BIZ-009). 최신순(created_at DESC). -->
+    <select id="projectAttachments"
+            resultType="com.therecommerce.workmap.view.dto.ViewDtos$ProjectAttachmentItem">
+        SELECT a.id            AS id,
+               a.file_name     AS fileName,
+               a.file_path     AS filePath,
+               a.file_size     AS fileSize,
+               a.content_type  AS contentType,
+               a.created_at    AS createdAt,
+               wi.id           AS workItemId,
+               wi.key          AS workItemKey,
+               wi.title        AS workItemSummary,
+               u.name          AS uploaderName
+        FROM attachments a
+        JOIN work_items wi ON a.work_item_id = wi.id
+        LEFT JOIN users u  ON a.uploaded_by = u.id
+        WHERE wi.project_id = #{projectId}
+          AND wi.deleted_at IS NULL
+        ORDER BY a.created_at DESC, a.id DESC
+    </select>
+
 </mapper>

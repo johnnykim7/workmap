@@ -125,4 +125,50 @@ class ViewServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.INVALID_REQUEST);
     }
+
+    // ─────────────── 첨부 집계(WMP-VIEW-007, CR-044) ───────────────
+
+    private ViewDtos.ProjectAttachmentItem attach(Long id, Long workItemId) {
+        return new ViewDtos.ProjectAttachmentItem(
+                id, "f" + id + ".png", "/files/serve/f" + id + ".png", 1024L, "image/png",
+                null, workItemId, "WMP-" + workItemId, "요약" + workItemId, "홍길동");
+    }
+
+    @Test
+    @DisplayName("첨부집계_가시프로젝트_전체첨부반환")
+    void 첨부집계_성공() {
+        visible(1L);
+        when(viewMapper.projectAttachments(1L)).thenReturn(List.of(attach(10L, 1L), attach(11L, 2L)));
+
+        ViewDtos.ProjectAttachmentsResponse res = service.attachments(1L, 99L);
+
+        assertThat(res.projectId()).isEqualTo(1L);
+        assertThat(res.items()).hasSize(2);
+        assertThat(res.items().get(0).workItemKey()).isEqualTo("WMP-1");
+        assertThat(res.items().get(0).uploaderName()).isEqualTo("홍길동");
+        verify(viewMapper).projectAttachments(1L);
+    }
+
+    @Test
+    @DisplayName("첨부집계_미가시프로젝트_차단됨")
+    void 첨부집계_미가시차단() {
+        when(projectMapper.findById(1L)).thenReturn(Project.builder().id(1L).build());
+        when(projectMapper.findVisible(anyLong(), any(), any(), any(), anyBoolean()))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.attachments(1L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.NOT_PROJECT_MEMBER);
+        verify(viewMapper, never()).projectAttachments(anyLong());
+    }
+
+    @Test
+    @DisplayName("첨부집계_없는프로젝트_NOT_FOUND")
+    void 첨부집계_없는프로젝트() {
+        when(projectMapper.findById(404L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.attachments(404L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.PROJECT_NOT_FOUND);
+    }
 }
