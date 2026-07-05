@@ -216,9 +216,9 @@ function TabItem(p: TabItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative flex items-center gap-1 px-3 py-2 text-sm border-b-2 ${
+      className={`group relative flex items-center gap-1 px-3 py-2 text-sm font-medium border-b-2 ${
         p.active
-          ? 'border-primary text-foreground font-medium'
+          ? 'border-primary text-foreground'
           : 'border-transparent text-muted-foreground hover:text-foreground'
       }`}
     >
