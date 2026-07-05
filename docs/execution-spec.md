@@ -222,6 +222,15 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **핵심 함정**: ① 보드 응답 구조가 바뀌므로 **BE·FE 동시 배포 필수**(단수 sprintId 참조하던 FE EmptyState 문구 등 정리). ② 각 스프린트 섹션은 **독립 DnDContext** — 하나의 DnD로 전 그룹 묶으면 섹션 간 드롭이 의미 없어지고 statusId 충돌(같은 워크플로라 statusId 동일). ③ 운영형(ACTIVE 0)에서 아코디언 헤더 노출 금지(기존 단일 보드 UX 보존). ④ Tailwind v4 LNB 트랩([[workmap-tailwind-lnb-trap]]) — Collapsible 추가 후 배포 시 사이드바 재확인.
 - **에러코드·마이그레이션**: 신규 없음(스키마 무변경, `ACTIVE_SPRINT_EXISTS` 코드는 잔존해도 미사용·무해).
 
+### CR-043(배치) — 건강지표 요약 화면 노출 (링 + axes 칩)
+> CR-043 지표 카탈로그는 구현 완료(보고서 [건강]탭). 이 항목은 **세 화면 배치(IA) 확정 후 요약 화면에 신호만 얹는** 후속 배치 작업. 기준 = T3-3 "건강지표 화면 배치 지도(IA)" + T1-1 WMP-HOME-004 화면 배치.
+- **A. 요약 링 + axes 칩 (이번 범위, 중규모, BE 0)**:
+  - `HealthDashboard`의 상단 종합 판정 블록(score-ring + verdict + axes 칩, 현재 `HealthDashboard.tsx` 62~82줄)을 **공통 컴포넌트로 추출**(예: `features/metrics/components/HealthSummaryStrip.tsx`) → 보고서·요약 양쪽에서 재사용.
+  - `SummaryView.tsx`: 최상단에 `HealthSummaryStrip`(`useHealth(projectId)` 재사용) 배치. axes 칩 클릭 → `/projects/:key/reports`(기본 [건강]탭)로 이동(가능하면 해당 축으로 스크롤/포커스, 최소 탭 진입). 기존 4카드+진행률은 **유지**(대체 아님).
+  - **BE·API·스키마·에러코드 변경 없음** — `GET /projects/{id}/health` 그대로 재사용.
+- **B. 회사홈 프로젝트별 미니 링 (별도 트랙, 미구현)**: 전사/WS 건강 집계 API 신규(`/health`는 프로젝트 단건뿐) + WS IA 재편 얽힘 → 이번 범위 밖. 착수 시 재판단.
+- **핵심 함정**: ① 요약은 **신호만** — 예외축 상세 카드·차트를 복제하지 말 것(경계 붕괴). ② 공통 컴포넌트 추출 시 보고서 [건강]탭 상단이 회귀 없이 동일 렌더되는지 확인. ③ Tailwind v4 LNB 트랙([[workmap-tailwind-lnb-trap]]) — 요약 화면 변경 배포 후 사이드바 재확인.
+
 ---
 
 ## 5-A. Sprint 완료 게이트
