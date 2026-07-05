@@ -77,7 +77,7 @@ export function MembersDialog({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between font-normal text-muted-foreground"
+                  className="w-full justify-between font-normal text-muted-foreground bg-background shadow-xs shadow-black/5 hover:bg-background data-[state=open]:bg-background disabled:bg-background disabled:opacity-100 disabled:text-muted-foreground/70 disabled:cursor-not-allowed"
                   disabled={addable.length === 0}
                 >
                   {addable.length === 0
