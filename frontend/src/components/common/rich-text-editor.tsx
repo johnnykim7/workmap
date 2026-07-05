@@ -108,7 +108,7 @@ export function RichTextEditor({
   }
 
   return (
-    <div className={cn('rounded-md border border-border', className)}>
+    <div className={cn('wmp-editor rounded-md border border-border', className)}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} aria-hidden />
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 px-2 py-1.5">
         <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="실행 취소"><Undo2 className="h-4 w-4" /></ToolBtn>
@@ -131,8 +131,9 @@ export function RichTextEditor({
         <Divider />
         <ToolBtn onClick={() => fileInputRef.current?.click()} disabled={uploading} title={uploading ? '업로드 중…' : '이미지 삽입'}><ImageIcon className="h-4 w-4" /></ToolBtn>
       </div>
-      {/* 콘텐츠 서식은 rich-text-editor.css의 .tiptap 스코프가 담당(인라인 임의셀렉터 금지). */}
-      <EditorContent editor={editor} className="min-h-[120px] px-3 py-2 text-sm" />
+      {/* 콘텐츠 서식은 main.css의 .tiptap 스코프가 담당(인라인 임의셀렉터 금지).
+          flex flex-col + 내부 .tiptap flex-1(main.css) 로 빈 여백 클릭도 편집영역에 닿게 → 포커스됨. */}
+      <EditorContent editor={editor} className="flex min-h-[120px] flex-col text-sm" />
     </div>
   );
 }

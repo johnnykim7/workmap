@@ -21,6 +21,15 @@
   /* min-height는 에디터(EditorContent의 min-h-[120px])가 자체적으로 가짐.
    * .tiptap 전역에 주면 읽기 표시(채팅 메시지 본문 등)에 빈 공간이 생겨 휑해진다. */
   .tiptap { outline: none; }
+  /* 편집형 에디터: EditorContent 래퍼가 flex flex-col이라 내부 contenteditable(.tiptap)이
+   * flex-1로 컨테이너 전체 높이를 채운다 → placeholder 아래 빈 여백을 클릭해도 편집영역에 닿아
+   * 포커스된다(읽기전용 .tiptap-readonly은 제외 — 채팅 메시지 본문은 콘텐츠 높이 유지). */
+  /* 패딩을 래퍼가 아니라 contenteditable(.tiptap)에 직접 줘야 패딩 영역까지 편집영역에 포함된다.
+   * (래퍼 py를 쓰면 그만큼 하단 여백이 비편집 영역이라 클릭해도 포커스 안 됨) */
+  .tiptap:not(.tiptap-readonly) { flex: 1 1 auto; cursor: text; padding: 0.5rem 0.75rem; }
+  /* 편집형 에디터 바탕 = 흰색(--card). 회색 캔버스(--background)·회색 모달 위에서 disable처럼
+   * 보이지 않게(입력창 흰색 규칙과 동일 취지). 툴바 아래 콘텐츠 영역까지 흰색으로 갈라준다. */
+  .wmp-editor { background-color: var(--card); }
   .tiptap p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     color: var(--muted-foreground);
