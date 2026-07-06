@@ -1081,6 +1081,24 @@
 - **규모/절차**: 중규모. 설계 캐스케이드 T1(WMP-WI-018·BIZ-115/116·POL-015)→T1-5(DONE 인수조건 가드)→T3-1(구조·컬럼·metadata·V21)→T3-2(API·에러코드)→T3-3(체크 UI·경고·설정 토글) 완료. T1-6 이벤트 **무변경**(인수조건 체크는 알림 트리거 아님 — 필요 시 후속). **DONE 전제조건이 될 수 있다는 점에서 CR-048(결과=전제 아님)과 대비.**
 - **요청자**: 사용자(2026-07-07, "완료조건 어떻게 설정·체크하나" → 강제/비강제 논의 → 프로젝트 설정 토글·기본 비강제·책임 소지 이력 확정) | **변경 일자**: 2026-07-07
 
+### CR-050 — AI 업무 초안 (aimbase 연동, 백로그 인라인) (WMP-WI-019)
+
+- **배경**: "특정 프로젝트에서 aimbase와 연동해 Epic/Story/Task를 생성하려면?"에서 출발. 초기엔 AI 채팅창(티키타카)로 검토했으나, 사용자가 "굳이 채팅으로 한다는 게 이상하다"며 철회 + "업무 만들기의 시작은 백로그부터", "운영업무는 실제 이벤트가 발생해야 알 수 있다"는 통찰로 **백로그 인라인**으로 좁힘.
+- **논의·결정(사용자 합의, 티키타카로 수렴)**:
+  - **진입 = 백로그 인라인 [AI 초안]** — 별도 채팅 UI 안 만듦. 계획 가능한 업무(개발형·계획형)의 백로그에만 진입. **운영형(OPS) 제외**(백로그 탭·EPIC/STORY 유형 없음, 이벤트 접수 성격).
+  - **연동 방향 = WorkMap → aimbase, 구조적 JSON 응답** — WorkMap이 aimbase 워크플로우를 호출(아웃바운드)해 JSON을 받아 draft로 생성. **MCP 도구 노출은 기각** — 방향이 aimbase→WorkMap 인바운드로 뒤집히고(=외부 개방 별도 대규모 트랙) 후보→확정 게이트가 깨짐(LLM이 도구 부르는 순간 이미 씀). 실측: WorkMap엔 외부 API키 인증·MCP 서버 없음(인증=JWT뿐).
+  - **입력 = 자동 입력 + 초안(draft) 상태 + 편집/삭제/전체버리기** — AI 결과를 백로그에 draft로 자동 입력, 사람이 편집·개별삭제·[전체 담기]·[전체 버리기]. 자동 확정이면 티키타카가 무의미하다는 사용자 통찰 → 확정 게이트를 초안으로 둠.
+  - **초안 저장 위치 = DB draft 플래그(사용자 결정)** — 프론트 메모리(B) 기각. work_items에 draft 컬럼 추가. 편집/삭제가 기존 API 재사용되고 새로고침해도 남음.
+  - **순차 = Epic 먼저 확정 → Story/Task** — Story는 epic_id 필요라 Epic이 먼저 draft=false 돼야 하위 요청 가능(계층 강제).
+  - **용어 = "AI 초안"**(사용자 선택). "완성 아닌 시작점" 뉘앙스.
+- **스키마(V22)**: `work_items.draft BOOLEAN NOT NULL DEFAULT false` + 부분 인덱스 `idx_wi_draft WHERE draft = true`. 다른 컬럼·테이블 무변경.
+- **BE**: 신규 `ai` 모듈 — `AiDraftClient`(RestClient, CR-027/028 NotificationClient 패턴 재사용: workflow run + 폴링) + `AiDraftService`(응답 파싱 → WorkItemService.create() draft=true 위임, Epic→Story→Task 순차) + `AiDraftController`(POST/GET/DELETE `/projects/{id}/ai-drafts`·POST `/ai-drafts/confirm`, @PreAuthorize WRITER) + WmpErrorCode **7851~7853**(UPSTREAM_FAILED/TIMEOUT/NOT_ALLOWED, NOT_CONFIGURED는 7851 계열 메시지) + application.yml `workmap.aimbase.*`(env `WMP_AIMBASE_KEY`, 워크플로 id·폴링). **draft 필터 보정**: `AND draft = false`를 조회 경로에 추가 — searchWhere(목록/검색)·modeWhere(대시보드)·ViewMapper timeline/calendar/attachments·MetricsMapper 전 집계·ProjectMapper.summarize·ApprovalMapper·WorkItemLinkMapper·findChildren/findByEpic/findDone·UnfinishedBySprint·findCompletedBetween·findDueForNotification. **백로그/보드는 findByProjectAndSprint에 includeDraft 파라미터 분기**(백로그=true 구분표시, 보드=false 제외). **손대지 않음**: findById(상세·편집 진입)·findByIdIncludingDeleted·isDescendant·isInUse 3종.
+- **FE**: `features/ai-draft`(api·hooks) + 백로그 상단 [✨ AI 초안] 버튼(secondary, useCanWrite) + AiDraftDialog(서술 Textarea·모드·Epic Select) + 백로그 "AI 초안(N)" 접기 구역(초안 배지·인라인 편집·행별 담기/삭제·[전체 담기]/[전체 버리기] destructive+ConfirmDialog) + Epic 미확정 시 하위 담기 비활성. ds-ui만(네이티브 alert/confirm/select 금지), 버튼 variant 규칙 준수.
+- **재사용(신규 최소화)**: WorkItemService.create(BIZ/FSM/계층)·NotificationClient RestClient·CR-031 WRITER·ConfirmDialog·백로그 인라인 편집·기존 PATCH/DELETE 전부 기존. 순수 신규 = work_items 1컬럼(V22) + ai 모듈(클라이언트·서비스·컨트롤러) + 에러코드 3개 + 조회 draft 필터 보정 + FE ai-draft feature·다이얼로그·초안 구역.
+- **aimbase 워크플로우 등록은 사용자가 aimbase 쪽에서 처리**(소비앱 도메인 등록·API키 발급·"서술→Epic/Story/Task JSON" 워크플로 생성). WorkMap은 §T3-2 F4의 응답 계약을 기대. 이번 CR 범위 = WorkMap FE/BE만.
+- **규모/절차**: 중규모. 설계 캐스케이드 T1-1(WMP-WI-019)·T1-3(BIZ-117)→T3-1(draft 컬럼·V22)→T3-2(§F4 API·에러코드·aimbase 계약)→T3-3(백로그 진입·초안 구역) 완료. T1-5 FSM **무변경**(초안도 생성=시작상태, draft는 상태 아님). T1-6 이벤트 **무변경**(초안은 알림 트리거 아님 — draft 격리로 마감알림도 제외).
+- **요청자**: 사용자(2026-07-07, "aimbase 연동으로 Epic/Story/Task 생성" → 채팅 검토·철회 → 백로그 인라인·구조적 응답·draft 확정 게이트 확정) | **변경 일자**: 2026-07-07
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

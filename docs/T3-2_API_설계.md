@@ -162,12 +162,38 @@
 | PATCH | /work-items/{id}/measure | 측정(단위·목표·현재값, progress 자동) | 🔒 | P1 | WMP-WI-016 |
 | PATCH | /work-items/{id}/result | 결과(완료 산출물) 본문 저장·수정 | 🔒 | P2 | WMP-WI-017 |
 | PATCH | /work-items/{id}/acceptance-criteria | 인수조건 항목/체크 상태 저장(전체 배열 치환) | 🔒 WRITER | P2 | WMP-WI-018 |
+| POST | /projects/{id}/ai-drafts | AI 업무 초안 생성(서술→aimbase→draft work_item) | 🔒 WRITER | P2 | WMP-WI-019 |
+| GET | /projects/{id}/ai-drafts | 프로젝트 초안 목록(draft=true 업무, 백로그 구분표시용) | 🔒 | P2 | WMP-WI-019 |
+| POST | /projects/{id}/ai-drafts/confirm | 초안 확정(draft→정식 전환, 지정 id 또는 전체) | 🔒 WRITER | P2 | WMP-WI-019 |
+| DELETE | /projects/{id}/ai-drafts | 초안 전체 버리기(draft=true 일괄 소프트 삭제) | 🔒 WRITER | P2 | WMP-WI-019 |
 
 > **인수조건(`PATCH /work-items/{id}/acceptance-criteria`, WMP-WI-018, CR-049)**: 인수조건 전체 배열을 치환 저장한다(부분 패치 아님 — FE가 항목 추가/삭제/체크 토글 후 전체 목록을 보냄). body `{criteria:[{text, checked}]}`, 서버가 checked=true로 바뀐 항목에 checkedBy=호출자·checkedAt=now를 채운다(false로 되돌리면 clear). 쓰기 권한 WRITER(VIEWER 제외, CR-031/BIZ-115). 저장은 acceptance_criteria JSONB 컬럼이므로 조회는 `GET /work-items/{id}` 응답에 함께 실린다(별도 GET 없음). 인수조건 텍스트 자체 편집은 `PATCH /work-items/{id}`(description 등과 함께) 또는 이 엔드포인트 어느 쪽으로도 가능 — 구현은 이 전용 엔드포인트로 일원화. 완료(DONE) 시 미충족 강제 여부는 프로젝트 설정(require_acceptance_criteria)이 결정(BIZ-116, `PATCH /work-items/{id}/status` 가드).
 >
 > **상태 전이 인수조건 가드(`PATCH /work-items/{id}/status`, CR-049)**: 대상 상태가 완료(is_done)이고 소속 프로젝트가 강제(require_acceptance_criteria=true)이며 인수조건에 미충족(checked=false) 항목이 1개 이상이면 전이를 거부한다(`ACCEPTANCE_CRITERIA_UNMET`, **WMP-7850**, 409). 인수조건이 없으면 통과(운영형 보호). 비강제 프로젝트는 통과하되, 미충족인 채 완료되면 활동 로그에 `COMPLETE_WITH_UNMET` 스냅샷 1건을 부수 기록(BIZ-116, 책임 소지). 승인 게이트(APPROVAL_PENDING)와 독립적 — 화이트리스트·승인 통과 후 마지막에 검사. **신규 에러코드: `ACCEPTANCE_CRITERIA_UNMET`(WMP-7850)**. 인수조건 미존재·프로젝트 미존재 등은 기존 코드 재사용.
 
 > **결과(`PATCH /work-items/{id}/result`, WMP-WI-017, CR-048)**: 완료 산출물 본문(result_content, 리치텍스트 HTML)을 저장·수정한다. 업무당 1개(1:1·덮어쓰기), 서버가 result_written_by(호출자)·result_written_at(now)를 채운다. 쓰기 권한 WRITER(VIEWER 제외, CR-031). **DONE 전이의 전제조건이 아니다** — 완료 여부와 무관하게 저장 가능하나, 화면(T3-3)에서는 완료 상태일 때만 노출한다. 결과 **파일 산출물은 별도 API 없이 기존 첨부**(`POST/DELETE /work-items/{id}/attachments`, WMP-WI-012)를 재사용한다(첨부는 업무 소속이라 결과 관점에서 함께 보여줄 뿐 별도 저장소를 두지 않음). 결과 본문은 work_items.result_content 컬럼이므로 조회는 `GET /work-items/{id}` 응답에 함께 실린다(별도 GET 없음).
+
+### F4. AI 업무 초안 (aimbase) — WMP-WI-019, CR-050
+
+백로그에서 자연어 서술을 입력하면 aimbase 워크플로우가 Epic/Story/Task 구조를 제안하고, 결과를 **draft=true work_item으로 자동 생성**한다. 사람이 백로그에서 편집·삭제·확정하며, 확정 전까지 정식 뷰·집계에서 격리된다(BIZ-117).
+
+**초안 생성 `POST /projects/{id}/ai-drafts`** (🔒 WRITER):
+- body: `{ "statement": "<자연어 서술>", "mode": "epic" | "story-task", "epicId": <mode=story-task일 때 대상 Epic id> }`
+- 서버 흐름: ① 프로젝트 조회·템플릿 검증(OPS 템플릿은 EPIC/STORY 없어 거부, `AI_DRAFT_NOT_ALLOWED` WMP-7853) → ② aimbase 워크플로우 `POST {aimbase}/api/v1/workflows/{wfId}/run`(X-API-Key) 호출 → ③ 비동기라 `GET {aimbase}/api/v1/workflows/runs/{runId}` 폴링(최대 대기·간격은 설정값) → ④ 완료 응답의 구조적 JSON 파싱 → ⑤ 각 항목을 `WorkItemService.create()`로 draft=true 생성(BIZ-001/002·FSM·계층 재사용).
+- **aimbase 기대 응답 계약**(사용자가 워크플로우를 이 형태로 맞춤):
+  - mode=`epic`: `{ "epics": [ { "summary": "...", "description": "..." } ] }`
+  - mode=`story-task`: `{ "stories": [ { "summary": "...", "description": "...", "tasks": [ { "summary": "...", "description": "..." } ] } ] }`
+- 생성 순서: story-task 모드는 Story를 epicId 하위 draft로 만들고, 각 Story의 tasks를 그 Story의 parentId 하위 draft로 만든다(Epic→Story→Task 계층 유지).
+- 응답: `{ "created": [<draft work_item 요약>], "failedCount": N }`(부분 실패 시 성공분만 남기고 실패 건수 보고).
+- **오류**: aimbase 미응답/네트워크 실패 `AI_DRAFT_UPSTREAM_FAILED`(WMP-7851, 502) / 폴링 타임아웃 `AI_DRAFT_TIMEOUT`(WMP-7852, 504) / 응답 파싱 실패도 7851. 프로젝트 미존재는 기존 코드.
+
+**초안 목록 `GET /projects/{id}/ai-drafts`** (🔒): 해당 프로젝트의 draft=true work_item 목록(백로그 화면이 "초안" 구역 구분표시에 사용). 가시성 가드는 프로젝트 조회와 동일.
+
+**초안 확정 `POST /projects/{id}/ai-drafts/confirm`** (🔒 WRITER): body `{ "ids": [<work_item id>] }`(생략·빈 배열이면 프로젝트 전체 draft 확정). 지정 초안을 `draft=false`로 전환(정식 편입). Epic이 draft인 채로 그 하위 Story를 확정하려 하면 계층 정합상 Epic부터 확정해야 함(FE가 Epic 먼저 유도, 서버는 개별 UPDATE라 순서 자유이나 Story의 epic_id는 이미 확정 Epic id를 가리킴).
+
+**초안 전체 버리기 `DELETE /projects/{id}/ai-drafts`** (🔒 WRITER): 해당 프로젝트의 draft=true work_item을 일괄 소프트 삭제(deleted_at). "전체가 마음에 안 들면 다시" 동선. 개별 삭제는 기존 `DELETE /work-items/{id}` 재사용.
+
+**설정값**(application.yml, env 주입): `workmap.aimbase.base-url` / `api-key`(env `WMP_AIMBASE_KEY`) / `epic-workflow-id` / `story-task-workflow-id` / `poll-interval-ms` / `poll-max-attempts`. 클라이언트는 CR-027/028 NotificationClient(RestClient) 패턴 재사용. 설정 미주입 시 초안 API는 `AI_DRAFT_NOT_CONFIGURED`(WMP-7851 계열, 안내 메시지)로 응답.
 
 ### F1. 연결된 업무 항목 (Links)
 

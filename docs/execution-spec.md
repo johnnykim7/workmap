@@ -310,6 +310,22 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 - **FE 배선**: 상세 인수조건 섹션(DetailBody Story 분기) = ds-ui Checkbox 리스트(추가/삭제/체크 토글) + "N/M 충족" 진척률 + acceptance-criteria api/hook(전체 배열 PATCH). 완료 버튼(상태 변경) 시 미충족이면 ConfirmDialog 경고(비강제) 또는 status 403/409 에러 Toast(강제, WMP-7850 메시지). ProjectSettingsDialog에 Switch "인수조건 미충족 시 완료 차단"(폼 저장 동행). VIEWER는 Checkbox disabled(useCanWrite, CR-031). 네이티브 alert/confirm/checkbox 금지.
 - **테스트**: WorkItemServiceTest — 강제+미충족=거부 / 강제+전부충족=통과 / 비강제+미충족=통과+COMPLETE_WITH_UNMET 기록 / 인수조건없음+강제=통과. @WebMvcTest 신규 매퍼 없음(기존 WorkItem/Project 매퍼 확장). FE api.test.ts 인수조건 PATCH.
 
+### CR-050 — AI 업무 초안 (aimbase 연동, 백로그 인라인) (WMP-WI-019, 중규모)
+
+> 백로그에서 자연어 서술 → aimbase가 Epic/Story/Task 제안 → **draft=true로 자동 입력** → 사람이 편집/삭제/확정. WorkMap→aimbase 아웃바운드(구조적 JSON, MCP 아님). 초안은 확정 전까지 백로그에서만 보이고 다른 뷰·집계에서 격리(BIZ-117).
+
+- **V22 마이그레이션**: `ALTER TABLE work_items ADD COLUMN draft BOOLEAN NOT NULL DEFAULT false;` + `CREATE INDEX idx_wi_draft ON work_items (project_id) WHERE draft = true;`. work_items 도메인에 `draft` 필드 추가 + resultMap 매핑 + insert/update 반영. ⚠️ [[workmap-mybatis-builder-trap]] — 위험군 도메인이면 @NoArgsConstructor 유지 확인(work_items는 이미 있음).
+- **BE 배선 — draft 필터 보정(핵심)**: `AND draft = false`를 조회 경로에 추가. 실측 전수조사(조회 census) 기준:
+  - **공용 프래그먼트**: `WorkItemMapper.searchWhere`(목록/검색), `DashboardMapper.modeWhere`(대시보드). 각 WHERE에 나란히 추가(deleted_at IS NULL 옆).
+  - **개별 WHERE**: ViewMapper(timeline/calendar/projectAttachments), MetricsMapper 전 쿼리(agingItems/blockedCount/overSleCount/everDoneCount/reopen/workload/cycleTime/currentStatusCounts/fieldVerificationStats/dailyThroughput/doneAmongCommitted/earnedPoints/teamWaitItems/opsApplyStats), ProjectMapper.summarize, ApprovalMapper.findByProject, WorkItemLinkMapper.findBySource, WorkItemMapper(findChildren/findByEpic/findBySprint 집계계열/findUnfinishedBySprint/findDoneBySprint/findCompletedBetween/findDueForNotification).
+  - **백로그·보드 = findByProjectAndSprint에 includeDraft 파라미터 분기**: 백로그(SprintService.backlog) 호출 시 includeDraft=true(초안 포함, FE가 draft 필드로 구분표시), 보드(BoardService, `findByProjectAndSprint(projectId, null, true)` L60) 호출 시 includeDraft=false(제외). 쿼리 `<if test="!includeDraft">AND draft = false</if>`.
+  - **손대지 않음**: findById(상세·편집 진입 — 초안 편집 가능해야 함)·findByIdIncludingDeleted·isDescendant(계층 무결성)·AdminWorkflow/IssueType/MeasureUnit의 isInUse(마스터 삭제 가드 — 초안도 사용중으로 봐야 함).
+- **BE 배선 — ai 모듈**: `AiDraftClient`(RestClient — `POST {base}/api/v1/workflows/{wfId}/run` X-API-Key + `GET .../runs/{runId}` 폴링, NotificationClient 패턴 복제) → `AiDraftService`: 프로젝트/템플릿 검증(OPS면 7853) → 워크플로 호출 → 완료 응답 파싱(mode=epic: `{epics:[...]}`, story-task: `{stories:[{...,tasks:[...]}]}`) → 각 항목 `WorkItemService.create(CreateRequest{draft=true, epicId/parentId 세팅})` → 부분 실패 성공분만 반환. `AiDraftController`: POST/GET/DELETE `/projects/{id}/ai-drafts` + POST `/ai-drafts/confirm`(ids→draft=false UPDATE), @PreAuthorize(WRITER). WorkItemService.create에 draft 파라미터 경로 추가(CreateRequest 확장 또는 내부 오버로드 — 기존 만들기 모달 경로는 draft=false 기본).
+- **application.yml**: `workmap.aimbase.base-url`(기본 http://59.8.160.12:8280)·`api-key`(`${WMP_AIMBASE_KEY:}`)·`epic-workflow-id`·`story-task-workflow-id`·`poll-interval-ms`(기본 3000)·`poll-max-attempts`(기본 20). 키/워크플로id 미주입이면 초안 API가 NOT_CONFIGURED 안내(7851 계열). env는 CR-027 `WMP_NOTI_API_KEY`처럼 docker-compose env_file 주입.
+- **에러코드**: WMP-**7851**(AI_DRAFT_UPSTREAM_FAILED, 502 — aimbase 미응답·네트워크·파싱실패·미설정)·**7852**(AI_DRAFT_TIMEOUT, 504 — 폴링 초과)·**7853**(AI_DRAFT_NOT_ALLOWED, 409 — OPS 템플릿 등 대상 아님). 7850은 CR-049 점유.
+- **FE 배선**: `features/ai-draft`(api·hooks: createDrafts/listDrafts/confirmDrafts/discardAll). 백로그 상단 [✨ AI 초안] 버튼(secondary, useCanWrite) → AiDraftDialog(서술 Textarea + 모드 RadioGroup + story-task면 Epic Select). 백로그 "AI 초안(N)" Collapsible 구역 — 초안 행에 "초안" 배지·인라인 편집·행별 [담기]/[✗], 헤더 [전체 담기]/[전체 버리기](destructive+ConfirmDialog). Story/Task 초안은 소속 Epic이 draft면 [담기] 비활성+툴팁. draft 구분은 백로그 응답 항목의 `draft` 필드로. ds-ui만.
+- **테스트**: AiDraftServiceTest — epic 모드 파싱→draft 생성 / story-task 모드 Epic 하위 Story·Task 계층 / OPS 템플릿 거부(7853) / aimbase 실패(7851) / 부분 실패 성공분 반환. @WebMvcTest에 신규 ai 매퍼 없으면(WorkItemMapper 재사용) mock 추가 불요(신규 매퍼 생기면 슬라이스 MockBean 보강 — CR-009 함정). draft 필터: 보드/검색/대시보드 쿼리에 draft=true 항목 안 뜨는지 매퍼 검증(선택). FE api.test.ts ai-draft 4종.
+
 ---
 
 ## 5-A. Sprint 완료 게이트
