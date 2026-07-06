@@ -305,8 +305,10 @@ export function AppShell() {
       // 정확히 '/projects'일 때만 토큰으로 정규화 → '[전체 프로젝트]'만 켜지고 개별 프로젝트엔 안 걸림.
       currentPath={pathname === ROUTES.projects ? ALL_PROJECTS_TOKEN : pathname}
       // 매칭 토큰이 넘어오면 실제 목록 경로로 되돌려 이동.
+      // ⚠️ linkComponent를 넘기지 않는다 — 넘기면 children이 <Link to={path}>로 직접 이동해
+      //   onNavigate를 우회하고, 매칭 토큰(/__all-projects)이 실존 라우트가 아니라 '*'→홈으로 튕긴다.
+      //   linkComponent 없으면 children 클릭이 onNavigate를 타서 토큰 되돌리기가 동작한다.
       onNavigate={(p) => navigate(p === ALL_PROJECTS_TOKEN ? ROUTES.projects : p)}
-      linkComponent={Link}
       logo={<WorkspaceSwitcher currentName={currentWs?.name ?? 'WorkMap'} />}
       logoCollapsed={<Building2 className="size-5" />}
       header={<HeaderActions />}
