@@ -38,7 +38,7 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       <ApprovalBanner item={item} />
       {/* 콘텐츠 섹션: 구분선을 각 섹션 '위'(다음 섹션 제목 머리)에 둔다 — 선이 다음 블록의 시작을 알린다.
           첫 섹션은 위 선·패딩 제거. 자체 카드형(결과)은 [&>.detail-card]로 위 선 제외 — 카드 테두리와 겹침 방지. */}
-      <div className="[&>*:not(:first-child)]:mt-5 [&>*:not(:first-child)]:border-t [&>*]:border-border [&>*:not(:first-child)]:pt-5 [&>.detail-card]:border-t-0 [&>.detail-card]:pt-0">
+      <div className="[&>*:not(:first-child)]:mt-5 [&>*:not(:first-child)]:border-t [&>*]:border-border/60 [&>*:not(:first-child)]:pt-5 [&>.detail-card]:border-t-0 [&>.detail-card]:pt-0">
         <DetailBody item={item} />
         {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
         <Attachments item={item} addRef={addAttachmentRef} />

@@ -203,11 +203,16 @@ function AcceptanceCriteriaSection({ item }: { item: WorkItemResponse }) {
 }
 
 // 읽기 상태에서 클릭 유도용 공통 래퍼 — 비어있으면 placeholder, 있으면 children, 우측 [편집] 버튼.
-function ReadShell({ empty, placeholder, onEdit, children }: {
-  empty: boolean; placeholder?: string; onEdit: () => void; children: React.ReactNode;
+// boxed=true: 평소에도 옅은 회색 박스(설명란처럼 입력 영역임을 드러낼 때). 기본은 hover 시에만 테두리.
+function ReadShell({ empty, placeholder, onEdit, boxed, children }: {
+  empty: boolean; placeholder?: string; onEdit: () => void; boxed?: boolean; children: React.ReactNode;
 }) {
   return (
-    <div className="group relative rounded-md border border-transparent px-2 py-1.5 -mx-2 hover:border-border hover:bg-muted/30">
+    <div className={
+      boxed
+        ? 'group relative rounded-md border border-border bg-muted/30 px-3 py-2.5 hover:bg-muted/50'
+        : 'group relative rounded-md border border-transparent px-2 py-1.5 -mx-2 hover:border-border hover:bg-muted/30'
+    }>
       <button
         type="button"
         onClick={onEdit}
@@ -248,7 +253,8 @@ function RichEditBlock({ value, placeholder, onCommit }: {
   if (!editing) {
     const empty = htmlToPlainText(value).trim().length === 0;
     return (
-      <ReadShell empty={empty} placeholder={placeholder} onEdit={() => { setDraft(value); setEditing(true); }}>
+      // boxed: 설명란은 평소에도 옅은 회색 박스로 입력 영역임을 드러낸다.
+      <ReadShell boxed empty={empty} placeholder={placeholder} onEdit={() => { setDraft(value); setEditing(true); }}>
         <RichTextEditor value={value} editable={false} />
       </ReadShell>
     );
