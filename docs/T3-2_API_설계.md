@@ -81,7 +81,7 @@
 
 > **CR-027 변경**: 기존 `POST /users`의 "초대" 역할은 `POST /invitations`로 분리. `POST /users`는 비밀번호를 직접 지정하는 직접 생성(시드/관리 목적)으로 남기되 권장 가입 경로는 초대다. invitations는 user를 즉시 만들지 않고 수락 시점에 생성한다.
 > **CR-047 사용자 상세·프로필 사진(WMP-USER-001)**:
-> - `GET /users/{id}`: 프로필 카드용 단건 상세. 반환 `{ id, email, name, role, departmentId, departmentName, avatarUrl, active, createdAt }`. `departmentName`은 `departments` LEFT JOIN. 없는 id는 `USER_NOT_FOUND`(WMP-7850). **인증 사용자 누구나 조회 가능**(전역 아바타 클릭 → 카드). VIEWER 포함 읽기 허용.
+> - `GET /users/{id}`: 프로필 카드용 단건 상세. 반환 `{ id, email, name, role, departmentId, departmentName, avatarUrl, active, createdAt }`. `departmentName`은 `departments` LEFT JOIN. 없는 id는 `USER_NOT_FOUND`(WMP-7740, 기존 재사용 — 초안의 7850 표기는 오기, 7850은 CR-049 인수조건 가드가 사용). **인증 사용자 누구나 조회 가능**(전역 아바타 클릭 → 카드). VIEWER 포함 읽기 허용.
 > - `PATCH /users/me/avatar` body `{ avatarUrl }`: 본인 프로필 사진 URL 저장(`@AuthUserInfo("userId")`, path param 없음 — 남의 아바타 변경 불가). 사진 파일 자체는 기존 `POST /files/upload`(CR-024)로 업로드하고 반환 URL을 여기 저장. `avatarUrl=null` 허용(사진 제거).
 > - `UserResponse`·`MemberDtos.Response`에 `avatarUrl` 필드 추가 → 목록·멤버 응답에서도 사진 표시(추가 fetch 없이 즉시 렌더).
 
@@ -126,6 +126,8 @@
 > - **좌·우 이동 / 제거** = `PATCH /projects/{id}` body `activeTabs`(순서 바뀐/원소 제거된 전체 배열). summary는 이동·제거 불가(서버 가드). active_tabs 구조 무변경.
 > - **기본값으로 설정** = `PATCH /projects/{id}` body `defaultTab`(탭 코드). 진입 시 첫 화면.
 > - **이름 바꾸기** = `PUT /projects/{id}/tabs/{code}/label` body `{label}`. 되돌리기 = DELETE.
+>
+> **인수조건 완료 강제 설정(CR-049)**: `PATCH /projects/{id}` body에 `requireAcceptanceCriteria`(boolean, null=미변경) 추가. 프로젝트 설정 화면(ProjectSettingsDialog)에서 토글. 기본 false(비강제). true면 소속 업무의 DONE 전이 시 인수조건 미충족 검증(BIZ-116). Manager 이상(기존 PATCH /projects 가드 재사용).
 > - 라벨 표시는 폴백: project_tab_label → tab_def → code. `GET /projects/{id}/tabs`가 폴백 적용된 최종 표시명을 내려준다(프런트가 상수 의존 제거).
 >
 > **신규 에러코드(CR-020, WMP-7806~7808)**: `TAB_NOT_FOUND`(WMP-7806, 알 수 없는 탭 코드 404), `TAB_LABEL_INVALID`(WMP-7807, 라벨 공백/길이 초과 400), `TAB_SUMMARY_LOCKED`(WMP-7808, summary는 제거·이동·기본해제 불가 400). 프로젝트 미존재는 기존 `PROJECT_NOT_FOUND` 재사용.
@@ -159,6 +161,11 @@
 | PATCH | /work-items/bulk | 벌크 편집(상태·담당자·스프린트·라벨 일괄) | 🔒 | P1 | WMP-WI-015 |
 | PATCH | /work-items/{id}/measure | 측정(단위·목표·현재값, progress 자동) | 🔒 | P1 | WMP-WI-016 |
 | PATCH | /work-items/{id}/result | 결과(완료 산출물) 본문 저장·수정 | 🔒 | P2 | WMP-WI-017 |
+| PATCH | /work-items/{id}/acceptance-criteria | 인수조건 항목/체크 상태 저장(전체 배열 치환) | 🔒 WRITER | P2 | WMP-WI-018 |
+
+> **인수조건(`PATCH /work-items/{id}/acceptance-criteria`, WMP-WI-018, CR-049)**: 인수조건 전체 배열을 치환 저장한다(부분 패치 아님 — FE가 항목 추가/삭제/체크 토글 후 전체 목록을 보냄). body `{criteria:[{text, checked}]}`, 서버가 checked=true로 바뀐 항목에 checkedBy=호출자·checkedAt=now를 채운다(false로 되돌리면 clear). 쓰기 권한 WRITER(VIEWER 제외, CR-031/BIZ-115). 저장은 acceptance_criteria JSONB 컬럼이므로 조회는 `GET /work-items/{id}` 응답에 함께 실린다(별도 GET 없음). 인수조건 텍스트 자체 편집은 `PATCH /work-items/{id}`(description 등과 함께) 또는 이 엔드포인트 어느 쪽으로도 가능 — 구현은 이 전용 엔드포인트로 일원화. 완료(DONE) 시 미충족 강제 여부는 프로젝트 설정(require_acceptance_criteria)이 결정(BIZ-116, `PATCH /work-items/{id}/status` 가드).
+>
+> **상태 전이 인수조건 가드(`PATCH /work-items/{id}/status`, CR-049)**: 대상 상태가 완료(is_done)이고 소속 프로젝트가 강제(require_acceptance_criteria=true)이며 인수조건에 미충족(checked=false) 항목이 1개 이상이면 전이를 거부한다(`ACCEPTANCE_CRITERIA_UNMET`, **WMP-7850**, 409). 인수조건이 없으면 통과(운영형 보호). 비강제 프로젝트는 통과하되, 미충족인 채 완료되면 활동 로그에 `COMPLETE_WITH_UNMET` 스냅샷 1건을 부수 기록(BIZ-116, 책임 소지). 승인 게이트(APPROVAL_PENDING)와 독립적 — 화이트리스트·승인 통과 후 마지막에 검사. **신규 에러코드: `ACCEPTANCE_CRITERIA_UNMET`(WMP-7850)**. 인수조건 미존재·프로젝트 미존재 등은 기존 코드 재사용.
 
 > **결과(`PATCH /work-items/{id}/result`, WMP-WI-017, CR-048)**: 완료 산출물 본문(result_content, 리치텍스트 HTML)을 저장·수정한다. 업무당 1개(1:1·덮어쓰기), 서버가 result_written_by(호출자)·result_written_at(now)를 채운다. 쓰기 권한 WRITER(VIEWER 제외, CR-031). **DONE 전이의 전제조건이 아니다** — 완료 여부와 무관하게 저장 가능하나, 화면(T3-3)에서는 완료 상태일 때만 노출한다. 결과 **파일 산출물은 별도 API 없이 기존 첨부**(`POST/DELETE /work-items/{id}/attachments`, WMP-WI-012)를 재사용한다(첨부는 업무 소속이라 결과 관점에서 함께 보여줄 뿐 별도 저장소를 두지 않음). 결과 본문은 work_items.result_content 컬럼이므로 조회는 `GET /work-items/{id}` 응답에 함께 실린다(별도 GET 없음).
 

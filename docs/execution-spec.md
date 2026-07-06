@@ -297,6 +297,21 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 
 ---
 
+### CR-049 — 인수조건 체크 + 완료 강제(선택) (WMP-WI-018, 중규모)
+
+> 완료조건을 "판단 가능하게" 만든다 — 인수조건을 체크 가능 구조로 승격 + 프로젝트별 강제 토글(기본 비강제) + 미충족 완료의 책임 소지 이력. 자동 판정은 없음(사람이 체크). 판정 대상은 인수조건만(체크리스트 제외).
+
+- **저장 그릇**: work_items.acceptance_criteria JSONB(타입 무변경) 구조 승격 `[{text,checked,checkedBy,checkedAt}]` + projects.require_acceptance_criteria BOOLEAN(V21) + activity_logs.metadata JSONB(V21). 실측 근거: acceptance_criteria는 이미 `StringListJsonTypeHandler`로 매핑되던 것을 **AcceptanceCriterion 객체 리스트 TypeHandler로 교체**(WorkItemMapper.xml resultMap L33-34·insert L74·update L109). checklist는 String 패스스루 그대로(CR-049 대상 아님).
+- **V21 마이그레이션**: ① projects ADD require_acceptance_criteria(DEFAULT false) ② activity_logs ADD metadata JSONB ③ acceptance_criteria 값 변환 UPDATE(`["문장"]`→객체 배열, `jsonb_typeof` 가드로 이미 객체면 skip=재실행 방어). ⚠️ JSONB 캐스팅은 JDBC `stringtype=unspecified` 이미 설정됨(CR-007).
+- **BE 배선 — status 가드**: `WorkItemService.changeStatus`(실측 L237-292)에서 **화이트리스트 검증(L256)과 부수효과(L258) 사이**에 인수조건 가드 삽입. `to.isDone()`(L262에서 이미 쓰는 판정 재사용) && project.requireAcceptanceCriteria && 미충족 존재 → `ACCEPTANCE_CRITERIA_UNMET`(WMP-7850) throw. 비강제인데 미충족이면 통과 후 `log(id, actorId, ActivityLog.COMPLETE_WITH_UNMET, ...)` + metadata 스냅샷(기존 log 헬퍼 L502 확장, 동일 트랜잭션). ⚠️ `bypassApproval=true`(승인 경유 재호출) 경로에서도 가드는 적용(승인 통과가 인수조건 미충족을 면제하지 않음).
+  - **project 로드**: changeStatus는 work_item만 들고 있으므로 project.require_acceptance_criteria를 조회해야 함(ProjectMapper.findById 또는 work_item join). 강제 프로젝트만 미충족 검사하므로 기본(false)이면 인수조건 파싱조차 안 함(성능).
+- **BE 배선 — 체크 저장**: `PATCH /work-items/{id}/acceptance-criteria` → 전체 배열 치환. checked=true로 바뀐 항목에 checkedBy=actorId·checkedAt=now, false면 clear. @PreAuthorize(WmpAuthz.WRITER, CR-031). WorkItemMapper 인수조건 UPDATE.
+- **BE 배선 — 프로젝트 설정**: `PATCH /projects/{id}` UpdateRequest에 `Boolean requireAcceptanceCriteria`(null=미변경). ProjectService.update builder + ProjectMapper.xml `<set>`에 `<if test="p.requireAcceptanceCriteria != null">`. ⚠️ 도메인 필드는 **박스 Boolean**(원시 boolean이면 항상 false라 null 미변경 판별 불가 — [[workmap-mybatis-builder-trap]] 인접 주의).
+- **FE 배선**: 상세 인수조건 섹션(DetailBody Story 분기) = ds-ui Checkbox 리스트(추가/삭제/체크 토글) + "N/M 충족" 진척률 + acceptance-criteria api/hook(전체 배열 PATCH). 완료 버튼(상태 변경) 시 미충족이면 ConfirmDialog 경고(비강제) 또는 status 403/409 에러 Toast(강제, WMP-7850 메시지). ProjectSettingsDialog에 Switch "인수조건 미충족 시 완료 차단"(폼 저장 동행). VIEWER는 Checkbox disabled(useCanWrite, CR-031). 네이티브 alert/confirm/checkbox 금지.
+- **테스트**: WorkItemServiceTest — 강제+미충족=거부 / 강제+전부충족=통과 / 비강제+미충족=통과+COMPLETE_WITH_UNMET 기록 / 인수조건없음+강제=통과. @WebMvcTest 신규 매퍼 없음(기존 WorkItem/Project 매퍼 확장). FE api.test.ts 인수조건 PATCH.
+
+---
+
 ## 5-A. Sprint 완료 게이트
 
 | # | 항목 | 확인 |

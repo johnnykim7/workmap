@@ -52,7 +52,8 @@
 | CR-045 | 전체 워크스페이스 프로젝트 보기(WMP-WS-009) — WS가 많을 때 내 모든 WS 프로젝트를 WS별 그룹으로 한 화면에 나열(넓힘 모드). 스위처 "전체 보기"가 진입점. FE 전용(BE 무변경 — 기존 GET /projects workspaceId 미지정 재사용). 격리(BIZ-112) 유지 | 신규 | Medium | v2.6 |
 | CR-046 | 설정 3계층 IA 재편 + WS 설정 화면(WMP-WS-010) + WS 보관(WMP-WS-011) — 전역 시스템 설정(/admin/*)을 WS 셸 밖 별도 레이아웃(시스템 관리)으로 완전분리하고, 비워진 LNB "설정" 자리에 WS 스코프 설정 화면(일반/멤버/채널/보관 4탭)을 배치. WS 보관은 소프트(동결·데이터 보존) FSM 신규 + workspaces status/archived_at 컬럼 V18 + 채널 CRUD @PreAuthorize 가드 보강. 전사 OWNER/ADMIN 권한 | 신규 | High | v2.7 |
 | CR-047 | 사용자 아바타·프로필 카드 전역 공통화 + 프로필 사진(WMP-USER-001) — 아이콘 클릭 시 프로필 카드 Popover(GET /users/{id} 부서명 조인), 공통 UserAvatar/UserProfileCard로 약 20곳 통일, PATCH /users/me/avatar + V19 avatar_url | 신규 | Medium | v2.7 |
-| CR-048 | 업무 "결과"(완료 산출물) 섹션 신설(WMP-WI-017) — 본문(지시)·댓글(티키타카)·결과(완료 산출물) 역할 3분할(BIZ-114). work_items에 result_content/written_by/written_at 컬럼 V20 + PATCH /work-items/{id}/result. 리치에디터(CR-024)·첨부(CR-037) 재사용, 완료 상태일 때만 노출(접기 섹션), DONE 전제조건 아님. 에러코드 7850 | 신규 | Medium | v2.8 |
+| CR-048 | 업무 "결과"(완료 산출물) 섹션 신설(WMP-WI-017) — 본문(지시)·댓글(티키타카)·결과(완료 산출물) 역할 3분할(BIZ-114). work_items에 result_content/written_by/written_at 컬럼 V20 + PATCH /work-items/{id}/result. 리치에디터(CR-024)·첨부(CR-037) 재사용, 완료 상태일 때만 노출(접기 섹션), DONE 전제조건 아님. 에러코드 없음(WORK_ITEM_NOT_FOUND 재사용) | 신규 | Medium | v2.8 |
+| CR-049 | 인수조건 체크 + 완료 강제(선택)(WMP-WI-018) — 인수조건을 `[{text,checked,checkedBy,checkedAt}]` 체크 가능 구조로 승격(BIZ-115), 프로젝트별 `require_acceptance_criteria` 토글로 "미충족 시 완료 차단" 조정(기본 비강제, BIZ-116/POL-015). 자동 판정 없음(사람 체크). 비강제 미충족 완료는 activity_logs COMPLETE_WITH_UNMET 스냅샷으로 책임 소지 기록. V21(projects 1컬럼+activity_logs metadata+인수조건 값 변환) + PATCH /work-items/{id}/acceptance-criteria + status 가드. 에러코드 ACCEPTANCE_CRITERIA_UNMET(WMP-7850) | 신규 | Medium | v2.8 |
 
 ---
 
@@ -1061,6 +1062,24 @@
 - **재사용(신규 최소화)**: 에디터·첨부·파일뷰어·완료 조건부 렌더(OPS_STATUSES 선례) 전부 기존 자산. 순수 신규 = 컬럼 3개 + PATCH 1개 + FE 섹션 1개.
 - **규모/절차**: 중규모(스키마+API+화면, 기존 패턴 재사용). 설계 캐스케이드 T1(WMP-WI-017·BIZ-114)→T3(컬럼·API·화면) 완료. T1-5 FSM·T1-6 이벤트 **무변경**(결과는 전이 전제조건 아니고 알림 트리거 아님).
 - **요청자**: 사용자(2026-07-07, "결정의 결과물은 본문이 아니라 산출물에 남는 게 맞지 않냐" 논의 → 결과 섹션 신설 확정) | **변경 일자**: 2026-07-07
+
+---
+
+### CR-049 — 인수조건 체크 + 완료 강제(선택) (WMP-WI-018)
+
+- **배경**: "스토리/태스크/서브태스크의 완료조건을 어떻게 설정·체크하나"에서 출발. 실측 결과 ① 인수조건은 `List<String>`(체크 상태 없음), 체크리스트는 불투명 String 패스스루라 **충족/미충족을 담을 자리조차 없었음** ② DONE 전이 시 완료 조건을 검증하는 게이트가 전혀 없었음(FSM 화이트리스트 + 승인 게이트만) ③ 서브태스크 전부 완료해야 부모 완료 같은 강제도 없음. 즉 "완료조건"이 참고용 텍스트 칸뿐이었다.
+- **논의·결정(사용자 합의)**:
+  - **자동 판정 불가 인정** — 자연어 인수조건("만료 시 갱신된다")을 시스템이 참/거짓 판정할 수 없음(테스트 코드 연동은 제품 범위 밖, Jira/Linear도 안 함). → 충족 판정은 **무조건 사람(WRITER)**.
+  - **강제 vs 비강제 = 프로젝트 설정에 두고 기본은 비강제** — "인수조건 없는 운영형 업무까지 막힘 + 형식주의" 우려로 강제를 기본으로 두지 않음. 강제 규율을 원하는 프로젝트만 켬. (Jira/Linear 실제 동작도 비강제.)
+  - **책임 소지** — 사용자 지적("미체크라고 어딘가엔 계속 남아야 책임 소지"). 넘어가되(비강제) 미충족 완료 행위를 **activity_logs에 스냅샷 영구 기록**(누가·언제·어떤 항목 미충족). 상세엔 "N/M 충족" 상시 표시.
+  - **판정 대상 = 인수조건만**(사용자 결정). 체크리스트는 강제/차단 대상 아님(참고용 유지).
+  - **체크 권한 = WRITER**(사용자 결정, CR-031 재사용).
+- **스키마(V21)**: ① `projects.require_acceptance_criteria BOOLEAN NOT NULL DEFAULT false`(강제 토글, POL-015) ② `activity_logs.metadata JSONB NULL`(COMPLETE_WITH_UNMET 스냅샷) ③ **인수조건 값 변환** — 기존 `["문장"]` → `[{text,checked:false,checkedBy:null,checkedAt:null}]`(컬럼 타입 무변경, UPDATE로 재구성, 재실행 방어). work_items 컬럼 추가 없음.
+- **BE**: PATCH `/work-items/{id}/acceptance-criteria`(전체 배열 치환, checked=true 항목에 checkedBy=호출자·checkedAt=now, @PreAuthorize WRITER) + `changeStatus` DONE 가드 추가(화이트리스트·승인 통과 후 마지막 검사 — 강제+미충족이면 거부, 비강제+미충족이면 통과 후 COMPLETE_WITH_UNMET 활동로그) + `PATCH /projects/{id}`에 requireAcceptanceCriteria 필드(Boolean, null=미변경, `<set>` <if>) + AcceptanceCriterion 구조 매핑(JSONB TypeHandler) + 에러코드 **ACCEPTANCE_CRITERIA_UNMET(WMP-7850)**.
+- **FE**: 상세 인수조건 섹션 = ds-ui Checkbox 항목(추가/삭제/체크) + 진척률 "N/M 충족" 표시 + acceptance-criteria api/hook. 완료 시 미충족이면 ConfirmDialog 경고(비강제)/에러 Toast(강제). ProjectSettingsDialog에 "인수조건 미충족 시 완료 차단" Switch. VIEWER는 체크박스 disabled. 네이티브 alert/confirm/checkbox 금지(ds-ui만).
+- **재사용(신규 최소화)**: activity_logs 계층(actor·시점 공짜)·CR-031 WRITER 가드·ConfirmDialog·Switch·프로젝트 PATCH 패턴 전부 기존. 순수 신규 = projects 1컬럼 + activity_logs 1컬럼 + 인수조건 구조 승격 + PATCH 1개 + status 가드 1개 + 에러코드 1개 + FE 섹션 1개.
+- **규모/절차**: 중규모. 설계 캐스케이드 T1(WMP-WI-018·BIZ-115/116·POL-015)→T1-5(DONE 인수조건 가드)→T3-1(구조·컬럼·metadata·V21)→T3-2(API·에러코드)→T3-3(체크 UI·경고·설정 토글) 완료. T1-6 이벤트 **무변경**(인수조건 체크는 알림 트리거 아님 — 필요 시 후속). **DONE 전제조건이 될 수 있다는 점에서 CR-048(결과=전제 아님)과 대비.**
+- **요청자**: 사용자(2026-07-07, "완료조건 어떻게 설정·체크하나" → 강제/비강제 논의 → 프로젝트 설정 토글·기본 비강제·책임 소지 이력 확정) | **변경 일자**: 2026-07-07
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
