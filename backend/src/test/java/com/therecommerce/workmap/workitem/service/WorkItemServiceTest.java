@@ -208,6 +208,16 @@ class WorkItemServiceTest {
     }
 
     @Test
+    @DisplayName("HRC-9: Sub-task아닌유형이_parent가짐_거부(TASK)")
+    void 태스크_부모지정_거부() {
+        when(projectMapper.findById(5L)).thenReturn(devProject());
+        // TASK는 requiresParent()=false → parentId가 있으면 계층 위반(HRC-5 규칙, DB조회 이전에 차단)
+        assertThatThrownBy(() -> service.create(createReq("TASK", 22L), 99L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.HIERARCHY_VIOLATION);
+    }
+
+    @Test
     @DisplayName("HRC-3: depth3초과_거부(Sub-task 아래 Sub-task)")
     void depth초과_거부() {
         when(projectMapper.findById(5L)).thenReturn(devProject());

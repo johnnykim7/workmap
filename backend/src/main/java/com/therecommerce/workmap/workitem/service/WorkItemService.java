@@ -444,8 +444,14 @@ public class WorkItemService {
     // 내부 헬퍼
     // ===================================================================
 
-    /** 계층 정합성(BIZ-103): Sub-task 부모 필수 / Epic은 Sub-task 부모 불가 / depth≤2 / 순환 금지. */
+    /** 계층 정합성(BIZ-103): Sub-task 부모 필수 / Epic은 Sub-task 부모 불가 / depth≤2 / 순환 금지 /
+     *  Sub-task 외 유형은 부모 불가(HRC-5). */
     private void validateHierarchy(IssueType type, Long parentId, Long selfId) {
+        // HRC-5: Sub-task가 아닌 유형(EPIC/STORY/TASK/BUG/DOC)은 parent_id를 가질 수 없다.
+        if (!type.requiresParent() && parentId != null) {
+            throw new BusinessException(WmpErrorCode.HIERARCHY_VIOLATION,
+                    "Sub-task가 아닌 유형은 부모 항목을 가질 수 없습니다.");  // HRC-5
+        }
         if (type.requiresParent()) {
             if (parentId == null) {
                 throw new BusinessException(WmpErrorCode.HIERARCHY_VIOLATION, "Sub-task는 부모 항목이 필수입니다.");  // HRC-1
