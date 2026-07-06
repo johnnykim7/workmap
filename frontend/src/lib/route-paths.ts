@@ -33,6 +33,9 @@ export const ROUTES = {
   projects: '/projects',
 
   project: (key: string, tab: ProjectTab = 'summary') => `/projects/${key}/${tab}`,
+  // 탭 없는 프로젝트 루트. LNB 하이라이트 매칭용(어느 탭이든 startsWith로 잡히도록).
+  // 클릭 시엔 /projects/:key index가 summary로 리다이렉트한다(App.tsx).
+  projectRoot: (key: string) => `/projects/${key}`,
   workItem: (key: string) => `/work-items/${key}`,
   workspaceMembers: (wsId: number | string) => `/workspaces/${wsId}/members`,
   // CR-046 — WS 자신의 설정(일반/멤버/채널/보관). LNB "설정" 자리.

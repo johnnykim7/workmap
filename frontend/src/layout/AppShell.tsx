@@ -219,6 +219,10 @@ function HeaderActions() {
   );
 }
 
+// '[전체 프로젝트]' 하이라이트를 개별 프로젝트 화면과 분리하기 위한 매칭 전용 경로 토큰.
+// 실제 라우트가 아니며, 클릭 시 onNavigate에서 ROUTES.projects로 되돌린다.
+const ALL_PROJECTS_TOKEN = '/__all-projects';
+
 export function AppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -249,9 +253,15 @@ export function AppShell() {
     // → 프로젝트 목록/관리 화면(/projects) 진입점이 없어져, children 최상단에 별도 항목으로 제공.
     // children은 label 텍스트만 렌더 가능(아이콘/색 불가) → 대괄호로 구분 표식.
     const projectChildren = [
-      { path: ROUTES.projects, label: '[전체 프로젝트]' },
+      // 매칭 전용 토큰. AdminShell은 currentPath와 path를 prefix로만 비교하는데,
+      // 실제 '/projects'는 모든 '/projects/*'의 prefix라 개별 프로젝트 화면에서도 함께 켜진다.
+      // → path를 실존하지 않는 토큰(ALL_PROJECTS_TOKEN)으로 두고, 클릭 이동은 onNavigate에서
+      //   '/projects'로 되돌리며, currentPath도 정확히 '/projects'일 때만 이 토큰으로 정규화한다.
+      { path: ALL_PROJECTS_TOKEN, label: '[전체 프로젝트]' },
       ...projects.map((p) => ({
-        path: ROUTES.project(p.key),
+        // 탭 없는 프로젝트 루트로 매칭 → 어느 탭(요약/타임라인/보드…)에 있어도 하이라이트 유지.
+        // (index 라우트가 summary로 리다이렉트하므로 클릭 이동도 정상.)
+        path: ROUTES.projectRoot(p.key),
         label: p.name,
       })),
     ];
@@ -292,8 +302,10 @@ export function AppShell() {
   return (
     <AdminShell
       menuItems={menuItems}
-      currentPath={pathname}
-      onNavigate={(p) => navigate(p)}
+      // 정확히 '/projects'일 때만 토큰으로 정규화 → '[전체 프로젝트]'만 켜지고 개별 프로젝트엔 안 걸림.
+      currentPath={pathname === ROUTES.projects ? ALL_PROJECTS_TOKEN : pathname}
+      // 매칭 토큰이 넘어오면 실제 목록 경로로 되돌려 이동.
+      onNavigate={(p) => navigate(p === ALL_PROJECTS_TOKEN ? ROUTES.projects : p)}
       linkComponent={Link}
       logo={<WorkspaceSwitcher currentName={currentWs?.name ?? 'WorkMap'} />}
       logoCollapsed={<Building2 className="size-5" />}
