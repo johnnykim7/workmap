@@ -14,12 +14,13 @@ import { TypeBadge } from '@/components/badges';
 import type { IssueType } from '@/types/domain';
 import { useUiStore } from '@/store/ui-store';
 
-type SectionId = 'types' | 'splitting' | 'writing';
+type SectionId = 'types' | 'splitting' | 'flow' | 'writing';
 
 // 좌측 목차 항목 — 여기에 { id, label } 추가 + 우측 본문에 분기만 넣으면 확장된다.
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'types', label: '업무 유형' },
   { id: 'splitting', label: 'Story·Task 나누기' },
+  { id: 'flow', label: '흐름과 케이스' },
   { id: 'writing', label: '작성 개념' },
 ];
 
@@ -140,43 +141,6 @@ function SizeRow({ tone, label, example }: { tone: 'big' | 'ok' | 'small'; label
   );
 }
 
-// 시간 흐름 한 줄 — 시점 + 유형 배지 + 제목 + 설명.
-// lead=상위(Story/Task)면 살짝 들여쓰기, sub=Sub-task면 더 들여쓰기, added=진행/완료 후 추가분, done=완료.
-function TimelineRow({
-  when,
-  badge,
-  title,
-  note,
-  lead,
-  sub,
-  added,
-  done,
-}: {
-  when: string;
-  badge: IssueType;
-  title: string;
-  note: string;
-  lead?: boolean;
-  sub?: boolean;
-  added?: boolean;
-  done?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline gap-2 py-1 text-[13px]">
-      <span className="w-11 shrink-0 select-none font-mono text-[11px] text-muted-foreground">{when}</span>
-      <span className={`shrink-0 ${sub ? 'pl-8' : lead ? 'pl-4' : ''}`}>
-        <TypeBadge type={badge} />
-      </span>
-      <span className={`font-sans ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{title}</span>
-      <span className="ml-auto flex items-center gap-1.5 whitespace-nowrap pl-2 text-xs text-muted-foreground">
-        {added && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">추가</span>}
-        {done && <span className="rounded bg-green-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-400">완료</span>}
-        {note}
-      </span>
-    </div>
-  );
-}
-
 // 케이스별 판정 한 줄 — 발견 시점 + 화살표 + 유형 배지 + 처리 방식.
 function CaseRow({ when, badge, how }: { when: string; badge: IssueType; how: string }) {
   return (
@@ -185,6 +149,71 @@ function CaseRow({ when, badge, how }: { when: string; badge: IssueType; how: st
       <span className="shrink-0 select-none text-muted-foreground">→</span>
       <span className="shrink-0"><TypeBadge type={badge} /></span>
       <span className="shrink-0 font-medium text-foreground">{how}</span>
+    </div>
+  );
+}
+
+// 상태 뱃지 — Sub-task 미니 표의 진행 상태 칩(Done/In Progress/추가).
+function StatusChip({ kind }: { kind: 'done' | 'wip' | 'added' }) {
+  const map = {
+    done: { label: 'Done', cls: 'bg-green-600/10 text-green-700 dark:text-green-400' },
+    wip: { label: 'In Progress', cls: 'bg-blue-600/10 text-blue-700 dark:text-blue-400' },
+    added: { label: '추가', cls: 'bg-primary/10 text-primary' },
+  }[kind];
+  return <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${map.cls}`}>{map.label}</span>;
+}
+
+// Sub-task 미니 표의 한 행 — 작업명 + 상태(+선택: 추가 시점·이유).
+function SubItem({ name, status, meta }: { name: string; status: 'done' | 'wip' | 'added'; meta?: string }) {
+  return (
+    <div className="flex items-baseline gap-2 border-t border-border/60 px-3 py-1.5 text-[13px] first:border-t-0">
+      <span className="min-w-0 flex-1 text-muted-foreground">{name}</span>
+      {meta && <span className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground/70">{meta}</span>}
+      <StatusChip kind={status} />
+    </div>
+  );
+}
+
+// 하위 목록을 감싸는 카드 — 헤더(상위 배지 + 제목) + Sub-task 미니 표.
+function ParentCard({
+  badge,
+  title,
+  subtitle,
+  children,
+}: {
+  badge: IssueType;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex items-baseline gap-2 border-b border-border bg-muted/40 px-3 py-2">
+        <TypeBadge type={badge} />
+        <span className="text-[13px] font-semibold text-foreground">{title}</span>
+        {subtitle && <span className="text-[11px] text-muted-foreground">— {subtitle}</span>}
+      </div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+// 하위 표 안의 소제목 구분줄 — "처음부터 있던 / 진행 중 추가된" 등.
+function SubGroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="border-t border-border/60 bg-muted/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground first:border-t-0">
+      {children}
+    </div>
+  );
+}
+
+// 시간 흐름 요약 표의 한 행 — 시점 + 발생 상황 + 처리.
+function FlowSummaryRow({ when, situation, action }: { when: string; situation: string; action: string }) {
+  return (
+    <div className="flex items-baseline gap-3 border-t border-border px-3 py-2 text-[13px] first:border-t-0">
+      <span className="w-11 shrink-0 font-mono text-[11px] text-muted-foreground">{when}</span>
+      <span className="min-w-0 flex-1 text-muted-foreground">{situation}</span>
+      <span className="shrink-0 whitespace-nowrap font-medium text-foreground">{action}</span>
     </div>
   );
 }
@@ -261,29 +290,124 @@ function SplittingContent() {
         </div>
       </section>
 
-      {/* ── 시간 흐름 예시 ── */}
+    </div>
+  );
+}
+
+// ═══ 목차 3. 흐름과 케이스 — 시간 흐름 예시 + 무엇으로 만드나 ═══
+function FlowContent() {
+  return (
+    <div className="space-y-8">
+      {/* ── 시간 흐름 예시 (전문) ── */}
       <section>
         <Eyebrow>시간 흐름으로 보기</Eyebrow>
-        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">한 Epic이 시간에 따라 늘어나고 닫힙니다</h3>
+        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">예시: “네이버 반품 처리 자동화” 개발</h3>
         <p className="mb-3 text-sm text-muted-foreground">
-          업무는 처음에 다 정해지지 않습니다. <b className="text-foreground">진행하면서 세부 작업이 발견되고</b>, 각 조각이
-          하나씩 닫힙니다. “네이버 반품 처리 자동화” Epic을 예로 보면:
+          업무는 처음에 다 정해지지 않습니다. <b className="text-foreground">진행하면서 세부 작업이 발견되고</b>, 각 조각이 하나씩 닫힙니다.
+          하나의 Epic이 시간에 따라 어떻게 늘어나고 닫히는지 끝까지 따라가 봅니다.
         </p>
 
-        <div className="overflow-x-auto rounded-lg border border-border bg-muted/40 px-4 py-3">
-          <TimelineRow when="Day 1" badge="EPIC" title="네이버 반품 처리 자동화" note="큰 개발 범위를 Epic으로 생성" />
-          <TimelineRow when="Day 1" badge="STORY" title="고객이 반품을 신청할 수 있다" note="사용자 관점 기능을 Story로 쪼갬" lead />
-          <TimelineRow when="Day 1" badge="TASK" title="반품 신청 API를 개발한다" note="기술 작업을 Task로 쪼갬 (Story와 동급)" lead />
-          <TimelineRow when="Day 1" badge="SUBTASK" title="반품 요청 API 응답 구조 확인" note="처음부터 있던 하위 작업" sub />
-          <TimelineRow when="Day 2" badge="SUBTASK" title="네이버↔WMS 상태값 변환 테이블" note="진행 중 발견 → 기존 Task 밑에 추가" sub added />
-          <TimelineRow when="Day 3" badge="SUBTASK" title="승인 실패 응답코드별 처리" note="API 테스트 중 발견 → 하위로 추가" sub added />
-          <TimelineRow when="Day 5" badge="TASK" title="반품 신청 API 개발 · 완료" note="하위 다 끝나면 상위도 완료" done lead />
-          <TimelineRow when="Day 7" badge="STORY" title="반품 알림도 보내주세요 (신규 요청)" note="완료 후 새 요구 → 새 Story로 분리" added lead />
+        {/* 1. Epic 생성 */}
+        <div className="mb-4 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5">
+          <div className="mb-1 flex items-baseline gap-2">
+            <TypeBadge type="EPIC" />
+            <span className="text-[13px] font-semibold text-foreground">네이버 반품 처리 자동화</span>
+          </div>
+          <p className="text-[13px] text-muted-foreground">
+            네이버에서 들어오는 반품 요청을 우리 WMS/OMS에서 자동으로 확인하고, 승인·거절·회수 상태를 처리할 수 있게 만드는 것이 목표입니다.
+          </p>
+        </div>
+
+        {/* 시간 흐름 요약 표 */}
+        <p className="mb-1.5 text-[13px] font-semibold text-foreground">시간 흐름 한눈에</p>
+        <div className="mb-5 overflow-hidden rounded-lg border border-border bg-card">
+          <FlowSummaryRow when="Day 1" situation="큰 개발 범위가 정해짐" action="Epic 생성" />
+          <FlowSummaryRow when="Day 1" situation="사용자 관점 기능을 쪼갬" action="Story 생성" />
+          <FlowSummaryRow when="Day 1" situation="개발자가 할 기술 작업을 쪼갬" action="Task 생성" />
+          <FlowSummaryRow when="Day 2" situation="개발 중 예상 못 한 작업 발견" action="진행 중인 Task 아래 Sub-task 추가" />
+          <FlowSummaryRow when="Day 4" situation="테스트 중 누락 발견" action="Story·Task 아래 Sub-task 추가" />
+          <FlowSummaryRow when="Day 5" situation="작업 완료 처리" action="Story·Task Done" />
+          <FlowSummaryRow when="Day 7" situation="완료 후 추가 요청 발생" action="새 Story·Task 생성" />
+        </div>
+
+        {/* 실제 구조 — Story 1 */}
+        <p className="mb-1.5 text-[13px] font-semibold text-foreground">실제 구조 — Story 1</p>
+        <div className="mb-4 space-y-2">
+          <ParentCard badge="STORY" title="운영자는 네이버 반품 요청을 WMS에서 확인할 수 있다" subtitle="사용자 관점 기능">
+            <SubGroupLabel>처음부터 있던 Sub-task</SubGroupLabel>
+            <SubItem name="네이버 반품 요청 API 응답 구조 확인" status="done" />
+            <SubItem name="WMS 반품 목록 화면에 네이버 주문번호 표시" status="done" />
+            <SubItem name="반품 요청 상태값 매핑" status="wip" />
+            <SubGroupLabel>진행 중 추가된 Sub-task</SubGroupLabel>
+            <SubItem name="네이버 상태값 → WMS 상태값 변환 테이블 작성" status="added" meta="Day 2 · 개발 중 누락 발견" />
+            <SubItem name="상태값 불일치 시 예외 로그 저장" status="added" meta="Day 2 · 운영 추적 필요" />
+          </ParentCard>
+          <p className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
+            개발 중 네이버 상태값과 WMS 상태값이 1:1로 안 맞는 문제가 발견됩니다.
+            <b className="text-foreground"> 진행 중 발견된 세부 작업</b>이므로 기존 Story 아래 Sub-task로 추가하면 됩니다.
+          </p>
+        </div>
+
+        {/* 실제 구조 — Task 1 */}
+        <p className="mb-1.5 text-[13px] font-semibold text-foreground">실제 구조 — Task 1</p>
+        <div className="mb-4 space-y-2">
+          <ParentCard badge="TASK" title="네이버 반품 API 연동 구현" subtitle="개발자 관점 기술 작업 (Story와 동급)">
+            <SubGroupLabel>처음부터 있던 Sub-task</SubGroupLabel>
+            <SubItem name="API 인증 토큰 확인" status="done" />
+            <SubItem name="반품 요청 조회 API 구현" status="done" />
+            <SubItem name="반품 승인 API 구현" status="wip" />
+            <SubGroupLabel>진행 중 추가된 Sub-task</SubGroupLabel>
+            <SubItem name="승인 실패 응답코드별 메시지 처리" status="added" meta="Day 3 · API 테스트 중 발견" />
+            <SubItem name="실패 건 재시도 로직 추가" status="added" meta="Day 3 · 운영 안정성 필요" />
+          </ParentCard>
+          <p className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
+            개발 중 승인 실패 응답이 여러 케이스로 나뉜다는 것을 발견합니다. 이것도 기존 Task의 하위 Sub-task로 넣는 게 맞습니다.
+          </p>
+        </div>
+
+        {/* 완료 후 — 두 갈래 */}
+        <p className="mb-1.5 text-[13px] font-semibold text-foreground">완료된 뒤 새로운 게 들어오면</p>
+        <div className="space-y-2.5">
+          {/* 상황 A: 원래 범위 누락 */}
+          <div className="rounded-lg border border-border bg-card p-3">
+            <div className="mb-1.5 text-[12px] font-bold text-foreground">상황 A — 원래 완료 기준에 있었어야 할 누락</div>
+            <p className="mb-2 text-[13px] text-muted-foreground">
+              Story가 Done 처리됐는데 운영 테스트 중 <i>“반품 거절 사유가 WMS 화면에 안 보입니다”</i>가 나왔습니다.
+              원래 이 Story의 완료 기준에 포함됐어야 하는 기능입니다.
+            </p>
+            <div className="flex flex-wrap items-baseline gap-2 rounded-md bg-muted/50 px-3 py-2 text-[13px]">
+              <span className="text-muted-foreground">→ 완료된 업무의 결함이므로</span>
+              <TypeBadge type="BUG" />
+              <span className="font-medium text-foreground">Bug로 생성</span>
+              <span className="text-[12px] text-muted-foreground">(예: “반품 거절 사유 필드 화면 미표시”)</span>
+            </div>
+          </div>
+
+          {/* 상황 B: 새 요구 */}
+          <div className="rounded-lg border border-border bg-card p-3">
+            <div className="mb-1.5 text-[12px] font-bold text-foreground">상황 B — 완료 후 들어온 새 요구사항</div>
+            <p className="mb-2 text-[13px] text-muted-foreground">
+              <i>“반품 요청이 들어오면 담당자에게 카카오 알림도 보내주세요.”</i> 기존 반품 조회 기능과 이어지긴 하지만,
+              별도 가치가 있는 <b className="text-foreground">새 기능</b>입니다.
+            </p>
+            <div className="mb-2 flex flex-wrap items-baseline gap-2 rounded-md bg-muted/50 px-3 py-2 text-[13px]">
+              <span className="text-muted-foreground">→ 이어져도 Sub-task가 아니라</span>
+              <TypeBadge type="STORY" />
+              <span className="font-medium text-foreground">새 Story로 분리</span>
+            </div>
+            <ParentCard badge="STORY" title="운영자는 신규 반품 요청 발생 시 알림을 받을 수 있다">
+              <SubItem name="알림 발송 조건 정의" status="wip" />
+              <SubItem name="담당자 매핑 기준 정의" status="wip" />
+              <SubItem name="카카오 알림 API 연동" status="wip" />
+              <SubItem name="알림 발송 실패 로그 저장" status="wip" />
+            </ParentCard>
+          </div>
         </div>
 
         <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
-          <b className="text-foreground">읽는 법.</b> 계획 단계에 없던 세부 작업은 <b className="text-foreground">진행 중에 기존 Story·Task 밑 Sub-task로</b> 붙습니다.
-          반대로 <b className="text-foreground">끝난 뒤에 나온 새 요구</b>는 이어지는 일이라도 아래 표대로 <b className="text-foreground">새 항목</b>으로 만드는 편이 이력이 깔끔합니다.
+          <b className="text-foreground">읽는 법.</b> 계획에 없던 세부 작업은 <b className="text-foreground">진행 중에 기존 Story·Task 밑 Sub-task로</b> 붙습니다.
+          반대로 <b className="text-foreground">끝난 뒤에 나온 것</b>은 이어지는 일이라도 새 항목(Bug·Story·Task)으로 만드는 편이
+          “그때 완료한 범위”와 “나중에 추가된 것”이 섞이지 않아 이력이 깔끔합니다.
         </div>
       </section>
 
@@ -314,7 +438,7 @@ function SplittingContent() {
   );
 }
 
-// ═══ 목차 3. 작성 개념 — 본문·댓글·결과 + 인수조건 ═══
+// ═══ 목차 4. 작성 개념 — 본문·댓글·결과 + 인수조건 ═══
 function WritingContent() {
   return (
     <div className="space-y-8">
@@ -464,6 +588,7 @@ export function HelpDrawer() {
           <div className="min-w-0 overflow-y-auto px-6 py-5">
             {active === 'types' && <TypesContent />}
             {active === 'splitting' && <SplittingContent />}
+            {active === 'flow' && <FlowContent />}
             {active === 'writing' && <WritingContent />}
           </div>
         </div>
