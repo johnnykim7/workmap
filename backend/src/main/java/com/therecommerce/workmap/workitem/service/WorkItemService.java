@@ -197,6 +197,21 @@ public class WorkItemService {
         return WorkItemDtos.Response.from(getEntity(id));
     }
 
+    /**
+     * 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, BIZ-114, CR-048).
+     * 업무당 1개·덮어쓰기. 작성자=호출자, 작성시각=now. DONE 전제조건이 아니므로 상태와 무관하게 저장 가능
+     * (완료 노출은 화면 책임). 첨부는 별도 API(기존 첨부) 재사용이라 여기서 다루지 않는다.
+     */
+    @Transactional
+    public WorkItemDtos.Response saveResult(Long id, WorkItemDtos.ResultRequest req, Long actorId) {
+        WorkItem w = getEntity(id);
+        w.setResultContent(req.resultContent());
+        w.setResultWrittenBy(actorId);
+        w.setResultWrittenAt(OffsetDateTime.now(clock));
+        workItemMapper.updateResult(w);
+        return WorkItemDtos.Response.from(getEntity(id));
+    }
+
     /** 소프트 삭제(WI-6, BIZ-009). 자식(Sub-task)도 함께 deleted_at 설정. */
     @Transactional
     public void softDelete(Long id, Long actorId) {

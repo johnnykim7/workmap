@@ -675,4 +675,34 @@ class WorkItemServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.HIERARCHY_VIOLATION);
     }
+
+    // ===================================================================
+    // 결과(완료 산출물) 저장 — WMP-WI-017, BIZ-114, CR-048
+    // ===================================================================
+
+    @Test
+    @DisplayName("RSLT-1: 결과저장_본문·작성자·시각이_세팅되고_updateResult호출됨")
+    void 결과저장_본문작성자시각_세팅() {
+        when(workItemMapper.findById(1L)).thenReturn(item(1L, 100L, "TODO"));
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+
+        service.saveResult(1L, new WorkItemDtos.ResultRequest("<p>SNS+뉴스레터로 확정</p>"), 99L);
+
+        verify(workItemMapper).updateResult(c.capture());
+        WorkItem saved = c.getValue();
+        assertThat(saved.getResultContent()).isEqualTo("<p>SNS+뉴스레터로 확정</p>");
+        assertThat(saved.getResultWrittenBy()).isEqualTo(99L);       // 작성자=호출자
+        assertThat(saved.getResultWrittenAt()).isEqualTo(FIXED);     // 시각=고정 clock
+    }
+
+    @Test
+    @DisplayName("RSLT-2: 결과저장은_상태와무관(미완료여도_허용, DONE 전제조건 아님)")
+    void 결과저장_상태무관_허용() {
+        // 진행중(IN_PROGRESS)이어도 결과 저장 자체는 허용 — 완료 노출은 화면 책임
+        when(workItemMapper.findById(1L)).thenReturn(item(1L, 100L, "IN_PROGRESS"));
+
+        service.saveResult(1L, new WorkItemDtos.ResultRequest("중간 결과"), 99L);
+
+        verify(workItemMapper).updateResult(any());  // 상태 검증 없이 저장됨
+    }
 }

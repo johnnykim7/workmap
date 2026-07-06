@@ -86,6 +86,16 @@ export function useUpdateWorkItem(id: number, key?: string) {
   });
 }
 
+// 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). 성공 시 상세 무효화.
+export function useSaveResult(id: number, key?: string) {
+  const invalidate = useInvalidateDetail(id, key);
+  return useMutation({
+    mutationFn: (resultContent: string) => workItemApi.saveResult(id, resultContent),
+    onSuccess: () => invalidate(),
+    onError: (e) => toast.error(errMsg(e, '결과 저장에 실패했습니다.')),
+  });
+}
+
 /**
  * 백로그/목록에서 항목의 Epic 연결 변경(§6.1, CR-022) — id를 인자로 받아 리스트에서 호출.
  * useUpdateWorkItem은 id 고정이라 다건 리스트에 부적합 → projectId 단위 mutation.

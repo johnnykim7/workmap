@@ -200,6 +200,9 @@ public final class WorkItemDtos {
             List<String> labels,
             List<String> relatedSolutions,
             OffsetDateTime completedAt,
+            String resultContent,
+            Long resultWrittenBy,
+            OffsetDateTime resultWrittenAt,
             Long createdBy,
             OffsetDateTime createdAt
     ) {
@@ -213,7 +216,14 @@ public final class WorkItemDtos {
                     w.getTargetValue(), w.getCurrentValue(), w.getAcceptanceCriteria(),
                     w.getStepsToReproduce(), w.getExpectedResult(), w.getActualResult(),
                     w.getEnvironment(), w.getSeverity(), w.getChecklist(), w.getLabels(),
-                    w.getRelatedSolutions(), w.getCompletedAt(), w.getCreatedBy(), w.getCreatedAt());
+                    w.getRelatedSolutions(), w.getCompletedAt(),
+                    w.getResultContent(), w.getResultWrittenBy(), w.getResultWrittenAt(),
+                    w.getCreatedBy(), w.getCreatedAt());
         }
     }
+
+    /** 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). 첨부는 기존 첨부 API 재사용. */
+    public record ResultRequest(
+            String resultContent
+    ) {}
 }

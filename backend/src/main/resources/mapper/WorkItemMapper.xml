@@ -46,6 +46,9 @@
         <result property="opsApplyStatus"    column="ops_apply_status"/>
         <result property="statusChangedAt"   column="status_changed_at"/>
         <result property="completedAt"       column="completed_at"/>
+        <result property="resultContent"     column="result_content"/>
+        <result property="resultWrittenBy"   column="result_written_by"/>
+        <result property="resultWrittenAt"   column="result_written_at"/>
         <result property="deletedAt"         column="deleted_at"/>
         <result property="createdBy"         column="created_by"/>
         <result property="createdAt"         column="created_at"/>
@@ -160,6 +163,16 @@
             issue_type = #{issueType},
             parent_id = #{parentId},
             epic_id = #{epicId},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- 결과(완료 산출물) 본문 저장·수정 (WMP-WI-017, CR-048) -->
+    <update id="updateResult" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            result_content = #{resultContent},
+            result_written_by = #{resultWrittenBy},
+            result_written_at = #{resultWrittenAt},
             updated_at = now()
         WHERE id = #{id} AND deleted_at IS NULL
     </update>

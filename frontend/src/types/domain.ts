@@ -289,6 +289,10 @@ export interface WorkItemResponse {
   relatedSolutions?: string[] | null;
   labels?: string[] | null;
   completedAt?: string | null;
+  // 결과(완료 산출물) — WMP-WI-017, CR-048. 본문(HTML)·작성자·시각. 완료 상태일 때만 화면 노출.
+  resultContent?: string | null;
+  resultWrittenBy?: number | null;
+  resultWrittenAt?: string | null;
   createdBy?: number | null;
   createdAt?: string | null;
 }

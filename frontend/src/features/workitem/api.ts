@@ -112,6 +112,9 @@ export const workItemApi = {
     api.patch<WorkItemResponse>(`/work-items/${id}/assignee`, { assigneeId, reporterId }),
   updateMeasure: (id: number, body: { measureUnitId?: number | null; targetValue?: number | null; currentValue?: number | null }) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/measure`, body),
+  // 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). 첨부는 기존 첨부 API 재사용.
+  saveResult: (id: number, resultContent: string) =>
+    api.patch<WorkItemResponse>(`/work-items/${id}/result`, { resultContent }),
   changeSprint: (id: number, sprintId: number | null) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/sprint`, { sprintId }),
   createSubtask: (id: number, body: CreateSubtaskRequest) =>

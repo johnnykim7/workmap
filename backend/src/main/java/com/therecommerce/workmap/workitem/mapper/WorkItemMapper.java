@@ -45,6 +45,9 @@ public interface WorkItemMapper {
     /** 유형 전환(issue_type + 계층 컬럼 재설정). */
     void updateType(WorkItem item);
 
+    /** 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). */
+    void updateResult(WorkItem item);
+
     /** 진행률만 갱신(상위 Epic 집계 등). */
     void updateProgress(@Param("id") Long id, @Param("progress") int progress);
 

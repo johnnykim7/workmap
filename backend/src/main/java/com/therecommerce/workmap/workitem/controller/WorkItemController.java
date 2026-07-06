@@ -142,4 +142,14 @@ public class WorkItemController {
             @AuthUserInfo("userId") Long userId) {
         return ResponseDto.success(workItemService.changeSprint(id, req.sprintId(), userId));
     }
+
+    /** 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). 조회는 GET /{id} 응답 필드로. */
+    @PreAuthorize(WmpAuthz.WRITER)
+    @PatchMapping("/{id}/result")
+    public ResponseDto<WorkItemDtos.Response> saveResult(
+            @PathVariable Long id,
+            @RequestBody WorkItemDtos.ResultRequest req,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(workItemService.saveResult(id, req, userId));
+    }
 }

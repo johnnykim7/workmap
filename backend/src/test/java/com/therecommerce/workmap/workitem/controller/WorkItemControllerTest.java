@@ -104,7 +104,9 @@ class WorkItemControllerTest {
         return new WorkItemDtos.Response(
                 1L, "ZGOH-5", 5L, "TASK", null, null, "제목", null, 10L, 100L, "TODO", "NORMAL",
                 null, null, null, null, null, null, null, 0, false, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, 99L, OffsetDateTime.now());
+                null, null, null, null, null, null, null, null,
+                null, null, null,  // result_content, result_written_by, result_written_at (CR-048)
+                99L, OffsetDateTime.now());
     }
 
     @Test

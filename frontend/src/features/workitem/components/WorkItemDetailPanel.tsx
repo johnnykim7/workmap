@@ -9,6 +9,7 @@ import { SubtaskList } from './SubtaskList';
 import { LinkedItems } from './LinkedItems';
 import { ParentLink } from './ParentLink';
 import { Attachments } from './Attachments';
+import { ResultSection } from './ResultSection';
 import { ActivityTabs } from './ActivityTabs';
 import { ApprovalBanner } from './ApprovalBanner';
 import { FieldVerifications } from '@/features/ops/components/FieldVerifications';
@@ -47,6 +48,8 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       <LinkedItems item={item} addRef={addLinkRef} />
       {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
       {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
+      {/* 결과(완료 산출물) — 완료 상태일 때만 렌더(내부에서 isDoneStatus 가드), CR-048 */}
+      <ResultSection item={item} />
       <ActivityTabs item={item} />
     </div>
   );
