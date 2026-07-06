@@ -51,6 +51,8 @@
 | CR-044 | 프로젝트 첨부 집계 탭(WMP-VIEW-007) — Jira "첨부 파일" 탭 유사. 프로젝트 전체 업무의 첨부를 한 화면에 모아보기(파일 관점). view 모듈 조회 엔드포인트 1개 + 탭 1개. 모든 유형 기본 ON. 스키마·에러코드 무변경 | 신규 | Medium | v2.6 |
 | CR-045 | 전체 워크스페이스 프로젝트 보기(WMP-WS-009) — WS가 많을 때 내 모든 WS 프로젝트를 WS별 그룹으로 한 화면에 나열(넓힘 모드). 스위처 "전체 보기"가 진입점. FE 전용(BE 무변경 — 기존 GET /projects workspaceId 미지정 재사용). 격리(BIZ-112) 유지 | 신규 | Medium | v2.6 |
 | CR-046 | 설정 3계층 IA 재편 + WS 설정 화면(WMP-WS-010) + WS 보관(WMP-WS-011) — 전역 시스템 설정(/admin/*)을 WS 셸 밖 별도 레이아웃(시스템 관리)으로 완전분리하고, 비워진 LNB "설정" 자리에 WS 스코프 설정 화면(일반/멤버/채널/보관 4탭)을 배치. WS 보관은 소프트(동결·데이터 보존) FSM 신규 + workspaces status/archived_at 컬럼 V18 + 채널 CRUD @PreAuthorize 가드 보강. 전사 OWNER/ADMIN 권한 | 신규 | High | v2.7 |
+| CR-047 | 사용자 아바타·프로필 카드 전역 공통화 + 프로필 사진(WMP-USER-001) — 아이콘 클릭 시 프로필 카드 Popover(GET /users/{id} 부서명 조인), 공통 UserAvatar/UserProfileCard로 약 20곳 통일, PATCH /users/me/avatar + V19 avatar_url | 신규 | Medium | v2.7 |
+| CR-048 | 업무 "결과"(완료 산출물) 섹션 신설(WMP-WI-017) — 본문(지시)·댓글(티키타카)·결과(완료 산출물) 역할 3분할(BIZ-114). work_items에 result_content/written_by/written_at 컬럼 V20 + PATCH /work-items/{id}/result. 리치에디터(CR-024)·첨부(CR-037) 재사용, 완료 상태일 때만 노출(접기 섹션), DONE 전제조건 아님. 에러코드 7850 | 신규 | Medium | v2.8 |
 
 ---
 
@@ -1048,6 +1050,17 @@
 - **BE**: users 스키마(V19) + User 도메인 avatarUrl + UserController `GET /{id}`·`PATCH /me/avatar` + UserService 상세조회(부서명 조인)·아바타 저장 + UserResponse/MemberDtos.Response avatarUrl + UserMapper findById(부서조인)·updateAvatar + 에러코드 WMP-7850.
 - **FE**: 공통 `UserAvatar`·`UserProfileCard`(components/common) + user api `getUser`·`updateMyAvatar` + TanStack Query hook + `/account/profile` 화면 + 계정 드롭다운 진입점 + `Avatar2`/인라인/`AssigneeAvatar` → UserAvatar 교체(약 20곳) + 칸반카드·백로그 userId 배선.
 - **요청자/승인자**: 사용자(2026-07-06, "아이콘 클릭 시 사용자 상세정보 카드" + "카드·아이콘 전역 공통화" 요청 → 프로필 사진 업로드 포함·GET /users/{id} 신설·1CR 일괄 확정) | **변경 일자**: 2026-07-06
+
+### CR-048 — 업무 "결과"(완료 산출물) 섹션 신설 (WMP-WI-017)
+
+- **배경**: "스토리/태스크의 결정 결과(담당자 확정·채널 결정 등)를 어디에 적나"에서 출발. 본문(설명)에 결과를 섞어 적던 관행 → 본문은 착수 시점 **지시서**(무엇을 왜)일 뿐, 결과의 정본이 아님. 실측: 본문은 덮어쓰기라 이력이 안 남고(FIELD_UPDATE from/to=null), 첨부는 참고/산출물 kind 구분이 없어 섞임. 산출물은 파일만이 아니다(텍스트 판단·파생 Sub-task/링크도 결과).
+- **결정**: 본문=지시 / 댓글=진행 티키타카 / **결과=완료 산출물(무엇이 되었나)** 3분할(BIZ-114). 결과는 업무 상세 **한 화면 안 1급 관점**(별도 페이지 아님, 방식 B). 완료 상태일 때만 노출(접기 섹션). 저장 그릇=work_items 컬럼 확장(1:1·덮어쓰기, 별도 테이블 불요 — acceptance_criteria 등 기존 결과성 컬럼과 동형). 결과 작성은 **권장이되 DONE 전제조건 아님**(강제 시 완료 기피 역효과). 네이밍=화면 라벨 "결과"(내부 개념어 "산출물", "보고서"는 문서 압박이라 기각).
+- **스키마(V20)**: work_items에 `result_content`(text)·`result_written_by`(bigint)·`result_written_at`(timestamptz) 3컬럼 ADD. 인덱스 불요(1:1 조회).
+- **BE**: PATCH `/work-items/{id}/result`(WorkItemService.saveResult — result_content 저장 + written_by=호출자·written_at=now) + WorkItemDtos.ResultRequest + WorkItemMapper.updateResult + @PreAuthorize(WRITER, CR-031) + GET `/work-items/{id}` 응답에 result 필드 포함(별도 GET 없음). WORK_ITEM_NOT_FOUND는 기존 재사용 — **신규 에러코드 없음**(7850은 CR-047 예약, 결과는 고유 에러 불요).
+- **FE**: `features/workitem` 상세에 결과 섹션(완료 시 조건부 렌더, `common_status==='DONE'||'OPS_APPLIED'`) — 공용 `RichTextEditor`(CR-024) inline 편집 + 공통 `FileAttachmentList`(CR-037) 결과 첨부(기존 첨부 API 재사용) + 작성자·시각 표시(UserAvatar). result api/hook + WorkItem 타입 result 필드 추가.
+- **재사용(신규 최소화)**: 에디터·첨부·파일뷰어·완료 조건부 렌더(OPS_STATUSES 선례) 전부 기존 자산. 순수 신규 = 컬럼 3개 + PATCH 1개 + FE 섹션 1개.
+- **규모/절차**: 중규모(스키마+API+화면, 기존 패턴 재사용). 설계 캐스케이드 T1(WMP-WI-017·BIZ-114)→T3(컬럼·API·화면) 완료. T1-5 FSM·T1-6 이벤트 **무변경**(결과는 전이 전제조건 아니고 알림 트리거 아님).
+- **요청자**: 사용자(2026-07-07, "결정의 결과물은 본문이 아니라 산출물에 남는 게 맞지 않냐" 논의 → 결과 섹션 신설 확정) | **변경 일자**: 2026-07-07
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 

@@ -158,6 +158,9 @@
 | PATCH | /work-items/{id}/convert | 유형 전환(Move/Convert, 계층 재검증) | 🔒 | P1 | WMP-WI-014 |
 | PATCH | /work-items/bulk | 벌크 편집(상태·담당자·스프린트·라벨 일괄) | 🔒 | P1 | WMP-WI-015 |
 | PATCH | /work-items/{id}/measure | 측정(단위·목표·현재값, progress 자동) | 🔒 | P1 | WMP-WI-016 |
+| PATCH | /work-items/{id}/result | 결과(완료 산출물) 본문 저장·수정 | 🔒 | P2 | WMP-WI-017 |
+
+> **결과(`PATCH /work-items/{id}/result`, WMP-WI-017, CR-048)**: 완료 산출물 본문(result_content, 리치텍스트 HTML)을 저장·수정한다. 업무당 1개(1:1·덮어쓰기), 서버가 result_written_by(호출자)·result_written_at(now)를 채운다. 쓰기 권한 WRITER(VIEWER 제외, CR-031). **DONE 전이의 전제조건이 아니다** — 완료 여부와 무관하게 저장 가능하나, 화면(T3-3)에서는 완료 상태일 때만 노출한다. 결과 **파일 산출물은 별도 API 없이 기존 첨부**(`POST/DELETE /work-items/{id}/attachments`, WMP-WI-012)를 재사용한다(첨부는 업무 소속이라 결과 관점에서 함께 보여줄 뿐 별도 저장소를 두지 않음). 결과 본문은 work_items.result_content 컬럼이므로 조회는 `GET /work-items/{id}` 응답에 함께 실린다(별도 GET 없음).
 
 ### F1. 연결된 업무 항목 (Links)
 

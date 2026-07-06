@@ -284,6 +284,19 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 
 ---
 
+### CR-048 — 업무 "결과"(완료 산출물) 섹션 (WMP-WI-017, 중규모)
+
+> 본문=지시 / 댓글=티키타카 / **결과=완료 산출물**. 결정 결과를 본문에 섞던 관행을 별도 관점으로 분리(BIZ-114). 기존 자산 재사용이 핵심 — 신규는 컬럼 3개 + PATCH 1개 + FE 섹션 1개.
+
+- **저장 그릇**: work_items 컬럼 확장(V20 — result_content/written_by/written_at). 1:1·덮어쓰기. 별도 테이블 안 만든다(acceptance_criteria 등 기존 결과성 컬럼과 동형, 이력은 댓글이 받음).
+- **BE 배선**: `PATCH /work-items/{id}/result` → WorkItemService.saveResult(result_content 저장 + written_by=actorId·written_at=now(clock)). WorkItemMapper.updateResult(부분 갱신 UPDATE). @PreAuthorize(WmpAuthz.WRITER — VIEWER 제외, CR-031). 결과 조회는 `GET /work-items/{id}` 응답 필드로(별도 GET·별도 매퍼 없음, WorkItem 도메인/resultMap에 3필드 매핑 추가).
+  - ⚠️ **DONE 전제조건 아님**: changeStatus(FSM)에 결과 검증 훅을 넣지 않는다. 결과 없이 완료 허용, 완료 후에도 저장 가능. 화면에서만 완료 시 노출.
+  - ⚠️ 신규 에러코드 없음(WORK_ITEM_NOT_FOUND 재사용). 7850은 CR-047 문서 예약분이라 결과가 새 코드 필요 시 7851부터.
+- **FE 배선**: 상세 패널에 결과 섹션 — 완료 상태(`common_status DONE|OPS_APPLIED`)일 때만 렌더(기존 `OPS_STATUSES.has()` 조건부 선례와 동일). 결과 본문=공용 `RichTextEditor`(CR-024, editable inline·blur 저장). 결과 첨부=공통 `FileAttachmentList`(CR-037, 기존 `/work-items/{id}/attachments` 어댑터 재사용 — 결과 관점 라벨만). 작성자·시각=`UserAvatar`(CR-047). result api/hook + WorkItem 타입에 result 필드.
+- **⚠️ MyBatis 함정 주의**: WorkItem 도메인에 필드 3개 추가 시, SELECT * 컬럼순서 자동매핑 폴백 위험([[workmap-mybatis-builder-trap]]). WorkItem은 이미 @NoArgsConstructor 보유(CR-040 보강)이므로 안전하나, resultMap에 3컬럼 매핑을 명시 추가할 것.
+
+---
+
 ## 5-A. Sprint 완료 게이트
 
 | # | 항목 | 확인 |
