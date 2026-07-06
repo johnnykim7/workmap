@@ -4,7 +4,7 @@
 // - 행별: 미리보기(뷰 가능 타입) · 다운로드 · 삭제(WRITER)
 // - … 메뉴: 목록/그리드 전환 · 모두 다운로드 · 모두 삭제
 // - 이미지 썸네일/미리보기 클릭 → 공통 FileViewer(전역 라이트박스)
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import {
   Button, Spinner, Skeleton, toast, cn,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
@@ -244,17 +244,17 @@ export function FileAttachmentList({
           </button>
         ) : view === 'grid' ? (
           // 첨부가 많으면 이 영역만 스크롤(세부 사항·활동 영역을 밀어내지 않게).
-          // 스크롤바는 감추고 상·하단 페이드로 "더 있음"만 암시.
-          <div className="scrollbar-hide fade-scroll-y max-h-96 overflow-y-auto">
+          // 스크롤바는 감추고, 더 있으면 하단 ⌄ 화살표 칩으로 안내.
+          <ScrollableArea>
             <div className="grid grid-cols-2 gap-3 py-1 sm:grid-cols-3">
               {items.map((a) => (
                 <GridCard key={a.id} item={a} canWrite={canWrite}
                   onOpen={() => openViewer(a)} onDownload={() => downloadOne(a)} onDelete={() => setConfirmDelete(a)} />
               ))}
             </div>
-          </div>
+          </ScrollableArea>
         ) : (
-          <div className="scrollbar-hide max-h-96 overflow-y-auto rounded-md border border-border">
+          <ScrollableArea stickyHeader className="rounded-md border border-border">
             {/* 헤더 행은 스크롤 중에도 상단 고정. */}
             <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
               <span className="flex-1">이름</span>
@@ -266,7 +266,7 @@ export function FileAttachmentList({
               <ListRow key={a.id} item={a} canWrite={canWrite}
                 onOpen={() => openViewer(a)} onDownload={() => downloadOne(a)} onDelete={() => setConfirmDelete(a)} />
             ))}
-          </div>
+          </ScrollableArea>
         )
       )}
 
@@ -368,5 +368,63 @@ function IconBtn({ onClick, title, danger, children }: {
       )}>
       {children}
     </button>
+  );
+}
+
+/**
+ * 자체 스크롤 영역(CR-037). 스크롤바는 감추고, 스크롤 여지가 있을 때만 하단에 ⌄ 화살표 칩을 띄운다.
+ * - 맨 아래에 닿으면 화살표가 사라진다(동적). 화살표 클릭 시 한 화면 아래로 스크롤.
+ * - 상·하단 페이드(mask)로 잘림을 부드럽게. children은 스크롤 콘텐츠.
+ * - stickyHeader=true면(목록 뷰) mask 페이드를 끈다(헤더가 흐려지지 않게).
+ */
+function ScrollableArea({ children, className, stickyHeader }: {
+  children: ReactNode; className?: string; stickyHeader?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const recompute = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 스크롤 가능 + 아직 맨 아래가 아니면 화살표 표시(1px 여유).
+    setCanScrollDown(el.scrollHeight - el.clientHeight - el.scrollTop > 1);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    recompute();
+    el.addEventListener('scroll', recompute, { passive: true });
+    // 컨테이너 크기 변동 감지(창 리사이즈 등). 콘텐츠 개수 변동은 아래 deps(children)로 재계산.
+    const ro = new ResizeObserver(recompute);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', recompute); ro.disconnect(); };
+  }, [recompute, children]);
+
+  const scrollDown = () => {
+    const el = ref.current;
+    if (el) el.scrollBy({ top: el.clientHeight * 0.8, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        className={cn('scrollbar-hide max-h-96 overflow-y-auto', !stickyHeader && canScrollDown && 'fade-scroll-y', className)}
+      >
+        {children}
+      </div>
+      {/* 더 스크롤할 게 있을 때만 하단 화살표 칩 */}
+      {canScrollDown && (
+        <button
+          type="button"
+          onClick={scrollDown}
+          title="아래로 스크롤"
+          className="absolute bottom-2 left-1/2 z-20 flex size-7 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+        >
+          <ChevronDown className="size-4 animate-bounce" />
+        </button>
+      )}
+    </div>
   );
 }
