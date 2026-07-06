@@ -24,6 +24,7 @@ public class Attachment {
     private String filePath;
     private Long fileSize;
     private String contentType;
+    private String kind;              // REFERENCE=참고자료(입력) / RESULT=결과물(산출물) (CR-051, BIZ-118)
     private Long uploadedBy;
     private OffsetDateTime createdAt;
 }

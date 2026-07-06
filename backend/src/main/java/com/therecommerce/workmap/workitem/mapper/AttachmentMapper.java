@@ -11,7 +11,8 @@ public interface AttachmentMapper {
 
     void insert(Attachment attachment);
 
-    List<Attachment> findByWorkItem(@Param("workItemId") Long workItemId);
+    /** kind=null이면 전체(하위호환), 지정 시 REFERENCE/RESULT만(CR-051). */
+    List<Attachment> findByWorkItem(@Param("workItemId") Long workItemId, @Param("kind") String kind);
 
     Attachment findById(@Param("id") Long id);
 

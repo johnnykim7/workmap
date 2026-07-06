@@ -60,11 +60,14 @@ export interface CreateLinkRequest {
 }
 
 // 첨부(WMP-WI-012, T3-2 F2) — BE는 파일 메타데이터(경로/URL) 등록 방식(바이너리 업로드 아님).
+// kind: 참고자료(REFERENCE, 입력)/결과물(RESULT, 산출물) 구분(CR-051, BIZ-118).
+export type AttachmentKind = 'REFERENCE' | 'RESULT';
 export interface CreateAttachmentRequest {
   fileName: string;
   filePath: string;            // URL 또는 경로
   fileSize?: number | null;
   contentType?: string | null;
+  kind?: AttachmentKind;       // 기본 REFERENCE(서버 정규화)
 }
 export interface Attachment {
   id: number;
@@ -73,6 +76,7 @@ export interface Attachment {
   filePath: string;
   fileSize: number | null;
   contentType: string | null;
+  kind: AttachmentKind;
   uploadedBy: number;
   createdAt: string;
 }
@@ -141,7 +145,9 @@ export const workItemApi = {
   deleteLink: (id: number, linkId: number) =>
     api.delete<void>(`/work-items/${id}/links/${linkId}`),
 
-  listAttachments: (id: number) => api.get<Attachment[]>(`/work-items/${id}/attachments`),
+  // kind 미지정=전체(하위호환), REFERENCE/RESULT면 해당 성격만(CR-051).
+  listAttachments: (id: number, kind?: AttachmentKind) =>
+    api.get<Attachment[]>(`/work-items/${id}/attachments${kind ? `?kind=${kind}` : ''}`),
   createAttachment: (id: number, body: CreateAttachmentRequest) =>
     api.post<Attachment>(`/work-items/${id}/attachments`, body),
   deleteAttachment: (id: number, attachmentId: number) =>

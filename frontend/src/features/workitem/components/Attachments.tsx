@@ -5,13 +5,17 @@ import { FileAttachmentList, type AttachmentAdapter } from '@/components/common/
 import { useCanWrite } from '@/lib/permissions';
 import type { WorkItemResponse } from '@/types/domain';
 import { useAttachments, useCreateAttachment, useDeleteAttachment } from '../hooks';
+import type { AttachmentKind } from '../api';
 
-export function Attachments({ item, addRef }: {
+// kind: 본문 첨부 섹션=REFERENCE(참고자료), 결과 섹션=RESULT(결과물) (CR-051, BIZ-118).
+// 같은 컴포넌트를 kind만 달리 재사용 — 각 섹션은 자기 성격의 파일만 조회·업로드한다.
+export function Attachments({ item, addRef, kind = 'REFERENCE' }: {
   item: WorkItemResponse;
   addRef?: MutableRefObject<() => void>;
+  kind?: AttachmentKind;
 }) {
-  const { data: attachments = [], isPending } = useAttachments(item.id);
-  const create = useCreateAttachment(item.id);
+  const { data: attachments = [], isPending } = useAttachments(item.id, kind);
+  const create = useCreateAttachment(item.id, kind);
   const remove = useDeleteAttachment(item.id);
   const canWrite = useCanWrite();
 

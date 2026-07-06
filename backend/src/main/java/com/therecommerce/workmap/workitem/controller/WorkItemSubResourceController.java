@@ -47,9 +47,12 @@ public class WorkItemSubResourceController {
     }
 
     // ── 첨부 ──
+    // kind 미지정=전체(하위호환), REFERENCE=참고자료·RESULT=결과물(CR-051, BIZ-118).
     @GetMapping("/attachments")
-    public ResponseDto<List<SubResourceDtos.AttachmentResponse>> listAttachments(@PathVariable Long id) {
-        return ResponseDto.success(attachmentService.list(id));
+    public ResponseDto<List<SubResourceDtos.AttachmentResponse>> listAttachments(
+            @PathVariable Long id,
+            @RequestParam(required = false) String kind) {
+        return ResponseDto.success(attachmentService.list(id, kind));
     }
 
     @PreAuthorize(WmpAuthz.WRITER)

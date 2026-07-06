@@ -25,6 +25,15 @@ public class AttachmentService {
     private final WorkItemMapper workItemMapper;
     private final FileStorageService fileStorageService;
 
+    // 첨부 성격(CR-051, BIZ-118). 잘못된/빈 값은 REFERENCE로 정규화.
+    private static final String KIND_REFERENCE = "REFERENCE";
+    private static final String KIND_RESULT = "RESULT";
+
+    private static String normalizeKind(String kind) {
+        if (KIND_RESULT.equals(kind)) return KIND_RESULT;
+        return KIND_REFERENCE;  // null·빈값·미지원 → 참고자료 기본
+    }
+
     @Transactional
     public SubResourceDtos.AttachmentResponse create(Long workItemId,
                                                      SubResourceDtos.CreateAttachmentRequest req, Long actorId) {
@@ -37,15 +46,18 @@ public class AttachmentService {
                 .filePath(req.filePath())
                 .fileSize(req.fileSize())
                 .contentType(req.contentType())
+                .kind(normalizeKind(req.kind()))
                 .uploadedBy(actorId)
                 .build();
         attachmentMapper.insert(attachment);
         return SubResourceDtos.AttachmentResponse.from(attachment);
     }
 
+    /** kind=null이면 전체(하위호환), REFERENCE/RESULT면 해당 성격만(CR-051). */
     @Transactional(readOnly = true)
-    public List<SubResourceDtos.AttachmentResponse> list(Long workItemId) {
-        return attachmentMapper.findByWorkItem(workItemId).stream()
+    public List<SubResourceDtos.AttachmentResponse> list(Long workItemId, String kind) {
+        String filter = kind == null ? null : normalizeKind(kind);
+        return attachmentMapper.findByWorkItem(workItemId, filter).stream()
                 .map(SubResourceDtos.AttachmentResponse::from).toList();
     }
 

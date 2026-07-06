@@ -6,6 +6,7 @@ import {
   workItemApi, type UpdateWorkItemRequest, type CreateSubtaskRequest,
   type CreateCommentRequest, type CreateLinkRequest, type DecisionRequest,
   type CreateAttachmentRequest, type ConvertRequest, type CreateWorkItemRequest,
+  type AttachmentKind,
 } from './api';
 import { ApiError } from '@/lib/api-client';
 import type { WorkItemResponse } from '@/types/domain';
@@ -227,20 +228,26 @@ export function useCreateComment(id: number) {
 }
 
 // ── 첨부 (WMP-WI-012) ──
-export const wiAttachmentsKey = (id?: number) => ['work-item', id, 'attachments'] as const;
-export function useAttachments(id?: number) {
+// ⚠️ queryKey에 kind 포함 — REFERENCE(참고자료)/RESULT(결과물) 목록 캐시를 분리(CR-051, BIZ-118).
+//    안 넣으면 두 섹션이 같은 캐시를 공유해 같은 파일이 양쪽에 뜨는 버그가 재발한다.
+export const wiAttachmentsKey = (id?: number, kind?: AttachmentKind) =>
+  ['work-item', id, 'attachments', kind ?? 'ALL'] as const;
+// invalidate는 kind 무관 prefix로 — 업로드/삭제 시 REFERENCE·RESULT·ALL 캐시 모두 갱신.
+const wiAttachmentsPrefix = (id?: number) => ['work-item', id, 'attachments'] as const;
+
+export function useAttachments(id?: number, kind?: AttachmentKind) {
   return useQuery({
-    queryKey: wiAttachmentsKey(id),
-    queryFn: () => workItemApi.listAttachments(id!),
+    queryKey: wiAttachmentsKey(id, kind),
+    queryFn: () => workItemApi.listAttachments(id!, kind),
     enabled: !!id,
   });
 }
-export function useCreateAttachment(id: number) {
+export function useCreateAttachment(id: number, kind: AttachmentKind = 'REFERENCE') {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateAttachmentRequest) => workItemApi.createAttachment(id, body),
+    mutationFn: (body: CreateAttachmentRequest) => workItemApi.createAttachment(id, { ...body, kind }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: wiAttachmentsKey(id) });
+      qc.invalidateQueries({ queryKey: wiAttachmentsPrefix(id) });
       qc.invalidateQueries({ queryKey: wiActivitiesKey(id) });
       toast.success('첨부를 추가했습니다.');
     },
@@ -252,7 +259,7 @@ export function useDeleteAttachment(id: number) {
   return useMutation({
     mutationFn: (attachmentId: number) => workItemApi.deleteAttachment(id, attachmentId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: wiAttachmentsKey(id) });
+      qc.invalidateQueries({ queryKey: wiAttachmentsPrefix(id) });
       qc.invalidateQueries({ queryKey: wiActivitiesKey(id) });
       toast.success('첨부를 삭제했습니다.');
     },

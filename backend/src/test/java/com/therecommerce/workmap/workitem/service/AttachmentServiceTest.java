@@ -4,14 +4,18 @@ import com.therecommerce.common.exception.BusinessException;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
 import com.therecommerce.workmap.file.FileStorageService;
 import com.therecommerce.workmap.workitem.domain.Attachment;
+import com.therecommerce.workmap.workitem.dto.SubResourceDtos;
 import com.therecommerce.workmap.workitem.mapper.AttachmentMapper;
 import com.therecommerce.workmap.workitem.mapper.WorkItemMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -68,5 +72,56 @@ class AttachmentServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", WmpErrorCode.ATTACHMENT_NOT_FOUND);
         verify(attachmentMapper, never()).deleteById(anyLong());
+    }
+
+    // ── kind 구분(참고자료/결과물) — CR-051, BIZ-118 ──
+
+    private SubResourceDtos.CreateAttachmentRequest req(String kind) {
+        return new SubResourceDtos.CreateAttachmentRequest("a.png", "/api/v1/files/serve/a.png", 10L, "image/png", kind);
+    }
+
+    @Test
+    @DisplayName("KIND-1: 결과물(RESULT) 업로드는 RESULT로 저장")
+    void create_result_savedAsResult() {
+        when(workItemMapper.findById(10L)).thenReturn(new com.therecommerce.workmap.workitem.domain.WorkItem());
+        ArgumentCaptor<Attachment> c = ArgumentCaptor.forClass(Attachment.class);
+
+        service.create(10L, req("RESULT"), 99L);
+
+        verify(attachmentMapper).insert(c.capture());
+        assertThat(c.getValue().getKind()).isEqualTo("RESULT");
+    }
+
+    @Test
+    @DisplayName("KIND-2: kind 미지정·잘못된값은 REFERENCE로 정규화")
+    void create_nullOrInvalidKind_normalizedToReference() {
+        when(workItemMapper.findById(10L)).thenReturn(new com.therecommerce.workmap.workitem.domain.WorkItem());
+        ArgumentCaptor<Attachment> c = ArgumentCaptor.forClass(Attachment.class);
+
+        service.create(10L, req(null), 99L);        // 미지정
+        service.create(10L, req("GARBAGE"), 99L);   // 잘못된 값
+
+        verify(attachmentMapper, times(2)).insert(c.capture());
+        assertThat(c.getAllValues()).allMatch(a -> "REFERENCE".equals(a.getKind()));
+    }
+
+    @Test
+    @DisplayName("KIND-3: list(kind)는 매퍼에 kind 필터를 전달")
+    void list_passesKindFilter() {
+        when(attachmentMapper.findByWorkItem(10L, "RESULT")).thenReturn(List.of());
+
+        service.list(10L, "RESULT");
+
+        verify(attachmentMapper).findByWorkItem(10L, "RESULT");
+    }
+
+    @Test
+    @DisplayName("KIND-4: list(null)은 전체 조회(kind=null 전달)")
+    void list_nullKind_passesNull() {
+        when(attachmentMapper.findByWorkItem(10L, null)).thenReturn(List.of());
+
+        service.list(10L, null);
+
+        verify(attachmentMapper).findByWorkItem(10L, null);
     }
 }

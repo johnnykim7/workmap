@@ -36,7 +36,8 @@ export function ResultSection({ item }: { item: WorkItemResponse }) {
           <ResultBody item={item} />
           <div>
             <h3 className="mb-1.5 text-xs font-semibold text-muted-foreground">결과물 파일</h3>
-            <Attachments item={item} />
+            {/* kind=RESULT — 본문 첨부(REFERENCE)와 분리(CR-051, BIZ-118). 같은 파일 중복 표시 방지. */}
+            <Attachments item={item} kind="RESULT" />
           </div>
         </div>
       )}

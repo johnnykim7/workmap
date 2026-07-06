@@ -40,7 +40,8 @@ public final class SubResourceDtos {
             @NotBlank String fileName,
             @NotBlank String filePath,
             Long fileSize,
-            String contentType
+            String contentType,
+            String kind              // REFERENCE(기본)/RESULT — 서버가 정규화(CR-051)
     ) {}
 
     public record AttachmentResponse(
@@ -50,12 +51,13 @@ public final class SubResourceDtos {
             String filePath,
             Long fileSize,
             String contentType,
+            String kind,
             Long uploadedBy,
             OffsetDateTime createdAt
     ) {
         public static AttachmentResponse from(Attachment a) {
             return new AttachmentResponse(a.getId(), a.getWorkItemId(), a.getFileName(),
-                    a.getFilePath(), a.getFileSize(), a.getContentType(), a.getUploadedBy(), a.getCreatedAt());
+                    a.getFilePath(), a.getFileSize(), a.getContentType(), a.getKind(), a.getUploadedBy(), a.getCreatedAt());
         }
     }
 

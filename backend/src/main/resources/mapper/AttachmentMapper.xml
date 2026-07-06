@@ -10,18 +10,23 @@
         <result property="filePath"    column="file_path"/>
         <result property="fileSize"    column="file_size"/>
         <result property="contentType" column="content_type"/>
+        <result property="kind"        column="kind"/>
         <result property="uploadedBy"  column="uploaded_by"/>
         <result property="createdAt"   column="created_at"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.therecommerce.workmap.workitem.domain.Attachment"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-        INSERT INTO attachments (work_item_id, file_name, file_path, file_size, content_type, uploaded_by)
-        VALUES (#{workItemId}, #{fileName}, #{filePath}, #{fileSize}, #{contentType}, #{uploadedBy})
+        INSERT INTO attachments (work_item_id, file_name, file_path, file_size, content_type, kind, uploaded_by)
+        VALUES (#{workItemId}, #{fileName}, #{filePath}, #{fileSize}, #{contentType}, #{kind}, #{uploadedBy})
     </insert>
 
+    <!-- kind=null이면 전체(하위호환·프로젝트 집계), 지정 시 해당 성격만(CR-051, BIZ-118) -->
     <select id="findByWorkItem" resultMap="attachmentMap">
-        SELECT * FROM attachments WHERE work_item_id = #{workItemId} ORDER BY created_at, id
+        SELECT * FROM attachments
+        WHERE work_item_id = #{workItemId}
+        <if test="kind != null"> AND kind = #{kind}</if>
+        ORDER BY created_at, id
     </select>
 
     <select id="findById" resultMap="attachmentMap">
