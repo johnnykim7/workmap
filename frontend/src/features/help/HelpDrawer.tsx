@@ -21,11 +21,14 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'basics', label: '업무 유형과 작성 개념' },
 ];
 
-// 계층 도식 한 줄 — 들여쓰기(depth) + 유형 배지 + 예시 + 설명.
-function TreeRow({ depth, type, example, desc }: { depth: number; type: IssueType; example: string; desc: string }) {
+// 계층 도식 한 줄 — 트리 연결선(lead) + 유형 배지 + 예시 + 설명.
+// 실제 계층(실측): Epic은 트리 부모가 아니라 epic_id로 Story/Task를 "묶는" 그룹이고,
+// Story·Task·Bug는 서로 동급(형제)이며, parent_id로 붙는 진짜 자식은 Sub-task뿐이다(depth≤2, BIZ-103).
+// 그래서 lead에 미리 그린 트리 문자(공백/│/├/└)를 그대로 받아 형제·자식을 정확히 표현한다.
+function TreeRow({ lead, type, example, desc }: { lead: string; type: IssueType; example: string; desc: string }) {
   return (
     <div className="flex items-baseline gap-2 py-1 font-mono text-[13px]">
-      <span className="select-none text-muted-foreground">{depth > 0 ? `${' '.repeat(depth * 3)}└ ` : ''}</span>
+      <span className="select-none whitespace-pre text-muted-foreground">{lead}</span>
       <span className="not-italic"><TypeBadge type={type} /></span>
       <span className="font-sans text-foreground">{example}</span>
       <span className="ml-auto whitespace-nowrap font-sans text-xs text-muted-foreground">{desc}</span>
@@ -53,23 +56,28 @@ function BasicsContent() {
       {/* ── 계층 ── */}
       <section>
         <Eyebrow>한눈에 보기</Eyebrow>
-        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">업무는 4단계로 쌓입니다</h3>
+        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">Epic이 묶고, Story·Task가 나란히, 그 밑에 Sub-task</h3>
         <p className="mb-3 text-sm text-muted-foreground">
-          큰 목표(Epic)를 사용자 가치 단위(Story)로, 다시 실제 작업(Task)으로 쪼갭니다. 아래로 갈수록 작고 구체적입니다.
+          <b className="text-foreground">Epic</b>은 여러 작업을 묶는 <b className="text-foreground">큰 목표(그룹)</b>입니다.
+          그 안의 <b className="text-foreground">Story</b>(사용자 가치)와 <b className="text-foreground">Task</b>(실행 작업)는
+          <b className="text-foreground"> 서로 동급</b>이고 — Task는 Story의 하위가 아닙니다 — 각각을 더 쪼갠 것이
+          <b className="text-foreground"> Sub-task</b>입니다.
         </p>
 
         <div className="mb-4 overflow-x-auto rounded-lg border border-border bg-muted/40 px-4 py-3">
-          <TreeRow depth={0} type="EPIC" example="반품 자동화" desc="큰 목표 · 수 주~수 개월" />
-          <TreeRow depth={1} type="STORY" example="고객이 반품을 신청한다" desc="완결된 사용자 가치" />
-          <TreeRow depth={2} type="TASK" example="반품 신청 API 개발" desc="실제 작업 · 하루~며칠" />
-          <TreeRow depth={3} type="SUBTASK" example="DTO 검증 로직" desc="Task를 쪼갠 체크리스트" />
+          <TreeRow lead=""        type="EPIC"    example="반품 자동화" desc="큰 목표 · 여러 작업을 묶는 그룹" />
+          <TreeRow lead=" ├ "     type="STORY"   example="고객이 반품을 신청한다" desc="사용자 가치" />
+          <TreeRow lead=" │  └ "  type="SUBTASK" example="사유 선택 UI" desc="Story를 쪼갠 하위" />
+          <TreeRow lead=" ├ "     type="TASK"    example="반품 신청 API 개발" desc="실행 작업 (Story와 동급)" />
+          <TreeRow lead=" │  └ "  type="SUBTASK" example="DTO 검증 로직" desc="Task를 쪼갠 하위" />
+          <TreeRow lead=" └ "     type="BUG"     example="첨부 실패 오류" desc="결함 (역시 동급)" />
         </div>
 
         <div className="space-y-2">
-          <WhenRow type="EPIC"><b className="text-foreground">여러 Story로 나뉘는 큰 목표</b>일 때. 한 번에 못 끝내는 덩어리.</WhenRow>
+          <WhenRow type="EPIC"><b className="text-foreground">여러 작업으로 나뉘는 큰 목표</b>일 때. 한 번에 못 끝내는 덩어리를 <b className="text-foreground">묶는</b> 그룹.</WhenRow>
           <WhenRow type="STORY"><b className="text-foreground">“사용자가 ~할 수 있다”</b>로 말되는 하나의 완결 기능일 때.</WhenRow>
-          <WhenRow type="TASK"><b className="text-foreground">담당자가 바로 손대는 작업.</b> 개발·문서·확인 등 실행 단위.</WhenRow>
-          <WhenRow type="SUBTASK">Task가 커서 <b className="text-foreground">여러 스텝으로 쪼개고 싶을</b> 때만.</WhenRow>
+          <WhenRow type="TASK"><b className="text-foreground">담당자가 바로 손대는 작업.</b> 개발·문서·확인 등 실행 단위 (Story와 <b className="text-foreground">나란한 층</b>).</WhenRow>
+          <WhenRow type="SUBTASK">Story·Task·Bug가 커서 <b className="text-foreground">여러 스텝으로 쪼개고 싶을</b> 때만. <b className="text-foreground">유일한 하위 계층</b>.</WhenRow>
         </div>
       </section>
 
@@ -121,6 +129,40 @@ function BasicsContent() {
         <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
           <b className="text-foreground">한 줄 원칙.</b> 본문 = <b className="text-foreground">시작 시 “무엇을·왜”</b>, 댓글 = <b className="text-foreground">진행 중 대화</b>,
           결과 = <b className="text-foreground">끝났을 때 “무엇을 만들었나”</b>. 본문에 결과를 적거나, 결과에 지시를 적지 않습니다.
+        </div>
+      </section>
+
+      {/* ── Sub-task는 언제 나누나 ── */}
+      <section>
+        <Eyebrow>쪼갤까 말까</Eyebrow>
+        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">Sub-task는 “한 사람이 한 번에” 못 할 때만</h3>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Story·Task가 <b className="text-foreground">여러 사람이 나눠 하거나</b>, <b className="text-foreground">단계가 여럿</b>이라
+          하나로 진행 상태를 표현하기 어려울 때 Sub-task로 쪼갭니다. 작은 일까지 습관적으로 쪼개면 오히려 관리 부담만 늘어납니다.
+        </p>
+
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div className="rounded-lg border border-green-600/25 bg-green-600/[0.07] p-3">
+            <div className="mb-2 text-[11px] font-bold text-green-700 dark:text-green-400">✓ 쪼개면 좋은 경우</div>
+            <ul className="ml-4 list-disc space-y-1.5 text-[13px] text-muted-foreground">
+              <li><b className="text-foreground">담당이 갈릴 때</b> — “결제 연동” Task를 프론트 화면 / 백엔드 API로 나눠 각자 담당.</li>
+              <li><b className="text-foreground">순서가 있는 단계</b> — “배포” Task를 빌드 → 스테이징 검증 → 운영 반영으로.</li>
+              <li><b className="text-foreground">며칠 걸리는 큰 작업</b> — 진행이 “50%”처럼 안 보일 때 체크되는 하위로 나눠 진척 파악.</li>
+            </ul>
+          </div>
+          <div className="rounded-lg border border-red-500/25 bg-red-500/[0.06] p-3">
+            <div className="mb-2 text-[11px] font-bold text-red-600 dark:text-red-400">✗ 굳이 안 쪼개도 됨</div>
+            <ul className="ml-4 list-disc space-y-1.5 text-[13px] text-muted-foreground">
+              <li><b className="text-foreground">한 사람이 반나절이면 끝</b> — 그냥 Task 하나로.</li>
+              <li><b className="text-foreground">그냥 할 일 목록</b> — 인수조건·체크리스트로 충분한 걸 Sub-task로 만들 필요 없음.</li>
+              <li><b className="text-foreground">Sub-task를 또 쪼개려 할 때</b> — 계층은 2단까지. 더 쪼갤 일이면 Task를 늘리세요.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
+          <b className="text-foreground">감별 한 줄.</b> “이걸 <b className="text-foreground">따로 담당·따로 완료</b>로 관리해야 하나?” → 예면 Sub-task,
+          아니면 본문 지시나 인수조건 한 줄로 충분합니다.
         </div>
       </section>
 
