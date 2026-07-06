@@ -210,7 +210,7 @@ function ReadShell({ empty, placeholder, onEdit, boxed, children }: {
   return (
     <div className={
       boxed
-        ? 'group relative rounded-md border border-border bg-muted/30 px-3 py-2.5 hover:bg-muted/50'
+        ? 'group relative rounded-md border border-border bg-background px-3 py-2.5 hover:bg-muted/20'
         : 'group relative rounded-md border border-transparent px-2 py-1.5 -mx-2 hover:border-border hover:bg-muted/30'
     }>
       <button

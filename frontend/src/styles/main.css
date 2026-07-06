@@ -178,6 +178,14 @@
   border-bottom-style: solid;
 }
 
+/* 업무 상세 섹션 구분선(WorkItemDetailPanel .detail-sections) — 각 섹션 위 border-t.
+ * Tailwind v4/ds-ui(v4.2·v4.3) 혼재로 border-t가 색 없이 currentColor(글자색≈검정)로 떨어져
+ * 선이 검게 보였다(사용자 리포트). → 짙은 회색(zinc-300)으로 색·style 강제해 톤 통일. */
+.detail-sections > :not(:first-child) {
+  border-top-color: oklch(87% 0.005 286);
+  border-top-style: solid;
+}
+
 /* 공통상태 7색 토큰 (StatusBadge에서 사용) — ds-ui 기본값 위에 정의 */
 :root {
   /* 구조 라인 톤 통일+약간 진하게(#2).
