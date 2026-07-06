@@ -41,7 +41,7 @@ import { useWorkspaceStore } from '@/store/workspace-store';
 import { useLogout } from '@/features/auth/hooks';
 import { useNewNotificationToast } from '@/features/inbox/hooks';
 import { NotificationBell } from '@/features/inbox/components/NotificationBell';
-import { HelpDrawer } from '@/features/help/HelpDrawer';
+import { HelpTrigger, HelpDrawer } from '@/features/help/HelpDrawer';
 import { useWorkspaces } from '@/features/workspaces/hooks';
 import { useProjects, useProjectByKey } from '@/features/projects/hooks';
 import { useChannels } from '@/features/chat/hooks';
@@ -175,7 +175,7 @@ function HeaderActions() {
             <Plus className="size-4" /> 만들기
           </Button>
         )}
-        <HelpDrawer />
+        <HelpTrigger />
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -323,6 +323,8 @@ export function AppShell() {
         <Outlet />
       </div>
       <CreateModal />
+      {/* 도움말 드로어 본체 — 전역 1회 마운트(전역 상태). 헤더 ? 또는 모달 안 ? 버튼으로 연다. */}
+      <HelpDrawer />
     </AdminShell>
   );
 }

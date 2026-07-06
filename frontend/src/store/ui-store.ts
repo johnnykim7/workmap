@@ -15,6 +15,11 @@ interface UiState {
   openCreateModal: () => void;
   openCreateModalWith: (prefill: CreateModalPrefill) => void;
   closeCreateModal: () => void;
+  // 도움말 드로어 — 전역 상태로 둬야 헤더 ? 아이콘과 모달 안 ? 버튼이 같은 드로어를 연다.
+  // (모달이 헤더를 가려 모달 안에서도 열 수 있어야 하므로. 목차가 하나뿐이라 섹션 인자는 없음.)
+  helpOpen: boolean;
+  openHelp: () => void;
+  setHelpOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -23,4 +28,7 @@ export const useUiStore = create<UiState>((set) => ({
   openCreateModal: () => set({ createModalOpen: true, createModalPrefill: null }),
   openCreateModalWith: (prefill) => set({ createModalOpen: true, createModalPrefill: prefill }),
   closeCreateModal: () => set({ createModalOpen: false, createModalPrefill: null }),
+  helpOpen: false,
+  openHelp: () => set({ helpOpen: true }),
+  setHelpOpen: (open) => set({ helpOpen: open }),
 }));

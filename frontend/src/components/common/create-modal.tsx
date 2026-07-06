@@ -13,7 +13,7 @@ import {
   Button, Input, Spinner, Checkbox, DatePicker,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@therecommerce/ds-ui';
-import { Plus, ChevronDown, ChevronRight, Lightbulb } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Lightbulb, HelpCircle } from 'lucide-react';
 import { Field } from './field';
 import { RichTextEditor } from './rich-text-editor';
 import { useUiStore } from '@/store/ui-store';
@@ -62,6 +62,7 @@ export function CreateModal() {
   const open = useUiStore((s) => s.createModalOpen);
   const prefill = useUiStore((s) => s.createModalPrefill);
   const close = useUiStore((s) => s.closeCreateModal);
+  const openHelp = useUiStore((s) => s.openHelp);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [keepOpen, setKeepOpen] = useState(false);
@@ -157,9 +158,27 @@ export function CreateModal() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!busy && !v) close(); }}>
-      <DialogContent className="max-w-lg">
+      {/* 입력 중 실수로 바깥을 클릭하거나 ESC를 눌러도 닫히지 않게 막는다(입력 유실 방지).
+          닫기는 [취소]/X 버튼 또는 생성 성공으로만 — Jira 이슈 생성 모달과 동일. */}
+      <DialogContent
+        className="max-w-lg"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>{titleLabel}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {titleLabel}
+            {/* 모달이 헤더를 가려 헤더 ?를 못 누르므로, 모달 안에서도 같은 도움말 드로어를 연다.
+                드로어는 이 모달 위에 겹쳐 뜨고 닫으면 입력은 그대로 유지된다. (기본 X 닫기 버튼과 겹치지 않게 mr) */}
+            <button
+              type="button"
+              onClick={openHelp}
+              aria-label="업무 유형·작성 개념 도움말"
+              className="mr-6 flex size-6 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <HelpCircle className="size-4" />
+            </button>
+          </DialogTitle>
           <DialogDescription>
             만들기는 가볍게 — 만든 뒤 상세에서 더 채울 수 있습니다.
           </DialogDescription>

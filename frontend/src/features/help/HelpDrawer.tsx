@@ -12,6 +12,7 @@ import {
 import { HelpCircle, Lock } from 'lucide-react';
 import { TypeBadge } from '@/components/badges';
 import type { IssueType } from '@/types/domain';
+import { useUiStore } from '@/store/ui-store';
 
 type SectionId = 'basics';
 
@@ -156,22 +157,33 @@ function BasicsContent() {
   );
 }
 
-/** 헤더 ? 아이콘 + 도움말 드로어. AppShell HeaderActions에서 사용. */
+/** 헤더의 ? 아이콘 트리거. 클릭 시 전역 도움말 드로어를 연다(모달 안 버튼과 같은 드로어). */
+export function HelpTrigger() {
+  const openHelp = useUiStore((s) => s.openHelp);
+  return (
+    <button
+      type="button"
+      onClick={openHelp}
+      aria-label="도움말"
+      className="flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <HelpCircle className="size-5" />
+    </button>
+  );
+}
+
+/**
+ * 도움말 드로어 본체. AppShell에 한 번만 마운트한다.
+ * 열림 상태는 전역(ui-store) — 헤더 ? 아이콘과 만들기 모달 안 ? 버튼이 같은 드로어를 연다.
+ * radix Dialog 포털이라 만들기 모달 위에 겹쳐 뜨고, 닫으면 모달 입력은 그대로 유지된다.
+ */
 export function HelpDrawer() {
-  const [open, setOpen] = useState(false);
+  const open = useUiStore((s) => s.helpOpen);
+  const setOpen = useUiStore((s) => s.setHelpOpen);
   const [active, setActive] = useState<SectionId>('basics');
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="도움말"
-        className="flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <HelpCircle className="size-5" />
-      </button>
-
       <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl">
         <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
           <SheetTitle className="flex items-center gap-2 text-[15px]">
