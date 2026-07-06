@@ -140,6 +140,55 @@ function SizeRow({ tone, label, example }: { tone: 'big' | 'ok' | 'small'; label
   );
 }
 
+// 시간 흐름 한 줄 — 시점 + 유형 배지 + 제목 + 설명.
+// lead=상위(Story/Task)면 살짝 들여쓰기, sub=Sub-task면 더 들여쓰기, added=진행/완료 후 추가분, done=완료.
+function TimelineRow({
+  when,
+  badge,
+  title,
+  note,
+  lead,
+  sub,
+  added,
+  done,
+}: {
+  when: string;
+  badge: IssueType;
+  title: string;
+  note: string;
+  lead?: boolean;
+  sub?: boolean;
+  added?: boolean;
+  done?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 py-1 text-[13px]">
+      <span className="w-11 shrink-0 select-none font-mono text-[11px] text-muted-foreground">{when}</span>
+      <span className={`shrink-0 ${sub ? 'pl-8' : lead ? 'pl-4' : ''}`}>
+        <TypeBadge type={badge} />
+      </span>
+      <span className={`font-sans ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{title}</span>
+      <span className="ml-auto flex items-center gap-1.5 whitespace-nowrap pl-2 text-xs text-muted-foreground">
+        {added && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">추가</span>}
+        {done && <span className="rounded bg-green-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-400">완료</span>}
+        {note}
+      </span>
+    </div>
+  );
+}
+
+// 케이스별 판정 한 줄 — 발견 시점 + 화살표 + 유형 배지 + 처리 방식.
+function CaseRow({ when, badge, how }: { when: string; badge: IssueType; how: string }) {
+  return (
+    <div className="flex items-baseline gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 text-[13px]">
+      <span className="min-w-0 flex-1 text-muted-foreground">{when}</span>
+      <span className="shrink-0 select-none text-muted-foreground">→</span>
+      <span className="shrink-0"><TypeBadge type={badge} /></span>
+      <span className="shrink-0 font-medium text-foreground">{how}</span>
+    </div>
+  );
+}
+
 // ═══ 목차 2. Story·Task 나누기 — 적당한 크기(1~2일)로 자르는 노하우 ═══
 function SplittingContent() {
   return (
@@ -209,6 +258,56 @@ function SplittingContent() {
         <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
           <b className="text-foreground">막힐 때 한 줄.</b> “이걸 하루 안에 <b className="text-foreground">눈에 보이게</b> 끝낼 수 있나?” → 아니면 더 자르고,
           10분이면 될 일이면 인수조건·Sub-task로 흡수하세요.
+        </div>
+      </section>
+
+      {/* ── 시간 흐름 예시 ── */}
+      <section>
+        <Eyebrow>시간 흐름으로 보기</Eyebrow>
+        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">한 Epic이 시간에 따라 늘어나고 닫힙니다</h3>
+        <p className="mb-3 text-sm text-muted-foreground">
+          업무는 처음에 다 정해지지 않습니다. <b className="text-foreground">진행하면서 세부 작업이 발견되고</b>, 각 조각이
+          하나씩 닫힙니다. “네이버 반품 처리 자동화” Epic을 예로 보면:
+        </p>
+
+        <div className="overflow-x-auto rounded-lg border border-border bg-muted/40 px-4 py-3">
+          <TimelineRow when="Day 1" badge="EPIC" title="네이버 반품 처리 자동화" note="큰 개발 범위를 Epic으로 생성" />
+          <TimelineRow when="Day 1" badge="STORY" title="고객이 반품을 신청할 수 있다" note="사용자 관점 기능을 Story로 쪼갬" lead />
+          <TimelineRow when="Day 1" badge="TASK" title="반품 신청 API를 개발한다" note="기술 작업을 Task로 쪼갬 (Story와 동급)" lead />
+          <TimelineRow when="Day 1" badge="SUBTASK" title="반품 요청 API 응답 구조 확인" note="처음부터 있던 하위 작업" sub />
+          <TimelineRow when="Day 2" badge="SUBTASK" title="네이버↔WMS 상태값 변환 테이블" note="진행 중 발견 → 기존 Task 밑에 추가" sub added />
+          <TimelineRow when="Day 3" badge="SUBTASK" title="승인 실패 응답코드별 처리" note="API 테스트 중 발견 → 하위로 추가" sub added />
+          <TimelineRow when="Day 5" badge="TASK" title="반품 신청 API 개발 · 완료" note="하위 다 끝나면 상위도 완료" done lead />
+          <TimelineRow when="Day 7" badge="STORY" title="반품 알림도 보내주세요 (신규 요청)" note="완료 후 새 요구 → 새 Story로 분리" added lead />
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
+          <b className="text-foreground">읽는 법.</b> 계획 단계에 없던 세부 작업은 <b className="text-foreground">진행 중에 기존 Story·Task 밑 Sub-task로</b> 붙습니다.
+          반대로 <b className="text-foreground">끝난 뒤에 나온 새 요구</b>는 이어지는 일이라도 아래 표대로 <b className="text-foreground">새 항목</b>으로 만드는 편이 이력이 깔끔합니다.
+        </div>
+      </section>
+
+      {/* ── 무엇으로 만드나 (케이스별 판정) ── */}
+      <section>
+        <Eyebrow>무엇으로 만드나</Eyebrow>
+        <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight">발견된 시점에 따라 담는 그릇이 다릅니다</h3>
+        <p className="mb-3 text-sm text-muted-foreground">
+          핵심 감각 하나: <b className="text-foreground">Sub-task는 “아직 안 끝난 일을 끝내기 위한 하위 작업”</b>입니다.
+          이미 끝난 업무에서 나온 것은 이어지는 일이라도 보통 새 항목으로 봅니다.
+        </p>
+
+        <div className="space-y-1.5">
+          <CaseRow when="계획 단계에서 예상된 세부 작업" badge="SUBTASK" how="Story·Task 아래 Sub-task로 함께 생성" />
+          <CaseRow when="진행 중 발견된 세부 작업" badge="SUBTASK" how="기존 Story·Task 아래 Sub-task 추가" />
+          <CaseRow when="완료 후 — 기존과 이어지는 작은 개선" badge="TASK" how="새 Task로 (작으면)" />
+          <CaseRow when="완료 후 — 사용자 시나리오가 있는 요구" badge="STORY" how="새 Story로 (별도 가치)" />
+          <CaseRow when="완료된 업무의 결함·버그" badge="BUG" how="Bug로 생성" />
+          <CaseRow when="Sub-task가 너무 커졌을 때" badge="TASK" how="Task·Story로 승격" />
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border border-l-[3px] border-l-primary bg-muted/40 px-3 py-2.5 text-[13px] text-muted-foreground">
+          <b className="text-foreground">한 줄.</b> 아직 <b className="text-foreground">안 끝난 일의 하위</b>면 Sub-task,
+          <b className="text-foreground">끝난 뒤 나온 것</b>이면 이어져도 새 Story·Task·Bug.
         </div>
       </section>
     </div>
@@ -311,7 +410,7 @@ export function HelpTrigger() {
       type="button"
       onClick={openHelp}
       aria-label="도움말"
-      className="flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
     >
       <HelpCircle className="size-5" />
     </button>
