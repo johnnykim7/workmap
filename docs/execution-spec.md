@@ -328,6 +328,20 @@ A.인증/사용자 · B.워크스페이스/프로젝트 · **C.업무 항목(Wor
 
 ---
 
+### CR-051 — 첨부 kind 구분 (참고자료 REFERENCE / 결과물 RESULT) (WMP-WI-012, 중규모)
+
+> CR-048 결과 섹션이 본문 첨부와 같은 저장소를 공유해 **같은 파일이 양쪽에 중복 표시**되던 문제를 kind 분리로 해결. 저장소·API 단일 유지, kind 필터로만 가른다(BIZ-118).
+
+- **스키마(V24)**: `ALTER TABLE attachments ADD COLUMN kind VARCHAR(20) NOT NULL DEFAULT 'REFERENCE'` (DEFAULT로 기존 행 자동 REFERENCE 백필) + `CREATE INDEX idx_attachments_kind ON attachments(work_item_id, kind)`.
+- **BE 배선**: Attachment 도메인 `kind` 필드 + AttachmentMapper.xml resultMap/insert에 kind + `findByWorkItem`에 kind 조건(`<if test="kind!=null"> AND kind=#{kind}</if>` — null이면 전체, 하위호환) + Mapper 인터페이스 findByWorkItem(@Param workItemId, @Param kind) + AttachmentService.create(kind 기본 REFERENCE)/list(kind) + Controller GET `@RequestParam(required=false) String kind`·POST body.kind. CreateAttachmentRequest·AttachmentResponse에 kind 추가. **잘못된 kind 값 방어**: create 시 REFERENCE/RESULT 아니면 INVALID_REQUEST(또는 기본 REFERENCE 강제). 신규 에러코드 없음.
+  - ⚠️ **CR-044 프로젝트 첨부 집계 무영향**: ViewMapper.projectAttachments는 kind 조건 없이 전체 조회 유지(집계는 참고/결과 안 가림).
+  - ⚠️ AttachmentResponse 생성자에 필드 추가 → 직접 호출처(테스트 픽스처 등) 있으면 함께 보정.
+- **FE 배선**: workitem/api.ts `listAttachments(id, kind?)`(쿼리스트링)·`createAttachment(id, body)` body에 kind + Attachment 타입 kind. hooks `useAttachments(id, kind?)`(queryKey에 kind 포함 — 캐시 분리)·`useCreateAttachment(id, kind)`. `Attachments.tsx`에 `kind` prop(기본 REFERENCE) → 어댑터 create에 kind 주입·list는 kind로 조회. **WorkItemDetailPanel 본문 첨부=`<Attachments kind="REFERENCE">`**, **ResultSection 결과 첨부=`<Attachments kind="RESULT">`**.
+  - ⚠️ queryKey에 kind를 넣어야 REFERENCE/RESULT 목록 캐시가 안 섞인다(안 넣으면 여전히 같은 목록 공유 — 이번 버그 재발).
+- **테스트**: AttachmentServiceTest(있으면) kind별 create/list 분리 검증, 없으면 신규 최소 1건. FE는 kind 필터가 api 계약(쿼리스트링·body)에 반영됐는지.
+
+---
+
 ## 5-A. Sprint 완료 게이트
 
 | # | 항목 | 확인 |

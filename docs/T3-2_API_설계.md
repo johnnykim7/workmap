@@ -209,11 +209,12 @@
 |--------|------|------|------|----------|-------------|
 | GET | /work-items/{id}/comments | 댓글 목록 | 🔒 | P1 | WMP-WI-009 |
 | POST | /work-items/{id}/comments | 댓글 작성(@멘션) | 🔒 | P1 | WMP-WI-009 |
-| GET | /work-items/{id}/attachments | 첨부 목록 | 🔒 | P1 | WMP-WI-012 |
-| POST | /work-items/{id}/attachments | 파일 첨부 | 🔒 | P1 | WMP-WI-012 |
+| GET | /work-items/{id}/attachments | 첨부 목록(`?kind=REFERENCE\|RESULT` 필터, CR-051) | 🔒 | P1 | WMP-WI-012 |
+| POST | /work-items/{id}/attachments | 파일 첨부(body.kind, 기본 REFERENCE) | 🔒 | P1 | WMP-WI-012 |
 | DELETE | /work-items/{id}/attachments/{attachmentId} | 첨부 삭제(메타+디스크 파일) | 🔒 | P1 | WMP-WI-012 |
 | GET | /work-items/{id}/activities | 활동/변경 이력 | 🔒 | P1 | WMP-WI-011 |
 
+- **첨부 kind 구분(CR-051, BIZ-118)**: 첨부는 `kind`로 참고자료(REFERENCE)·결과물(RESULT)을 구분한다. **GET `?kind=`**: 지정 시 해당 kind만, 미지정 시 전체(하위호환 — 프로젝트 집계 CR-044는 kind 미지정으로 전체 조회). **POST body.kind**: 기본 REFERENCE(본문 첨부 섹션), 결과 섹션 업로드는 RESULT. 잘못된 kind 값은 `INVALID_REQUEST`. 응답에 kind 포함. 화면: 본문 첨부 섹션=REFERENCE 필터, 결과 섹션 결과물 파일=RESULT 필터 → 같은 파일이 양쪽에 중복 표시되지 않는다.
 - **첨부 삭제(CR-037)**: DELETE는 첨부 메타(attachments 행) + 서버 디스크의 실제 파일을 함께 제거. work_item 소속 검증(다른 항목 첨부 삭제 차단). 없는 첨부는 `ATTACHMENT_NOT_FOUND`(WMP-7846). 쓰기 가드(`WmpAuthz.WRITER`, VIEWER 차단). 디스크 파일 삭제 실패는 로그만 남기고 메타 삭제는 진행(best-effort — 이미 지워진 파일 등).
 
 ### F3. 파일 업로드 (리치 에디터 인라인 이미지 — CR-024)

@@ -54,6 +54,8 @@
 | CR-047 | 사용자 아바타·프로필 카드 전역 공통화 + 프로필 사진(WMP-USER-001) — 아이콘 클릭 시 프로필 카드 Popover(GET /users/{id} 부서명 조인), 공통 UserAvatar/UserProfileCard로 약 20곳 통일, PATCH /users/me/avatar + V19 avatar_url | 신규 | Medium | v2.7 |
 | CR-048 | 업무 "결과"(완료 산출물) 섹션 신설(WMP-WI-017) — 본문(지시)·댓글(티키타카)·결과(완료 산출물) 역할 3분할(BIZ-114). work_items에 result_content/written_by/written_at 컬럼 V20 + PATCH /work-items/{id}/result. 리치에디터(CR-024)·첨부(CR-037) 재사용, 완료 상태일 때만 노출(접기 섹션), DONE 전제조건 아님. 에러코드 없음(WORK_ITEM_NOT_FOUND 재사용) | 신규 | Medium | v2.8 |
 | CR-049 | 인수조건 체크 + 완료 강제(선택)(WMP-WI-018) — 인수조건을 `[{text,checked,checkedBy,checkedAt}]` 체크 가능 구조로 승격(BIZ-115), 프로젝트별 `require_acceptance_criteria` 토글로 "미충족 시 완료 차단" 조정(기본 비강제, BIZ-116/POL-015). 자동 판정 없음(사람 체크). 비강제 미충족 완료는 activity_logs COMPLETE_WITH_UNMET 스냅샷으로 책임 소지 기록. V21(projects 1컬럼+activity_logs metadata+인수조건 값 변환) + PATCH /work-items/{id}/acceptance-criteria + status 가드. 에러코드 ACCEPTANCE_CRITERIA_UNMET(WMP-7850) | 신규 | Medium | v2.8 |
+| CR-050 | AI 업무 초안(WMP-WI-019, aimbase 연동) — draft=true 초안 격리(BIZ-117), 백로그에서만 배지 표시. V22(work_items.draft). | 신규 | Medium | v2.8 |
+| CR-051 | 첨부 kind 구분(참고자료/결과물)(WMP-WI-012, BIZ-118) — 첨부가 참고자료(입력)와 결과물(산출물)로 성격이 다른데 결과 섹션이 본문 첨부와 같은 저장소를 공유해 **같은 파일이 양쪽에 중복 표시**되는 문제 발견(CR-048 결과 섹션 운영 확인). attachments에 kind 컬럼(REFERENCE/RESULT) V24 + GET `?kind=` 필터 + POST body.kind(기본 REFERENCE) + 기존 REFERENCE 백필. 본문 첨부=REFERENCE·결과 첨부=RESULT로 분리. 에러코드 신규 없음(잘못된 kind=INVALID_REQUEST) | 신규 | Medium | v2.8 |
 
 ---
 
@@ -1098,6 +1100,16 @@
 - **aimbase 워크플로우 등록은 사용자가 aimbase 쪽에서 처리**(소비앱 도메인 등록·API키 발급·"서술→Epic/Story/Task JSON" 워크플로 생성). WorkMap은 §T3-2 F4의 응답 계약을 기대. 이번 CR 범위 = WorkMap FE/BE만.
 - **규모/절차**: 중규모. 설계 캐스케이드 T1-1(WMP-WI-019)·T1-3(BIZ-117)→T3-1(draft 컬럼·V22)→T3-2(§F4 API·에러코드·aimbase 계약)→T3-3(백로그 진입·초안 구역) 완료. T1-5 FSM **무변경**(초안도 생성=시작상태, draft는 상태 아님). T1-6 이벤트 **무변경**(초안은 알림 트리거 아님 — draft 격리로 마감알림도 제외).
 - **요청자**: 사용자(2026-07-07, "aimbase 연동으로 Epic/Story/Task 생성" → 채팅 검토·철회 → 백로그 인라인·구조적 응답·draft 확정 게이트 확정) | **변경 일자**: 2026-07-07
+
+### CR-051 — 첨부 kind 구분 (참고자료 REFERENCE / 결과물 RESULT) (WMP-WI-012, BIZ-118)
+
+- **배경**: CR-048 결과 섹션 운영 확인 중 발견 — 본문 첨부 섹션에 파일을 올리면 **결과 섹션의 "결과물 파일"에도 같은 파일이 뜬다**. 원인: 결과 섹션이 본문 첨부와 **같은 `/work-items/{id}/attachments` 저장소를 kind 구분 없이 공유**(CR-048 설계 당시 "결과 관점으로 함께 노출"로 의도했으나, 써보니 성격이 다른 첨부가 중복 표시되어 혼란). 앞선 논의(CR-048)에서 짚은 "첨부는 참고자료(입력)와 산출물(출력)이 kind 없이 섞인다"는 한계가 UI로 실증됨.
+- **결정**: 첨부에 `kind`(REFERENCE=참고자료·RESULT=결과물, BIZ-118). 저장소·API는 단일 유지, `?kind=` 필터로 분리. 본문 첨부=REFERENCE, 결과 첨부=RESULT. 기존 첨부는 REFERENCE 백필(사용자 결정 — 지금까지 결과 개념이 없었으므로 대부분 참고자료).
+- **스키마(V24)**: attachments에 `kind VARCHAR(20) NOT NULL DEFAULT 'REFERENCE'` 컬럼 + 기존 행 REFERENCE 백필(DEFAULT로 자동) + `idx_attachments_kind`(work_item_id, kind).
+- **BE**: Attachment 도메인 kind + CreateAttachmentRequest.kind(기본 REFERENCE)·AttachmentResponse.kind + AttachmentMapper.insert(kind)·findByWorkItem(kind 필터, kind null=전체) + AttachmentService.create/list(kind) + Controller GET `?kind=` param·POST body.kind. **신규 에러코드 없음**(잘못된 kind=INVALID_REQUEST). 프로젝트 첨부 집계(CR-044)는 kind 미지정=전체라 무영향.
+- **FE**: workitem api listAttachments(id, kind?)·createAttachment(id, body+kind) + useAttachments(id, kind)·useCreateAttachment(id, kind) + Attachments.tsx에 kind prop(기본 REFERENCE) + WorkItemDetailPanel 본문 첨부=`<Attachments kind="REFERENCE">`·ResultSection 결과 첨부=`<Attachments kind="RESULT">`. Attachment 타입에 kind.
+- **규모/절차**: 중규모. 설계 캐스케이드 T1-1(WMP-WI-012 보강)·T1-3(BIZ-118)→T3-1(kind 컬럼·V24)→T3-2(kind 필터 API)→T3-3(본문=REFERENCE·결과=RESULT). T1-5 FSM·T1-6 이벤트 무변경.
+- **요청자**: 사용자(2026-07-07, "첨부파일에 파일 추가하면 결과의 첨부에도 같은 파일이 들어간다 — 둘은 성격이 다른데" → kind 구분 확정) | **변경 일자**: 2026-07-07
 
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
