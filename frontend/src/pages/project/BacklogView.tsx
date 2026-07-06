@@ -6,7 +6,7 @@ import {
   DndContext, PointerSensor, useSensor, useSensors, pointerWithin, type DragEndEvent,
 } from '@dnd-kit/core';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from '@therecommerce/ds-ui';
-import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers, History } from 'lucide-react';
+import { Plus, ListTodo, AlertTriangle, ListOrdered, Layers, History, Sparkles } from 'lucide-react';
 import { useProjectByKey } from '@/features/projects/hooks';
 import {
   useBacklog, useChangeItemSprint, useCreateSprint, useStartSprint, useCompleteSprint,
@@ -22,6 +22,9 @@ import { SprintHeader } from '@/features/agile/components/SprintHeader';
 import { EpicGroupHeader } from '@/features/agile/components/EpicGroupHeader';
 import { CreateSprintDialog } from '@/features/agile/components/CreateSprintDialog';
 import { EditSprintDialog } from '@/features/agile/components/EditSprintDialog';
+import { AiDraftDialog } from '@/features/ai-draft/components/AiDraftDialog';
+import { AiDraftSection } from '@/features/ai-draft/components/AiDraftSection';
+import { useCreateAiDrafts, useConfirmAiDrafts, useDiscardAiDrafts, useDeleteDraftItem } from '@/features/ai-draft/hooks';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAssigneeName } from '@/features/members/use-assignee-name';
 import { BacklogSkeleton } from '@/components/common/skeletons';
@@ -70,6 +73,19 @@ export function BacklogView() {
   const canWrite = useCanWrite();
   const createItem = useCreateWorkItem();
   const changeEpic = useChangeEpic(projectId);
+
+  // AI 초안(WMP-WI-019, CR-050) — 개발형·계획형만(EPIC/STORY 유형 있는 템플릿). 운영형은 진입 없음.
+  const aiDraftSupported = useMemo(() => {
+    const codes = PROJECT_TEMPLATES.find((t) => t.id === project?.templateId)?.issueTypeCodes ?? [];
+    return codes.includes('EPIC') && codes.includes('STORY');
+  }, [project]);
+  const [aiDraftOpen, setAiDraftOpen] = useState(false);
+  const createAiDrafts = useCreateAiDrafts(projectId ?? 0);
+  const confirmAiDrafts = useConfirmAiDrafts(projectId ?? 0);
+  const discardAiDrafts = useDiscardAiDrafts(projectId ?? 0);
+  const deleteDraftItem = useDeleteDraftItem(projectId ?? 0);
+  const aiBusy =
+    createAiDrafts.isPending || confirmAiDrafts.isPending || discardAiDrafts.isPending || deleteDraftItem.isPending;
 
   // 행에서 직접 Epic 연결 변경(§6.1) — 후보 목록 + 핸들러. 칩 클릭→드롭다운.
   const epicOptions = useMemo(() => epics.map((e) => ({ id: e.id, title: e.title })), [epics]);
@@ -139,6 +155,11 @@ export function BacklogView() {
 
   const toggle = (id: string) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
 
+  // AI 초안 분리(CR-050) — 백로그 영역 항목 중 draft=true는 초안 구역으로, 나머지만 일반 백로그로.
+  const draftItems = backlog.backlog.items.filter((w) => w.draft === true);
+  const backlogItems = backlog.backlog.items.filter((w) => w.draft !== true);
+  const backlogSection = { ...backlog.backlog, items: backlogItems };
+
   // Epic 필터를 적용한 구역(items만 교체). 다른 메타(itemCount 등)는 표시용이라 원본 유지.
   const withFilter = <T extends { items: typeof projectItems }>(section: T): T =>
     ({ ...section, items: filterByEpic(section.items, epicFilter) });
@@ -190,10 +211,19 @@ export function BacklogView() {
           <Switch checked={showCompleted} onCheckedChange={setShowCompleted} />
         </label>
       </div>
-      <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-        <Plus className="size-4" />
-        스프린트 만들기
-      </Button>
+      <div className="flex items-center gap-2">
+        {/* AI 초안(CR-050) — 개발형·계획형만, VIEWER 숨김. 서술→aimbase→백로그 초안 구역. */}
+        {aiDraftSupported && canWrite && (
+          <Button variant="secondary" size="sm" onClick={() => setAiDraftOpen(true)}>
+            <Sparkles className="size-4" />
+            AI 초안
+          </Button>
+        )}
+        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="size-4" />
+          스프린트 만들기
+        </Button>
+      </div>
     </div>
   );
 
@@ -242,17 +272,29 @@ export function BacklogView() {
             );
           })}
 
-          {/* 백로그 구역 — 우선순위순(평면) 또는 Epic별(그룹) (CR-036) */}
+          {/* AI 초안 구역(CR-050) — draft 항목을 구분표시. 담기/삭제/전체버리기. */}
+          <AiDraftSection
+            drafts={draftItems}
+            canWrite={canWrite}
+            busy={aiBusy}
+            onConfirmOne={(id) => confirmAiDrafts.mutate([id])}
+            onConfirmAll={() => confirmAiDrafts.mutate(undefined)}
+            onDeleteOne={(id) => deleteDraftItem.mutate(id)}
+            onDiscardAll={() => discardAiDrafts.mutate()}
+            onItemClick={(id) => openItem(draftItems, id)}
+          />
+
+          {/* 백로그 구역 — 우선순위순(평면) 또는 Epic별(그룹) (CR-036). AI 초안은 위 구역으로 분리됨. */}
           {viewMode === 'priority' ? (
             <SprintSection
-              section={withFilter(backlog.backlog)}
+              section={withFilter(backlogSection)}
               assigneeName={assigneeName}
               epicName={epicName}
               epicOptions={epicOptions}
               onChangeEpic={onChangeEpic}
               sprintOptions={sprintOptions}
               onMoveToSprint={onMoveToSprint}
-              onItemClick={(id) => openItem(backlog.backlog.items, id)}
+              onItemClick={(id) => openItem(backlogItems, id)}
               onInlineCreate={inlineCreate(null)}
               inlineBusy={createItem.isPending}
               emptyHint="미계획 항목이 없습니다"
@@ -263,8 +305,8 @@ export function BacklogView() {
                     백로그
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {backlog.backlog.itemCount}건
-                    {backlog.backlog.storyPointsSum > 0 ? ` · ${backlog.backlog.storyPointsSum}pt` : ''}
+                    {backlogItems.length}건
+                    {backlogSection.storyPointsSum > 0 ? ` · ${backlogSection.storyPointsSum}pt` : ''}
                   </span>
                 </div>
               }
@@ -272,14 +314,14 @@ export function BacklogView() {
           ) : (
             // Epic별 그룹 보기(CR-036) — 백로그 영역 항목을 epicId로 묶어 그룹 헤더(접기/펼치기) + 소속 항목.
             // Epic 필터가 걸려 있으면 그 필터도 함께 적용(교집합). 각 그룹은 SprintSection 재사용(드롭 타깃=백로그 동일).
-            groupByEpic(filterByEpic(backlog.backlog.items, epicFilter), epics.map((e) => e.id)).map((group) => {
+            groupByEpic(filterByEpic(backlogItems, epicFilter), epics.map((e) => e.id)).map((group) => {
               const gid = group.epicId != null ? `e-${group.epicId}` : 'e-none';
               const gName = group.epicId != null ? (epicName(group.epicId) ?? `Epic #${group.epicId}`) : 'Epic 미지정';
               return (
                 <SprintSection
                   key={gid}
                   // itemCount/storyPointsSum는 그룹 헤더에서 안 쓰므로 원본 유지, items만 그룹으로 교체.
-                  section={{ ...backlog.backlog, items: group.items }}
+                  section={{ ...backlogSection, items: group.items }}
                   dropIdOverride={`sp-backlog-${gid}`}
                   collapsed={groupCollapsed[gid]}
                   assigneeName={assigneeName}
@@ -288,7 +330,7 @@ export function BacklogView() {
                   onChangeEpic={onChangeEpic}
                   sprintOptions={sprintOptions}
                   onMoveToSprint={onMoveToSprint}
-                  onItemClick={(id) => openItem(backlog.backlog.items, id)}
+                  onItemClick={(id) => openItem(backlogItems, id)}
                   onInlineCreate={inlineCreate(null, group.epicId)}
                   inlineBusy={createItem.isPending}
                   emptyHint="이 Epic에 항목이 없습니다"
@@ -314,6 +356,17 @@ export function BacklogView() {
         busy={createSprint.isPending}
         onSubmit={(body) =>
           createSprint.mutate(body, { onSuccess: () => setCreateOpen(false) })
+        }
+      />
+
+      {/* AI 초안 생성(CR-050) — 서술 + 모드. 결과는 백로그 초안 구역에 자동 입력. */}
+      <AiDraftDialog
+        open={aiDraftOpen}
+        onOpenChange={setAiDraftOpen}
+        epics={epicOptions}
+        busy={createAiDrafts.isPending}
+        onSubmit={(body) =>
+          createAiDrafts.mutate(body, { onSuccess: () => setAiDraftOpen(false) })
         }
       />
 

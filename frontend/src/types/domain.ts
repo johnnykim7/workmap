@@ -302,6 +302,8 @@ export interface WorkItemResponse {
   resultContent?: string | null;
   resultWrittenBy?: number | null;
   resultWrittenAt?: string | null;
+  // AI 업무 초안 여부(WMP-WI-019, CR-050). true면 백로그에서 "초안"으로 구분표시, 그 외 격리.
+  draft?: boolean;
   createdBy?: number | null;
   createdAt?: string | null;
 }
