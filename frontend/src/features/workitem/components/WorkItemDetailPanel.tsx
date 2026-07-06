@@ -33,26 +33,29 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
   const addAttachmentRef = useRef<() => void>(() => {});
 
   const body = (
-    // 섹션 사이 얇은 구분선 + 균일 상하 패딩으로 블록 경계를 만든다(제목은 muted 라벨 톤).
-    // [&>*]: 직속 섹션에만 패딩/구분선 적용, 첫 블록은 위 패딩·선 제거.
-    <div className="min-w-0 flex-1 divide-y divide-border lg:pl-4 [&>*]:py-5 [&>*:first-child]:pt-0">
+    <div className="min-w-0 flex-1 space-y-5 lg:pl-4">
+      {/* 승인 배너는 자체 카드형이라 구분선 규칙 밖에 둔다. */}
       <ApprovalBanner item={item} />
-      <DetailBody item={item} />
-      {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
-      <Attachments item={item} addRef={addAttachmentRef} />
-      {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
-      {item.issueType === 'SUBTASK' && item.parentId != null && (
-        <section>
-          <h2 className="mb-1.5 text-sm font-semibold text-foreground">상위 작업</h2>
-          <ParentLink parentId={item.parentId} projectId={item.projectId} />
-        </section>
-      )}
-      <LinkedItems item={item} addRef={addLinkRef} />
-      {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
-      {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
-      {/* 결과(완료 산출물) — 완료 상태일 때만 렌더(내부에서 isDoneStatus 가드), CR-048 */}
-      <ResultSection item={item} />
-      <ActivityTabs item={item} />
+      {/* 콘텐츠 섹션: 각 섹션 '아래' 얇은 구분선 + 하단 패딩으로 블록이 아래로 닫힌다(제목은 진한 톤).
+          자체 카드형(결과)은 [&>.detail-card]로 구분선 제외 — 카드 아래 이중선 방지. */}
+      <div className="[&>*]:border-b [&>*]:border-border [&>*]:pb-5 [&>*:not(:first-child)]:pt-5 [&>*:last-child]:border-b-0 [&>*:last-child]:pb-0 [&>.detail-card]:border-b-0 [&>.detail-card]:pb-0">
+        <DetailBody item={item} />
+        {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
+        <Attachments item={item} addRef={addAttachmentRef} />
+        {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
+        {item.issueType === 'SUBTASK' && item.parentId != null && (
+          <section>
+            <h2 className="mb-1.5 text-sm font-semibold text-foreground">상위 작업</h2>
+            <ParentLink parentId={item.parentId} projectId={item.projectId} />
+          </section>
+        )}
+        <LinkedItems item={item} addRef={addLinkRef} />
+        {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
+        {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
+        {/* 결과(완료 산출물) — 완료 상태일 때만 렌더(내부에서 isDoneStatus 가드), CR-048 */}
+        <ResultSection item={item} />
+        <ActivityTabs item={item} />
+      </div>
     </div>
   );
 

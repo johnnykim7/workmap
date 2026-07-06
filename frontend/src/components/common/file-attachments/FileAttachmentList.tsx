@@ -173,7 +173,7 @@ export function FileAttachmentList({
       <div className="mb-1.5 flex items-center justify-between">
         <button
           type="button"
-          className={cn('flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground', collapsible ? 'cursor-pointer' : 'cursor-default')}
+          className={cn('flex items-center gap-1.5 text-sm font-semibold text-foreground', collapsible ? 'cursor-pointer' : 'cursor-default')}
           onClick={() => collapsible && setCollapsed((v) => !v)}
         >
           {collapsible && (collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />)}

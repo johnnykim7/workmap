@@ -20,7 +20,7 @@ export function ResultSection({ item }: { item: WorkItemResponse }) {
   if (!isDoneStatus(item)) return null;
 
   return (
-    <section className="rounded-md border border-border">
+    <section className="detail-card rounded-md border border-border">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
