@@ -2,6 +2,7 @@ package com.therecommerce.workmap.common.mybatis;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.therecommerce.workmap.workitem.domain.AcceptanceCriterion;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
@@ -21,7 +22,12 @@ import java.util.List;
  */
 public class AcceptanceCriterionListJsonTypeHandler extends BaseTypeHandler<List<AcceptanceCriterion>> {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // checkedAt이 OffsetDateTime이라 JSR-310 모듈 등록 필수(findAndRegisterModules로 클래스패스 모듈 자동 로드).
+    // 미등록 시 "Java 8 date/time type not supported"로 직렬화 500(CR-049 운영에서 발견).
+    // WRITE_DATES_AS_TIMESTAMPS 비활성 → 숫자 타임스탬프가 아니라 ISO-8601 문자열로 저장(FE 계약 = string).
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .findAndRegisterModules()
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     private static final TypeReference<List<AcceptanceCriterion>> LIST_TYPE = new TypeReference<>() {};
 
     @Override
