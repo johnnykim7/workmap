@@ -37,8 +37,9 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       {/* 승인 배너는 자체 카드형이라 구분선 규칙 밖에 둔다. */}
       <ApprovalBanner item={item} />
       {/* 콘텐츠 섹션: 각 섹션 '아래' 얇은 구분선 + 하단 패딩으로 블록이 아래로 닫힌다(제목은 진한 톤).
+          마지막 섹션(활동)도 하단선 유지 — 다른 섹션과 동일하게 아래로 닫히게(패딩만 제거해 스크롤 끝 여백 방지).
           자체 카드형(결과)은 [&>.detail-card]로 구분선 제외 — 카드 아래 이중선 방지. */}
-      <div className="[&>*]:border-b [&>*]:border-border [&>*]:pb-5 [&>*:not(:first-child)]:pt-5 [&>*:last-child]:border-b-0 [&>*:last-child]:pb-0 [&>.detail-card]:border-b-0 [&>.detail-card]:pb-0">
+      <div className="[&>*]:border-b [&>*]:border-border [&>*]:pb-5 [&>*:not(:first-child)]:pt-5 [&>*:last-child]:pb-0 [&>.detail-card]:border-b-0 [&>.detail-card]:pb-0">
         <DetailBody item={item} />
         {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
         <Attachments item={item} addRef={addAttachmentRef} />
