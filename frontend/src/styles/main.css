@@ -108,6 +108,22 @@
  * 바깥 PageShell 본문에서 일어나므로) 헤더가 밀려 사라진다. sticky-table 마커 안에서만 wrapper의
  * overflow를 visible로 덮어, thead의 `sticky top-0`이 바깥 스크롤 컨테이너 기준으로 붙게 한다.
  * (전역이 아니라 sticky-table 스코프 — 가로 스크롤 필요한 표/칸반은 영향 없음.) */
+/* 스크롤바 숨김(CR-037) — 첨부 목록 등 자체 스크롤 영역에서 스크롤바를 감추고
+ * 페이드(mask)로 "더 있음"만 암시해 깔끔하게. 스크롤 기능 자체는 유지. */
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE·구 Edge */
+  scrollbar-width: none;       /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;               /* Chrome·Safari·Webkit */
+}
+/* 넘칠 때 상·하단을 부드럽게 페이드(스크롤 여지가 있음을 시각적으로 암시).
+ * mask는 콘텐츠 자체를 흐리므로 스크롤바 없이도 "더 있다"가 자연스럽게 보인다. */
+.fade-scroll-y {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 14px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 14px), transparent 100%);
+}
+
 .sticky-table [data-slot="table-wrapper"] {
   overflow: visible;
 }

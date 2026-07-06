@@ -243,15 +243,20 @@ export function FileAttachmentList({
             {canWrite ? '파일을 첨부하세요' : '첨부가 없습니다.'}
           </button>
         ) : view === 'grid' ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {items.map((a) => (
-              <GridCard key={a.id} item={a} canWrite={canWrite}
-                onOpen={() => openViewer(a)} onDownload={() => downloadOne(a)} onDelete={() => setConfirmDelete(a)} />
-            ))}
+          // 첨부가 많으면 이 영역만 스크롤(세부 사항·활동 영역을 밀어내지 않게).
+          // 스크롤바는 감추고 상·하단 페이드로 "더 있음"만 암시.
+          <div className="scrollbar-hide fade-scroll-y max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3 py-1 sm:grid-cols-3">
+              {items.map((a) => (
+                <GridCard key={a.id} item={a} canWrite={canWrite}
+                  onOpen={() => openViewer(a)} onDownload={() => downloadOne(a)} onDelete={() => setConfirmDelete(a)} />
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border border-border">
-            <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          <div className="scrollbar-hide max-h-96 overflow-y-auto rounded-md border border-border">
+            {/* 헤더 행은 스크롤 중에도 상단 고정. */}
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
               <span className="flex-1">이름</span>
               <span className="w-20 text-right">크기</span>
               <span className="w-40">추가된 날짜</span>
