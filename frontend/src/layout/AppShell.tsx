@@ -41,6 +41,7 @@ import { useWorkspaceStore } from '@/store/workspace-store';
 import { useLogout } from '@/features/auth/hooks';
 import { useNewNotificationToast } from '@/features/inbox/hooks';
 import { NotificationBell } from '@/features/inbox/components/NotificationBell';
+import { HelpDrawer } from '@/features/help/HelpDrawer';
 import { useWorkspaces } from '@/features/workspaces/hooks';
 import { useProjects, useProjectByKey } from '@/features/projects/hooks';
 import { useChannels } from '@/features/chat/hooks';
@@ -174,6 +175,7 @@ function HeaderActions() {
             <Plus className="size-4" /> 만들기
           </Button>
         )}
+        <HelpDrawer />
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
