@@ -31,7 +31,7 @@
                t.issue_type        AS targetIssueType,
                t.common_status     AS targetCommonStatus
         FROM work_item_links l
-        JOIN work_items t ON t.id = l.target_id AND t.deleted_at IS NULL
+        JOIN work_items t ON t.id = l.target_id AND t.deleted_at IS NULL AND t.draft = false
         WHERE l.source_id = #{sourceId}
         ORDER BY l.created_at ASC, l.id ASC
     </select>

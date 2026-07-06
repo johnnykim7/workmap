@@ -47,7 +47,7 @@
     <select id="findByProject" resultMap="approvalMap">
         SELECT a.* FROM approvals a
         JOIN work_items w ON w.id = a.work_item_id
-        WHERE w.project_id = #{projectId} AND w.deleted_at IS NULL
+        WHERE w.project_id = #{projectId} AND w.deleted_at IS NULL AND w.draft = false
         <if test="decision != null and decision != ''">
             AND a.decision = #{decision}
         </if>

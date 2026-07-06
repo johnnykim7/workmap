@@ -223,8 +223,8 @@ class SprintServiceTest {
                 sprint(1L, SprintStatus.COMPLETED.name()),
                 sprint(2L, SprintStatus.ACTIVE.name()),
                 sprint(3L, SprintStatus.FUTURE.name())));
-        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false))).thenReturn(List.of());
-        when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false), eq(false))).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(5L, null, true, true)).thenReturn(List.of());
 
         SprintDtos.BacklogResponse res = service.backlog(5L, false);
 
@@ -243,8 +243,8 @@ class SprintServiceTest {
                 sprint(2L, SprintStatus.ACTIVE.name()),
                 sprint(4L, SprintStatus.COMPLETED.name()),
                 sprint(5L, SprintStatus.FUTURE.name())));
-        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false))).thenReturn(List.of());
-        when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(eq(5L), anyLong(), eq(false), eq(false))).thenReturn(List.of());
+        when(workItemMapper.findByProjectAndSprint(5L, null, true, true)).thenReturn(List.of());
 
         SprintDtos.BacklogResponse res = service.backlog(5L, true);
 

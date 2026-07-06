@@ -77,10 +77,14 @@ public interface WorkItemMapper {
     // Sprint 4 — 애자일/운영/목록 조회
     // ===================================================================
 
-    /** 백로그/보드용: 프로젝트의 특정 스프린트 항목(sprintId=null이면 백로그). */
+    /**
+     * 백로그/보드용: 프로젝트의 특정 스프린트 항목(sprintId=null이면 백로그).
+     * includeDraft=true(백로그)면 AI 초안(draft=true)도 포함(FE가 draft 필드로 구분표시), false(보드)면 제외(BIZ-117, CR-050).
+     */
     List<WorkItem> findByProjectAndSprint(@Param("projectId") Long projectId,
                                           @Param("sprintId") Long sprintId,
-                                          @Param("includeBacklog") boolean includeBacklog);
+                                          @Param("includeBacklog") boolean includeBacklog,
+                                          @Param("includeDraft") boolean includeDraft);
 
     /** 보드용: 특정 스프린트의 모든 항목(서브태스크 포함). */
     List<WorkItem> findBySprint(@Param("sprintId") Long sprintId);
@@ -108,4 +112,21 @@ public interface WorkItemMapper {
      * 임박/초과 구분은 서비스에서 daysLeft = due_date - today로 판단한다.
      */
     List<WorkItem> findDueForNotification(@Param("maxDaysAhead") int maxDaysAhead);
+
+    // ===================================================================
+    // AI 업무 초안(WMP-WI-019, CR-050)
+    // ===================================================================
+
+    /** 프로젝트의 AI 초안(draft=true) 목록 — 백로그 초안 구역 표시용. */
+    List<WorkItem> findDraftsByProject(@Param("projectId") Long projectId);
+
+    /**
+     * 초안 확정(draft=false로 정식 전환). ids 지정 시 그 항목만, 비었으면 프로젝트 전체 draft 확정.
+     * @return 전환된 행 수
+     */
+    int confirmDrafts(@Param("projectId") Long projectId, @Param("ids") List<Long> ids);
+
+    /** 프로젝트의 draft=true 항목 일괄 소프트 삭제(전체 버리기). @return 삭제 행 수 */
+    int discardDraftsByProject(@Param("projectId") Long projectId,
+                               @Param("deletedAt") OffsetDateTime deletedAt);
 }

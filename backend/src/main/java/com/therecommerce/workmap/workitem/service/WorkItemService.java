@@ -59,6 +59,15 @@ public class WorkItemService {
 
     @Transactional
     public WorkItemDtos.Response create(WorkItemDtos.CreateRequest req, Long actorId) {
+        return create(req, actorId, false);
+    }
+
+    /**
+     * 업무 생성. draft=true면 AI 초안(WMP-WI-019, CR-050)으로 만들어 백로그에서만 구분표시되고
+     * 그 외 조회/집계에서 격리(BIZ-117)한다. 만들기 모달/인라인/하위작업 경로는 draft=false.
+     */
+    @Transactional
+    public WorkItemDtos.Response create(WorkItemDtos.CreateRequest req, Long actorId, boolean draft) {
         if (req.projectId() == null) {
             throw new BusinessException(WmpErrorCode.PROJECT_REQUIRED);  // WI-1, BIZ-001
         }
@@ -124,6 +133,7 @@ public class WorkItemService {
                 .checklist(req.checklist())
                 .labels(req.labels() == null ? List.of() : req.labels())
                 .relatedSolutions(req.relatedSolutions() == null ? List.of() : req.relatedSolutions())
+                .draft(draft)
                 .createdBy(actorId)
                 .build();
 

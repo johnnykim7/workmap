@@ -151,7 +151,12 @@ public enum WmpErrorCode implements ErrorCode {
     WORKSPACE_ALREADY_ARCHIVED("WMP-7849", "이미 보관된 워크스페이스입니다.", HttpStatus.CONFLICT),
 
     // 인수조건 완료 강제 (7850번대, CR-049 — WMP-WI-018)
-    ACCEPTANCE_CRITERIA_UNMET("WMP-7850", "미충족한 인수조건이 있어 완료할 수 없습니다.", HttpStatus.CONFLICT);
+    ACCEPTANCE_CRITERIA_UNMET("WMP-7850", "미충족한 인수조건이 있어 완료할 수 없습니다.", HttpStatus.CONFLICT),
+
+    // AI 업무 초안 (7851번대, CR-050 — WMP-WI-019, aimbase 연동)
+    AI_DRAFT_UPSTREAM_FAILED("WMP-7851", "AI 초안 생성 서비스 호출에 실패했습니다. 잠시 후 다시 시도하세요.", HttpStatus.BAD_GATEWAY),
+    AI_DRAFT_TIMEOUT("WMP-7852", "AI 초안 생성이 시간 내에 완료되지 않았습니다. 다시 시도하세요.", HttpStatus.GATEWAY_TIMEOUT),
+    AI_DRAFT_NOT_ALLOWED("WMP-7853", "이 프로젝트 유형에서는 AI 초안을 사용할 수 없습니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;

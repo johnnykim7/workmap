@@ -106,6 +106,7 @@ class WorkItemControllerTest {
                 null, null, null, null, null, null, null, 0, false, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null,
                 null, null, null,  // result_content, result_written_by, result_written_at (CR-048)
+                false,             // draft (CR-050)
                 99L, OffsetDateTime.now());
     }
 

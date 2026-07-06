@@ -57,7 +57,7 @@ public class BoardService {
         List<BoardDtos.SprintGroup> groups = new ArrayList<>();
         if (actives.isEmpty()) {
             // 운영형/스크럼 미시작: 백로그(sprint_id=null) 제외 전체가 보드 카드
-            List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, null, true);
+            List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, null, true, false);
             groups.add(new BoardDtos.SprintGroup(null, null, null, null, columnsOf(statuses, items)));
         } else {
             for (Sprint s : actives) {

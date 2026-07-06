@@ -13,7 +13,7 @@
       목록 항목은 WorkItem 도메인으로 매핑(WorkItemMapper.workItemMap 재사용).
     -->
     <sql id="modeWhere">
-        wi.deleted_at IS NULL
+        wi.deleted_at IS NULL AND wi.draft = false
         <choose>
             <when test="visibleProjectIds == null or visibleProjectIds.isEmpty()">
                 AND 1 = 0
@@ -79,7 +79,7 @@
             count(*) FILTER (WHERE wi.status_changed_at &lt; now() - (#{staleDays} || ' day')::interval
                               AND wi.common_status NOT IN ('DONE', 'HOLD'))                         AS stale
         FROM work_items wi
-        WHERE wi.deleted_at IS NULL
+        WHERE wi.deleted_at IS NULL AND wi.draft = false
         <choose>
             <when test="visibleProjectIds == null or visibleProjectIds.isEmpty()">
                 AND 1 = 0
@@ -100,7 +100,7 @@
     <select id="distributionByStatus" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
         SELECT common_status AS key, count(*) AS count
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
         GROUP BY common_status
         ORDER BY count DESC
     </select>
@@ -108,7 +108,7 @@
     <select id="distributionByType" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
         SELECT issue_type AS key, count(*) AS count
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
         GROUP BY issue_type
         ORDER BY count DESC
     </select>
@@ -116,7 +116,7 @@
     <select id="distributionByAssignee" resultType="com.therecommerce.workmap.dashboard.dto.DashboardDtos$Distribution">
         SELECT CAST(assignee_id AS varchar) AS key, count(*) AS count
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
         GROUP BY assignee_id
         ORDER BY count DESC
     </select>

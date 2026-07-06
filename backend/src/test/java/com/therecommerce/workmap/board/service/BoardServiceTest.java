@@ -76,7 +76,7 @@ class BoardServiceTest {
     void ACTIVE스프린트없음_전체항목보드() {
         when(projectMapper.findById(5L)).thenReturn(Project.builder().id(5L).workflowId(10L).build());
         when(sprintMapper.findAllActiveByProject(5L)).thenReturn(List.of());
-        when(workItemMapper.findByProjectAndSprint(5L, null, true)).thenReturn(List.of(
+        when(workItemMapper.findByProjectAndSprint(5L, null, true, false)).thenReturn(List.of(
                 WorkItem.builder().id(200L).statusId(1L).build()));
         when(workflowMapper.findStatuses(10L)).thenReturn(List.of(status(1L, "RECEIVED", 0)));
 

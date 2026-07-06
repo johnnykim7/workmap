@@ -120,7 +120,7 @@
                               AND wi.common_status NOT IN ('DONE', 'HOLD'))                    AS delayed,
             count(*) FILTER (WHERE wi.flagged)                                                 AS blocked
         FROM work_items wi
-        WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL
+        WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL AND wi.draft = false
     </select>
 
 </mapper>

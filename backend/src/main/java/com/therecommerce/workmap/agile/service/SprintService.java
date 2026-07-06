@@ -142,13 +142,14 @@ public class SprintService {
             if (completed && !includeCompleted) {
                 continue;  // 완료 스프린트는 기본 제외(토글 off)
             }
-            List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, s.getId(), false);
+            List<WorkItem> items = workItemMapper.findByProjectAndSprint(projectId, s.getId(), false, false);
             (completed ? completedSections : activeSections).add(section(s, items));
         }
         // 완료(오래된 순) → 진행/예정 순으로 배치.
         List<SprintDtos.BacklogSection> sprintSections = new ArrayList<>(completedSections);
         sprintSections.addAll(activeSections);
-        List<WorkItem> backlogItems = workItemMapper.findByProjectAndSprint(projectId, null, true);
+        // 백로그 영역만 AI 초안(draft=true) 포함 — FE가 draft 필드로 "초안" 구분표시(BIZ-117, CR-050).
+        List<WorkItem> backlogItems = workItemMapper.findByProjectAndSprint(projectId, null, true, true);
         return new SprintDtos.BacklogResponse(projectId, sprintSections, section(null, backlogItems));
     }
 

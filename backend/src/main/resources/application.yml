@@ -84,6 +84,14 @@ workmap:
     enabled: ${WMP_NOTI_ENABLED:true}
     # 메일 링크(초대·재설정) 절대 URL 조립용 FE 베이스(CR-027 토큰 보정).
     web-base-url: ${WMP_WEB_BASE_URL:http://59.8.160.12:3186}
+  # AI 업무 초안(aimbase) 연동(WMP-WI-019, CR-050). 키·워크플로 id는 env 주입 — 미주입 시 초안 API가 미설정 응답.
+  aimbase:
+    base-url: ${WMP_AIMBASE_BASE_URL:http://59.8.160.12:8280}
+    api-key: ${WMP_AIMBASE_KEY:}
+    epic-workflow-id: ${WMP_AIMBASE_EPIC_WF:}
+    story-task-workflow-id: ${WMP_AIMBASE_STORY_TASK_WF:}
+    poll-interval-ms: ${WMP_AIMBASE_POLL_INTERVAL_MS:3000}
+    poll-max-attempts: ${WMP_AIMBASE_POLL_MAX_ATTEMPTS:20}
 
 management:
   endpoints:

@@ -67,6 +67,7 @@ public class WorkItem {
     private String resultContent;              // 결과(완료 산출물) 본문 — 리치텍스트 HTML (WMP-WI-017, CR-048)
     private Long resultWrittenBy;              // 결과 작성자 → users.id
     private OffsetDateTime resultWrittenAt;    // 결과 최종 작성 시각
+    private boolean draft;                     // AI 업무 초안 여부 — true면 백로그에서만 구분표시, 그 외 격리(WMP-WI-019, BIZ-117, CR-050)
     private OffsetDateTime deletedAt;
     private Long createdBy;
     private OffsetDateTime createdAt;

@@ -30,7 +30,7 @@
                FLOOR(EXTRACT(EPOCH FROM (now() - wi.status_changed_at)) / 86400)::bigint AS age_days
         FROM work_items wi
         WHERE wi.project_id = #{projectId}
-          AND wi.deleted_at IS NULL
+          AND wi.deleted_at IS NULL AND wi.draft = false
           AND wi.common_status NOT IN ('DONE', 'HOLD')
           AND (
                 wi.flagged = true
@@ -43,14 +43,14 @@
     <!-- 막힘 전체 카운트 -->
     <select id="blockedCount" resultType="long">
         SELECT count(*) FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL AND flagged = true
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false AND flagged = true
     </select>
 
     <!-- SLE 초과 항목 수(막힘/정체 무관, 진행 중 & SLE 초과) -->
     <select id="overSleCount" resultType="long">
         SELECT count(*) FROM work_items wi
         WHERE wi.project_id = #{projectId}
-          AND wi.deleted_at IS NULL
+          AND wi.deleted_at IS NULL AND wi.draft = false
           AND wi.common_status NOT IN ('DONE', 'HOLD')
           AND wi.status_changed_at &lt; now() - (#{sleDays} || ' day')::interval
     </select>
@@ -64,7 +64,7 @@
     <select id="everDoneCount" resultType="long">
         SELECT count(DISTINCT al.work_item_id)
         FROM activity_logs al
-        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.draft = false AND wi.project_id = #{projectId}
         JOIN workflow_status ws ON ws.code = al.to_value AND ws.workflow_id = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
           AND ws.common_status = 'DONE'
@@ -87,7 +87,7 @@
         SELECT wi.id, wi.key, wi.title, wi.assignee_id,
                count(*) AS reopen_count
         FROM activity_logs al
-        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.draft = false AND wi.project_id = #{projectId}
         JOIN workflow_status wf_from ON wf_from.code = al.from_value AND wf_from.workflow_id = wi.workflow_id
         JOIN workflow_status wf_to   ON wf_to.code   = al.to_value   AND wf_to.workflow_id   = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
@@ -102,7 +102,7 @@
     <select id="reopenedCount" resultType="long">
         SELECT count(DISTINCT al.work_item_id)
         FROM activity_logs al
-        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.project_id = #{projectId}
+        JOIN work_items wi ON wi.id = al.work_item_id AND wi.deleted_at IS NULL AND wi.draft = false AND wi.project_id = #{projectId}
         JOIN workflow_status wf_from ON wf_from.code = al.from_value AND wf_from.workflow_id = wi.workflow_id
         JOIN workflow_status wf_to   ON wf_to.code   = al.to_value   AND wf_to.workflow_id   = wi.workflow_id
         WHERE al.action = 'STATUS_CHANGE'
@@ -127,7 +127,7 @@
                count(*) FILTER (WHERE wi.flagged = true)                                             AS blocked
         FROM work_items wi
         WHERE wi.project_id = #{projectId}
-          AND wi.deleted_at IS NULL
+          AND wi.deleted_at IS NULL AND wi.draft = false
           AND wi.assignee_id IS NOT NULL
           AND wi.common_status &lt;&gt; 'DONE'
         GROUP BY wi.assignee_id
@@ -160,7 +160,7 @@
             JOIN workflow_status ws_ip ON ws_ip.code = al_ip.to_value AND ws_ip.workflow_id = wi.workflow_id AND ws_ip.common_status = 'IN_PROGRESS'
             JOIN activity_logs al_done ON al_done.work_item_id = wi.id AND al_done.action = 'STATUS_CHANGE'
             JOIN workflow_status ws_dn ON ws_dn.code = al_done.to_value AND ws_dn.workflow_id = wi.workflow_id AND ws_dn.common_status = 'DONE'
-            WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL
+            WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL AND wi.draft = false
             GROUP BY wi.id, wi.key
         ) t
         WHERE t.first_done >= t.first_ip
@@ -182,7 +182,7 @@
     <select id="currentStatusCounts" resultType="com.therecommerce.workmap.metrics.dto.FlowMetricsDtos$StatusCount">
         SELECT common_status AS commonStatus, count(*) AS count
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
         GROUP BY common_status
     </select>
 
@@ -208,7 +208,7 @@
                count(*) FILTER (WHERE fv.result = 'PARTIAL')     AS partial,
                0                                                 AS passRatePct
         FROM field_verifications fv
-        JOIN work_items wi ON wi.id = fv.work_item_id AND wi.deleted_at IS NULL
+        JOIN work_items wi ON wi.id = fv.work_item_id AND wi.deleted_at IS NULL AND wi.draft = false
         WHERE wi.project_id = #{projectId}
     </select>
 
@@ -217,7 +217,7 @@
     <select id="dailyThroughput" resultType="int">
         SELECT count(*)::int
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
           AND completed_at IS NOT NULL
           AND completed_at >= now() - (#{historyDays} || ' day')::interval
         GROUP BY date_trunc('day', completed_at)
@@ -234,7 +234,7 @@
         FROM sprint_commitments sc
         LEFT JOIN work_items wi
                ON wi.id IN (SELECT jsonb_array_elements_text(sc.committed_item_ids)::bigint)
-              AND wi.deleted_at IS NULL
+              AND wi.deleted_at IS NULL AND wi.draft = false
         WHERE sc.sprint_id = #{sprintId}
         GROUP BY sc.sprint_id, sc.committed_points, sc.committed_item_count
     </select>
@@ -262,7 +262,7 @@
     <select id="earnedPoints" resultType="int">
         SELECT COALESCE(SUM(story_points), 0)::int
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL AND common_status = 'DONE'
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false AND common_status = 'DONE'
     </select>
 
     <!-- ── 팀 간 대기 (WMP-HOME-012) ───────────────────────────────────
@@ -282,7 +282,7 @@
         SELECT wi.id, wi.key, wi.title, wi.block_reason,
                FLOOR(EXTRACT(EPOCH FROM (now() - wi.status_changed_at)) / 86400)::bigint AS wait_days
         FROM work_items wi
-        WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL AND wi.flagged = true
+        WHERE wi.project_id = #{projectId} AND wi.deleted_at IS NULL AND wi.draft = false AND wi.flagged = true
         ORDER BY wait_days DESC
         LIMIT 50
     </select>
@@ -295,7 +295,7 @@
                count(*) FILTER (WHERE ops_apply_status = 'APPLIED')                      AS "opsApplied",
                count(*) FILTER (WHERE ops_apply_status IS NOT NULL)                      AS "anyOpsStatus"
         FROM work_items
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        WHERE project_id = #{projectId} AND deleted_at IS NULL AND draft = false
     </select>
 
 </mapper>

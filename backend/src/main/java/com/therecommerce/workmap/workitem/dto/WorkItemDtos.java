@@ -204,6 +204,7 @@ public final class WorkItemDtos {
             String resultContent,
             Long resultWrittenBy,
             OffsetDateTime resultWrittenAt,
+            boolean draft,
             Long createdBy,
             OffsetDateTime createdAt
     ) {
@@ -219,7 +220,7 @@ public final class WorkItemDtos {
                     w.getEnvironment(), w.getSeverity(), w.getChecklist(), w.getLabels(),
                     w.getRelatedSolutions(), w.getCompletedAt(),
                     w.getResultContent(), w.getResultWrittenBy(), w.getResultWrittenAt(),
-                    w.getCreatedBy(), w.getCreatedAt());
+                    w.isDraft(), w.getCreatedBy(), w.getCreatedAt());
         }
     }
 
