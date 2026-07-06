@@ -1,5 +1,6 @@
 package com.therecommerce.workmap.workitem.dto;
 
+import com.therecommerce.workmap.workitem.domain.AcceptanceCriterion;
 import com.therecommerce.workmap.workitem.domain.WorkItem;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -190,7 +191,7 @@ public final class WorkItemDtos {
             Long measureUnitId,
             BigDecimal targetValue,
             BigDecimal currentValue,
-            List<String> acceptanceCriteria,
+            List<AcceptanceCriterion> acceptanceCriteria,
             List<String> stepsToReproduce,
             String expectedResult,
             String actualResult,
@@ -226,4 +227,17 @@ public final class WorkItemDtos {
     public record ResultRequest(
             String resultContent
     ) {}
+
+    /**
+     * 인수조건 체크/편집(WMP-WI-018, CR-049). 전체 배열 치환(부분 패치 아님).
+     * checkedBy/checkedAt은 서버가 채운다(입력 무시) — {text, checked}만 신뢰.
+     */
+    public record AcceptanceCriteriaRequest(
+            @NotNull List<AcceptanceItem> criteria
+    ) {
+        public record AcceptanceItem(
+                @NotNull String text,
+                boolean checked
+        ) {}
+    }
 }

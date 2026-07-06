@@ -148,7 +148,10 @@ public enum WmpErrorCode implements ErrorCode {
 
     // 워크스페이스 보관 (7848번대, CR-046 — WS 보관 FSM)
     WORKSPACE_ARCHIVE_INVALID_TRANSITION("WMP-7848", "워크스페이스 상태 전이가 허용되지 않습니다.", HttpStatus.CONFLICT),
-    WORKSPACE_ALREADY_ARCHIVED("WMP-7849", "이미 보관된 워크스페이스입니다.", HttpStatus.CONFLICT);
+    WORKSPACE_ALREADY_ARCHIVED("WMP-7849", "이미 보관된 워크스페이스입니다.", HttpStatus.CONFLICT),
+
+    // 인수조건 완료 강제 (7850번대, CR-049 — WMP-WI-018)
+    ACCEPTANCE_CRITERIA_UNMET("WMP-7850", "미충족한 인수조건이 있어 완료할 수 없습니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;

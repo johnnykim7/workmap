@@ -48,6 +48,9 @@ public interface WorkItemMapper {
     /** 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). */
     void updateResult(WorkItem item);
 
+    /** 인수조건 전체 배열 치환(CR-049, WMP-WI-018). 체크 상태 포함. */
+    void updateAcceptanceCriteria(WorkItem item);
+
     /** 진행률만 갱신(상위 Epic 집계 등). */
     void updateProgress(@Param("id") Long id, @Param("progress") int progress);
 

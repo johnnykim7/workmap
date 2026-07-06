@@ -112,6 +112,7 @@ public class ProjectService {
                 .name(req.name())
                 .activeTabs(tabs)
                 .defaultTab(req.defaultTab())
+                .requireAcceptanceCriteria(req.requireAcceptanceCriteria())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
                 .description(req.description())

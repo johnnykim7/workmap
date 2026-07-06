@@ -34,6 +34,7 @@ public class Project {
     private Long workflowId;
     private List<String> activeTabs;
     private String defaultTab;   // "기본값으로 설정"한 진입 탭(CR-020). null이면 summary 폴백.
+    private Boolean requireAcceptanceCriteria;   // 인수조건 미충족 시 완료 차단 강제(CR-049, POL-015). 박스 타입=null 미변경 판별.
     private int seqCounter;
     private LocalDate startDate;
     private LocalDate endDate;

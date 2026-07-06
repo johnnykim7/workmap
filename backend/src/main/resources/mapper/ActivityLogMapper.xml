@@ -10,13 +10,14 @@
         <result property="action"     column="action"/>
         <result property="fromValue"  column="from_value"/>
         <result property="toValue"    column="to_value"/>
+        <result property="metadata"   column="metadata"/>
         <result property="createdAt"  column="created_at"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.therecommerce.workmap.workitem.domain.ActivityLog"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-        INSERT INTO activity_logs (work_item_id, actor_id, action, from_value, to_value)
-        VALUES (#{workItemId}, #{actorId}, #{action}, #{fromValue}, #{toValue})
+        INSERT INTO activity_logs (work_item_id, actor_id, action, from_value, to_value, metadata)
+        VALUES (#{workItemId}, #{actorId}, #{action}, #{fromValue}, #{toValue}, #{metadata})
     </insert>
 
     <select id="findByWorkItem" resultMap="logMap">

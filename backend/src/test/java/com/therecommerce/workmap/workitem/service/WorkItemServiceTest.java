@@ -705,4 +705,111 @@ class WorkItemServiceTest {
 
         verify(workItemMapper).updateResult(any());  // 상태 검증 없이 저장됨
     }
+
+    // ── 인수조건 완료 강제 (CR-049, WMP-WI-018, BIZ-115/116) ──
+
+    private com.therecommerce.workmap.workitem.domain.AcceptanceCriterion crit(String text, boolean checked) {
+        return com.therecommerce.workmap.workitem.domain.AcceptanceCriterion.builder()
+                .text(text).checked(checked).build();
+    }
+
+    private WorkItem itemWithCriteria(java.util.List<com.therecommerce.workmap.workitem.domain.AcceptanceCriterion> ac) {
+        WorkItem w = item(1L, 103L, "IN_REVIEW");
+        w.setAcceptanceCriteria(ac);
+        return w;
+    }
+
+    private void stubReviewToDone() {
+        when(workflowMapper.findStatusById(103L)).thenReturn(status(103, "IN_REVIEW", "IN_REVIEW", false, false));
+        when(workflowMapper.findStatusById(104L)).thenReturn(status(104, "DONE", "DONE", false, true));
+        when(workflowMapper.transitionExists(10L, 103L, 104L)).thenReturn(true);
+    }
+
+    @Test
+    @DisplayName("AC-1: 강제프로젝트_미충족있음_DONE전이거부(BIZ-116, WMP-7850)")
+    void 강제_미충족_완료거부() {
+        WorkItem w = itemWithCriteria(List.of(crit("토큰 발급", true), crit("만료 갱신", false)));
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        stubReviewToDone();
+        when(projectMapper.findById(5L)).thenReturn(
+                Project.builder().id(5L).requireAcceptanceCriteria(true).build());
+
+        assertThatThrownBy(() -> service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(WmpErrorCode.ACCEPTANCE_CRITERIA_UNMET);
+        verify(workItemMapper, never()).updateStatus(any());  // 전이 미반영
+    }
+
+    @Test
+    @DisplayName("AC-2: 강제프로젝트_전부충족_DONE전이허용(미충족0이라 project조회조차 스킵)")
+    void 강제_전부충족_완료허용() {
+        WorkItem w = itemWithCriteria(List.of(crit("토큰 발급", true), crit("만료 갱신", true)));
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        stubReviewToDone();
+        // 전부 충족이면 미충족이 0이라 강제 검사(projectMapper.findById) 자체를 안 탄다(성능)
+
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L);
+
+        verify(workItemMapper).updateStatus(any());       // 전이 반영됨
+        verify(projectMapper, never()).findById(any());   // 미충족 없으면 강제 검사 스킵
+        verify(activityLogMapper, never()).insert(argThat(a ->
+                ActivityLog.COMPLETE_WITH_UNMET.equals(a.getAction())));  // 미충족 스냅샷 없음
+    }
+
+    @Test
+    @DisplayName("AC-3: 비강제프로젝트_미충족있음_완료허용 + COMPLETE_WITH_UNMET스냅샷기록")
+    void 비강제_미충족_완료허용_스냅샷() {
+        WorkItem w = itemWithCriteria(List.of(crit("토큰 발급", true), crit("만료 갱신", false)));
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        stubReviewToDone();
+        when(projectMapper.findById(5L)).thenReturn(
+                Project.builder().id(5L).requireAcceptanceCriteria(false).build());
+
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L);
+
+        verify(workItemMapper).updateStatus(any());  // 통과
+        ArgumentCaptor<ActivityLog> c = ArgumentCaptor.forClass(ActivityLog.class);
+        verify(activityLogMapper, atLeastOnce()).insert(c.capture());
+        ActivityLog snap = c.getAllValues().stream()
+                .filter(a -> ActivityLog.COMPLETE_WITH_UNMET.equals(a.getAction()))
+                .findFirst().orElseThrow();
+        assertThat(snap.getActorId()).isEqualTo(99L);            // 누가
+        assertThat(snap.getMetadata()).contains("만료 갱신");     // 어떤 항목 미충족
+        assertThat(snap.getMetadata()).contains("\"total\":2").contains("\"met\":1");
+    }
+
+    @Test
+    @DisplayName("AC-4: 강제프로젝트_인수조건없음_완료허용(운영형 보호)")
+    void 강제_인수조건없음_완료허용() {
+        WorkItem w = itemWithCriteria(List.of());   // 인수조건 없음
+        when(workItemMapper.findById(1L)).thenReturn(w);
+        stubReviewToDone();
+        // 인수조건 없으면 강제여도 projectMapper.findById조차 호출 안 함(미충족 없음)
+
+        service.changeStatus(1L, new WorkItemDtos.ChangeStatusRequest(104L), 99L);
+
+        verify(workItemMapper).updateStatus(any());  // 통과
+        verify(projectMapper, never()).findById(any());  // 강제 검사 스킵
+    }
+
+    @Test
+    @DisplayName("AC-5: 인수조건체크저장_checked항목에checkedBy·checkedAt설정")
+    void 인수조건체크_저장() {
+        when(workItemMapper.findById(1L)).thenReturn(item(1L, 103L, "IN_REVIEW"));
+        var req = new WorkItemDtos.AcceptanceCriteriaRequest(List.of(
+                new WorkItemDtos.AcceptanceCriteriaRequest.AcceptanceItem("토큰 발급", true),
+                new WorkItemDtos.AcceptanceCriteriaRequest.AcceptanceItem("만료 갱신", false)));
+
+        service.saveAcceptanceCriteria(1L, req, 77L);
+
+        ArgumentCaptor<WorkItem> c = ArgumentCaptor.forClass(WorkItem.class);
+        verify(workItemMapper).updateAcceptanceCriteria(c.capture());
+        var saved = c.getValue().getAcceptanceCriteria();
+        assertThat(saved).hasSize(2);
+        assertThat(saved.get(0).isChecked()).isTrue();
+        assertThat(saved.get(0).getCheckedBy()).isEqualTo(77L);   // 체크한 사람
+        assertThat(saved.get(0).getCheckedAt()).isEqualTo(FIXED);
+        assertThat(saved.get(1).isChecked()).isFalse();
+        assertThat(saved.get(1).getCheckedBy()).isNull();         // 미체크는 clear
+    }
 }

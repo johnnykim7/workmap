@@ -31,7 +31,7 @@
         <result property="targetValue"       column="target_value"/>
         <result property="currentValue"      column="current_value"/>
         <result property="acceptanceCriteria" column="acceptance_criteria"
-                typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
+                typeHandler="com.therecommerce.workmap.common.mybatis.AcceptanceCriterionListJsonTypeHandler"/>
         <result property="stepsToReproduce"  column="steps_to_reproduce"
                 typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
         <result property="expectedResult"    column="expected_result"/>
@@ -71,7 +71,7 @@
              #{workflowId}, #{statusId}, #{commonStatus}, #{priority}, #{assigneeId}, #{reporterId},
              #{sprintId}, #{storyPoints}, #{estimateHours}, #{startDate}, #{dueDate}, #{progress},
              #{measureUnitId}, #{targetValue}, #{currentValue},
-             #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+             #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.AcceptanceCriterionListJsonTypeHandler},
              #{stepsToReproduce, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
              #{expectedResult}, #{actualResult}, #{environment}, #{severity}, #{checklist},
              #{labels, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
@@ -106,7 +106,7 @@
             start_date = #{startDate},
             due_date = #{dueDate},
             epic_id = #{epicId},
-            acceptance_criteria = #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            acceptance_criteria = #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.AcceptanceCriterionListJsonTypeHandler},
             steps_to_reproduce = #{stepsToReproduce, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
             expected_result = #{expectedResult},
             actual_result = #{actualResult},
@@ -115,6 +115,14 @@
             checklist = #{checklist},
             labels = #{labels, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
             related_solutions = #{relatedSolutions, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- 인수조건 전용 갱신(CR-049, WMP-WI-018). 전체 배열 치환(체크 상태 포함). -->
+    <update id="updateAcceptanceCriteria" parameterType="com.therecommerce.workmap.workitem.domain.WorkItem">
+        UPDATE work_items SET
+            acceptance_criteria = #{acceptanceCriteria, typeHandler=com.therecommerce.workmap.common.mybatis.AcceptanceCriterionListJsonTypeHandler},
             updated_at = now()
         WHERE id = #{id} AND deleted_at IS NULL
     </update>

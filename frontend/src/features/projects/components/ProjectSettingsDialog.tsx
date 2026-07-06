@@ -45,6 +45,7 @@ const schema = z
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     activeTabs: z.array(z.string()).min(1, '탭을 하나 이상 선택하세요.'),
+    requireAcceptanceCriteria: z.boolean(),
   })
   .refine((v) => !v.startDate || !v.endDate || v.startDate <= v.endDate, {
     message: '종료일은 시작일 이후여야 합니다.',
@@ -66,7 +67,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', description: '', startDate: '', endDate: '', activeTabs: ['summary'] },
+    defaultValues: { name: '', description: '', startDate: '', endDate: '', activeTabs: ['summary'], requireAcceptanceCriteria: false },
   });
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
       startDate: project.startDate ?? '',
       endDate: project.endDate ?? '',
       activeTabs: project.activeTabs?.length ? project.activeTabs : ['summary'],
+      requireAcceptanceCriteria: project.requireAcceptanceCriteria ?? false,
     });
   }, [open, project, reset]);
 
@@ -89,6 +91,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
       startDate: v.startDate || null,
       endDate: v.endDate || null,
       activeTabs: v.activeTabs,
+      requireAcceptanceCriteria: v.requireAcceptanceCriteria,
     };
     updateMut.mutate({ id: project.id, body }, { onSuccess: () => onOpenChange(false) });
   });
@@ -195,6 +198,27 @@ export function ProjectSettingsDialog({ open, onOpenChange, project }: Props) {
                 checked={isPrivate}
                 disabled={visibilityMut.isPending}
                 onCheckedChange={toggleVisibility}
+              />
+            </div>
+
+            {/* 인수조건 완료 강제(CR-049) — 폼 저장과 함께 반영. 기본 OFF(비강제). */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <div className="text-sm font-medium text-foreground">인수조건 미충족 시 완료 차단</div>
+                <div className="text-xs text-muted-foreground">
+                  켜면 스토리의 인수조건이 모두 충족돼야 완료할 수 있습니다. (끄면 경고만 표시하고 완료 허용)
+                </div>
+              </div>
+              <Controller
+                control={control}
+                name="requireAcceptanceCriteria"
+                render={({ field }) => (
+                  <Switch
+                    checked={field.value}
+                    disabled={busy}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
               />
             </div>
 

@@ -115,6 +115,9 @@ export const workItemApi = {
   // 결과(완료 산출물) 본문 저장·수정(WMP-WI-017, CR-048). 첨부는 기존 첨부 API 재사용.
   saveResult: (id: number, resultContent: string) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/result`, { resultContent }),
+  // 인수조건 체크/편집(WMP-WI-018, CR-049). 전체 배열 치환({text,checked}만 전송, checkedBy/At은 서버가 채움).
+  saveAcceptanceCriteria: (id: number, criteria: { text: string; checked: boolean }[]) =>
+    api.patch<WorkItemResponse>(`/work-items/${id}/acceptance-criteria`, { criteria }),
   changeSprint: (id: number, sprintId: number | null) =>
     api.patch<WorkItemResponse>(`/work-items/${id}/sprint`, { sprintId }),
   createSubtask: (id: number, body: CreateSubtaskRequest) =>

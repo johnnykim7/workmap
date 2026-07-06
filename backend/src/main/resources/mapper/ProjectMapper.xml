@@ -15,6 +15,7 @@
         <result property="activeTabs"   column="active_tabs"
                 typeHandler="com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler"/>
         <result property="defaultTab"   column="default_tab"/>
+        <result property="requireAcceptanceCriteria" column="require_acceptance_criteria"/>
         <result property="seqCounter"   column="seq_counter"/>
         <result property="startDate"    column="start_date"/>
         <result property="endDate"      column="end_date"/>
@@ -87,6 +88,7 @@
                 active_tabs = #{p.activeTabs, typeHandler=com.therecommerce.workmap.common.mybatis.StringListJsonTypeHandler},
             </if>
             <if test="p.defaultTab != null">default_tab = #{p.defaultTab},</if>
+            <if test="p.requireAcceptanceCriteria != null">require_acceptance_criteria = #{p.requireAcceptanceCriteria},</if>
             <if test="p.startDate != null">start_date = #{p.startDate},</if>
             <if test="p.endDate != null">end_date = #{p.endDate},</if>
             <if test="p.description != null">description = #{p.description},</if>

@@ -2,15 +2,17 @@
 // Epic: 하위 묶음 진행률 집계 / Story: 인수조건 / Task: 체크리스트·공수 / Bug: 재현절차·기대vs실제·환경·심각도 / Sub-task: 부모 링크.
 // 편집 UX(Jira 정합): 설명·인수조건·체크리스트·재현절차 등은 평소 읽기 렌더 → [편집] 클릭 시에만 입력기 노출 → 저장/취소.
 import { useEffect, useState } from 'react';
-import { Button, Textarea } from '@therecommerce/ds-ui';
-import { Pencil } from 'lucide-react';
+import { Button, Textarea, Checkbox } from '@therecommerce/ds-ui';
+import { Pencil, Plus, X } from 'lucide-react';
 import { ROUTES } from '@/lib/route-paths';
 import { useNavigate } from 'react-router-dom';
-import { type WorkItemResponse, STATUS_CATEGORY } from '@/types/domain';
-import { useUpdateWorkItem, useProjectItems } from '../hooks';
+import { type WorkItemResponse, type AcceptanceCriterion, STATUS_CATEGORY } from '@/types/domain';
+import { useUpdateWorkItem, useProjectItems, useSaveAcceptanceCriteria } from '../hooks';
 import { StatusBadge, TypeBadge } from '@/components/badges';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import { htmlToPlainText } from '@/lib/html-text';
+import { useCanWrite } from '@/lib/permissions';
+import { metProgress } from '../acceptance-criteria';
 
 interface Props {
   item: WorkItemResponse;
@@ -33,13 +35,7 @@ export function DetailBody({ item }: Props) {
       {item.issueType === 'EPIC' && <EpicChildren item={item} />}
 
       {item.issueType === 'STORY' && (
-        <Section title="인수조건">
-          <ListEditBlock
-            value={item.acceptanceCriteria ?? []}
-            placeholder="인수조건을 한 줄에 하나씩 입력하세요."
-            onCommit={(lines) => update.mutate({ acceptanceCriteria: lines })}
-          />
-        </Section>
+        <AcceptanceCriteriaSection item={item} />
       )}
 
       {item.issueType === 'TASK' && (
@@ -87,12 +83,117 @@ export function DetailBody({ item }: Props) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1.5 text-sm font-semibold text-foreground">{title}</h2>
+      <div className="mb-1.5 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {right}
+      </div>
       {children}
     </section>
+  );
+}
+
+// 인수조건(CR-049, WMP-WI-018) — 체크 가능 리스트 + 진척률(N/M 충족).
+// 읽기: 체크박스(WRITER만 토글, VIEWER는 disabled) + 진척률. 편집: 항목 추가/삭제/텍스트 수정.
+function AcceptanceCriteriaSection({ item }: { item: WorkItemResponse }) {
+  const canWrite = useCanWrite();
+  const save = useSaveAcceptanceCriteria(item.id, item.key);
+  const criteria: AcceptanceCriterion[] = item.acceptanceCriteria ?? [];
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string[]>(criteria.map((c) => c.text));
+
+  useEffect(() => {
+    if (!editing) setDraft(criteria.map((c) => c.text));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.acceptanceCriteria, editing]);
+
+  const { met, total } = metProgress(criteria);
+
+  // 체크 토글: 해당 항목만 checked 변경 후 전체 배열 치환 저장.
+  function toggle(idx: number, checked: boolean) {
+    const next = criteria.map((c, i) => ({ text: c.text, checked: i === idx ? checked : c.checked }));
+    save.mutate(next);
+  }
+
+  // 편집 저장: 빈 줄 제거 + 기존 체크 상태 보존(같은 text) — 서버 wrapCriteria가 최종 판단하나 UI도 정합 유지.
+  function saveEdit() {
+    const texts = draft.map((t) => t.trim()).filter(Boolean);
+    const next = texts.map((text) => ({
+      text,
+      checked: criteria.find((c) => c.text === text)?.checked ?? false,
+    }));
+    save.mutate(next, { onSuccess: () => setEditing(false) });
+  }
+
+  const right = canWrite && !editing && (
+    <button
+      type="button"
+      onClick={() => { setDraft(criteria.map((c) => c.text)); setEditing(true); }}
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+    >
+      <Pencil className="h-3 w-3" /> 편집
+    </button>
+  );
+
+  return (
+    <Section
+      title={total > 0 ? `인수조건 · ${met}/${total} 충족` : '인수조건'}
+      right={right}
+    >
+      {editing ? (
+        <div className="space-y-2">
+          {draft.map((text, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm"
+                value={text}
+                autoFocus={i === draft.length - 1}
+                placeholder="인수조건 항목"
+                onChange={(e) => setDraft((d) => d.map((v, j) => (j === i ? e.target.value : v)))}
+              />
+              <button
+                type="button"
+                onClick={() => setDraft((d) => d.filter((_, j) => j !== i))}
+                className="text-muted-foreground hover:text-destructive"
+                title="항목 삭제"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setDraft((d) => [...d, ''])}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" /> 항목 추가
+          </button>
+          <EditActions onSave={saveEdit} onCancel={() => setEditing(false)} saving={save.isPending} />
+        </div>
+      ) : total === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {canWrite ? '아직 인수조건이 없습니다. [편집]으로 추가하세요.' : '인수조건이 없습니다.'}
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {criteria.map((c, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <Checkbox
+                checked={c.checked}
+                disabled={!canWrite || save.isPending}
+                onCheckedChange={(v) => toggle(i, v === true)}
+                className="mt-0.5"
+              />
+              <span className={`text-sm ${c.checked ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                {c.text}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
 

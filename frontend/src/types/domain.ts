@@ -196,6 +196,7 @@ export interface Project {
   visibility: Visibility;
   workflowId?: number;
   activeTabs?: string[];
+  requireAcceptanceCriteria?: boolean; // 인수조건 미충족 시 완료 차단 강제(CR-049, 기본 false)
   startDate?: string;
   endDate?: string;
   description?: string;
@@ -249,6 +250,14 @@ export interface ProjectSummary {
   progress: number;
 }
 
+// 인수조건 항목(CR-049, WMP-WI-018). 충족(checked)은 사람이 체크(BIZ-115).
+export interface AcceptanceCriterion {
+  text: string;
+  checked: boolean;
+  checkedBy?: number | null;
+  checkedAt?: string | null;
+}
+
 // BE WorkItemDtos.Response 그대로 (T3-2 §F). 보드/백로그 카드·통합목록이 받는 실 계약.
 // 주의: 아래 WorkItem(목 도메인)과 달리 assigneeId/statusId 기반(이름·키 비정규화 없음).
 // 담당자 이름은 멤버 목록에서 assigneeId로 해소한다.
@@ -279,7 +288,7 @@ export interface WorkItemResponse {
   targetValue?: number | null;
   currentValue?: number | null;
   // 유형별 본문 필드(§9.3 — BE Response 전체 계약). 보드/백로그 카드 목록엔 비어 올 수 있음.
-  acceptanceCriteria?: string[] | null; // Story 인수조건
+  acceptanceCriteria?: AcceptanceCriterion[] | null; // Story 인수조건(체크 가능, CR-049)
   stepsToReproduce?: string[] | null; // Bug 재현절차
   expectedResult?: string | null; // Bug 기대 결과
   actualResult?: string | null; // Bug 실제 결과

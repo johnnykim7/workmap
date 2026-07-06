@@ -28,6 +28,7 @@ export interface UpdateProjectRequest {
   name?: string;
   activeTabs?: string[];
   defaultTab?: string; // "기본값으로 설정"(CR-020). 진입 시 첫 화면.
+  requireAcceptanceCriteria?: boolean; // 인수조건 완료 강제(CR-049). null이면 미변경.
   startDate?: string | null;
   endDate?: string | null;
   description?: string | null;

@@ -27,6 +27,7 @@ public class ActivityLog {
     public static final String LINK = "LINK";
     public static final String FLAG_ON = "FLAG_ON";    // 막힘 표시(CR-040)
     public static final String FLAG_OFF = "FLAG_OFF";  // 막힘 해제(CR-040)
+    public static final String COMPLETE_WITH_UNMET = "COMPLETE_WITH_UNMET";  // 인수조건 미충족 완료(CR-049, BIZ-116)
 
     private Long id;
     private Long workItemId;
@@ -34,5 +35,6 @@ public class ActivityLog {
     private String action;
     private String fromValue;
     private String toValue;
+    private String metadata;    // 구조화 부가정보 JSONB(CR-049) — COMPLETE_WITH_UNMET 미충족 스냅샷 등
     private OffsetDateTime createdAt;
 }

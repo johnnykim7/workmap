@@ -18,6 +18,7 @@ import { useUpdateWorkItem, useChangeStatus, useDeleteWorkItem, useToggleFlag } 
 import { BlockReasonDialog } from '@/features/board/components/BlockReasonDialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ConvertDialog } from './ConvertDialog';
+import { unmetCount } from '../acceptance-criteria';
 
 interface Props {
   item: WorkItemResponse;
@@ -45,6 +46,8 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // 인수조건 미충족 완료 경고(CR-049) — 비강제 프로젝트에서 미충족 항목이 있는 채 완료 시 확인. pendingStatusId=대기 중 전이.
+  const [unmetConfirm, setUnmetConfirm] = useState<{ statusId: number; unmet: number } | null>(null);
   useEffect(() => { setTitle(item.title); }, [item.title]);
 
   // 목록 내 이전/다음 = 같은 프로젝트 카드 순서(전 그룹×컬럼 평탄화 기준). 보드 미로딩 시 비활성.
@@ -65,6 +68,14 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
   function onStatusChange(v: string) {
     const toStatusId = Number(v);
     if (toStatusId === item.statusId) return;
+    // 완료(DONE 계열) 전이 시 미충족 인수조건 확인(CR-049). 비강제면 경고 후 진행,
+    // 강제 프로젝트면 BE가 409(ACCEPTANCE_CRITERIA_UNMET)를 반환 → onError 토스트로 안내.
+    const target = columns.find((c) => c.statusId === toStatusId);
+    const unmet = unmetCount(item.acceptanceCriteria);
+    if (target?.isDone && unmet > 0) {
+      setUnmetConfirm({ statusId: toStatusId, unmet });
+      return;
+    }
     changeStatus.mutate({ toStatusId });
   }
 
@@ -214,6 +225,22 @@ export function DetailHeader({ item, showBack = false, onAddSubtask, onAddLink, 
             { flagged: true, reason },
             { onSettled: () => setFlagDialogOpen(false) },
           );
+        }}
+      />
+
+      {/* 인수조건 미충족 완료 경고(CR-049). 비강제 프로젝트 — 넘어가되 확인. 서버가 미충족 스냅샷을 이력에 기록. */}
+      <ConfirmDialog
+        open={unmetConfirm != null}
+        onOpenChange={(o) => { if (!o) setUnmetConfirm(null); }}
+        title="인수조건 미충족"
+        description={`아직 충족되지 않은 인수조건이 ${unmetConfirm?.unmet ?? 0}건 있습니다. 그래도 완료 처리할까요? (완료 시 미충족 항목이 이력에 남습니다.)`}
+        confirmLabel="완료 처리"
+        busy={changeStatus.isPending}
+        onConfirm={() => {
+          if (unmetConfirm) {
+            changeStatus.mutate({ toStatusId: unmetConfirm.statusId },
+              { onSettled: () => setUnmetConfirm(null) });
+          }
         }}
       />
     </TooltipProvider>

@@ -126,7 +126,7 @@ class ProjectServiceTest {
         when(projectMapper.findById(7L)).thenReturn(existing, updated);
 
         ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
-                "새이름", List.of("summary", "board", "list"), null, null, null, null);
+                "새이름", List.of("summary", "board", "list"), null, null, null, null, null);
 
         ProjectDtos.Response res = projectService.update(7L, req);
 
@@ -143,7 +143,7 @@ class ProjectServiceTest {
         when(projectMapper.findById(404L)).thenReturn(null);
 
         ProjectDtos.UpdateRequest req = new ProjectDtos.UpdateRequest(
-                "x", null, null, null, null, null);
+                "x", null, null, null, null, null, null);
 
         assertThatThrownBy(() -> projectService.update(404L, req))
                 .isInstanceOf(BusinessException.class)

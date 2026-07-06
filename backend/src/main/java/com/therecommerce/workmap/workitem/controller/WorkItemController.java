@@ -152,4 +152,14 @@ public class WorkItemController {
             @AuthUserInfo("userId") Long userId) {
         return ResponseDto.success(workItemService.saveResult(id, req, userId));
     }
+
+    /** 인수조건 체크/편집(WMP-WI-018, CR-049). 전체 배열 치환. 조회는 GET /{id} 응답 필드로. */
+    @PreAuthorize(WmpAuthz.WRITER)
+    @PatchMapping("/{id}/acceptance-criteria")
+    public ResponseDto<WorkItemDtos.Response> saveAcceptanceCriteria(
+            @PathVariable Long id,
+            @Valid @RequestBody WorkItemDtos.AcceptanceCriteriaRequest req,
+            @AuthUserInfo("userId") Long userId) {
+        return ResponseDto.success(workItemService.saveAcceptanceCriteria(id, req, userId));
+    }
 }

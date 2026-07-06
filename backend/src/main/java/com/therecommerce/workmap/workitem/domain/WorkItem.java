@@ -52,7 +52,7 @@ public class WorkItem {
     private Long measureUnitId;
     private BigDecimal targetValue;
     private BigDecimal currentValue;
-    private List<String> acceptanceCriteria;
+    private List<AcceptanceCriterion> acceptanceCriteria;   // [{text,checked,checkedBy,checkedAt}] (CR-049, BIZ-115)
     private List<String> stepsToReproduce;
     private String expectedResult;
     private String actualResult;

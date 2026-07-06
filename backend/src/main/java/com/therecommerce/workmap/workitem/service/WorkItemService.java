@@ -10,6 +10,7 @@ import com.therecommerce.workmap.member.mapper.ProjectMemberMapper;
 import com.therecommerce.workmap.project.domain.Project;
 import com.therecommerce.workmap.project.domain.Visibility;
 import com.therecommerce.workmap.project.mapper.ProjectMapper;
+import com.therecommerce.workmap.workitem.domain.AcceptanceCriterion;
 import com.therecommerce.workmap.workitem.domain.ActivityLog;
 import com.therecommerce.workmap.workitem.domain.CommonStatus;
 import com.therecommerce.workmap.workitem.domain.IssueType;
@@ -114,7 +115,7 @@ public class WorkItemService {
                 .measureUnitId(req.measureUnitId())
                 .targetValue(req.targetValue())
                 .currentValue(req.currentValue())
-                .acceptanceCriteria(req.acceptanceCriteria())
+                .acceptanceCriteria(wrapCriteria(req.acceptanceCriteria(), null))
                 .stepsToReproduce(req.stepsToReproduce())
                 .expectedResult(req.expectedResult())
                 .actualResult(req.actualResult())
@@ -179,7 +180,10 @@ public class WorkItemService {
         if (req.estimateHours() != null) w.setEstimateHours(req.estimateHours());
         if (req.startDate() != null) w.setStartDate(req.startDate());
         if (req.dueDate() != null) w.setDueDate(req.dueDate());
-        if (req.acceptanceCriteria() != null) w.setAcceptanceCriteria(req.acceptanceCriteria());
+        // 인수조건 텍스트 편집(CR-049): 텍스트만 들어오므로, 같은 text의 기존 체크 상태는 보존한다.
+        if (req.acceptanceCriteria() != null) {
+            w.setAcceptanceCriteria(wrapCriteria(req.acceptanceCriteria(), w.getAcceptanceCriteria()));
+        }
         if (req.stepsToReproduce() != null) w.setStepsToReproduce(req.stepsToReproduce());
         if (req.expectedResult() != null) w.setExpectedResult(req.expectedResult());
         if (req.actualResult() != null) w.setActualResult(req.actualResult());
@@ -258,6 +262,20 @@ public class WorkItemService {
         String fromCode = from == null ? null : from.getCode();
         OffsetDateTime now = OffsetDateTime.now(clock);
 
+        // 인수조건 완료 가드(CR-049, BIZ-116): DONE 계열 진입 시에만. 강제 프로젝트면 미충족 차단.
+        // 비강제 프로젝트면 통과하되, 미충족인 채 완료되면 활동로그에 스냅샷을 남긴다(책임 소지).
+        List<AcceptanceCriterion> unmet = to.isDone() ? unmetCriteria(w) : List.of();
+        boolean unmetCompletion = false;
+        if (to.isDone() && !unmet.isEmpty()) {
+            Project project = projectMapper.findById(w.getProjectId());
+            boolean enforce = project != null && Boolean.TRUE.equals(project.getRequireAcceptanceCriteria());
+            if (enforce) {
+                throw new BusinessException(WmpErrorCode.ACCEPTANCE_CRITERIA_UNMET,
+                        "미충족한 인수조건이 " + unmet.size() + "건 있어 완료할 수 없습니다.");
+            }
+            unmetCompletion = true;   // 비강제 — 통과하되 아래에서 스냅샷 기록
+        }
+
         // 완료 자동(BIZ-006): DONE 계열 진입 시 completed_at, 재오픈 시 null(FSM-6/7/8)
         if (to.isDone()) {
             w.setCompletedAt(now);
@@ -277,6 +295,13 @@ public class WorkItemService {
 
         // 활동로그(FSM-12) — 동일 트랜잭션
         log(id, actorId, ActivityLog.STATUS_CHANGE, fromCode, to.getCode());
+
+        // 비강제 미충족 완료 스냅샷(CR-049, BIZ-116) — 누가·언제·어떤 항목이 미충족인 채 완료했나(책임 소지)
+        if (unmetCompletion) {
+            int total = w.getAcceptanceCriteria() == null ? 0 : w.getAcceptanceCriteria().size();
+            log(id, actorId, ActivityLog.COMPLETE_WITH_UNMET, null, null,
+                    unmetSnapshot(unmet, total - unmet.size(), total));
+        }
 
         // 이벤트 발행(FSM-10/11)
         events.publishEvent(new WorkItemEvents.WorkItemStatusChanged(
@@ -500,8 +525,90 @@ public class WorkItemService {
     }
 
     private void log(Long workItemId, Long actorId, String action, String from, String to) {
+        log(workItemId, actorId, action, from, to, null);
+    }
+
+    private void log(Long workItemId, Long actorId, String action, String from, String to, String metadata) {
         activityLogMapper.insert(ActivityLog.builder()
                 .workItemId(workItemId).actorId(actorId).action(action)
-                .fromValue(from).toValue(to).build());
+                .fromValue(from).toValue(to).metadata(metadata).build());
+    }
+
+    // ===================================================================
+    // 인수조건 체크 (CR-049, WMP-WI-018)
+    // ===================================================================
+
+    /**
+     * 인수조건 전체 배열 치환(WMP-WI-018). 체크로 바뀐 항목에 checkedBy=actorId·checkedAt=now,
+     * 해제하면 clear. 텍스트만 신뢰하고 checkedBy/checkedAt은 서버가 판단한다.
+     */
+    @Transactional
+    public WorkItemDtos.Response saveAcceptanceCriteria(
+            Long id, WorkItemDtos.AcceptanceCriteriaRequest req, Long actorId) {
+        WorkItem w = getEntity(id);
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        List<AcceptanceCriterion> next = new java.util.ArrayList<>();
+        for (WorkItemDtos.AcceptanceCriteriaRequest.AcceptanceItem item : req.criteria()) {
+            next.add(AcceptanceCriterion.builder()
+                    .text(item.text())
+                    .checked(item.checked())
+                    .checkedBy(item.checked() ? actorId : null)
+                    .checkedAt(item.checked() ? now : null)
+                    .build());
+        }
+        w.setAcceptanceCriteria(next);
+        workItemMapper.updateAcceptanceCriteria(w);
+        return WorkItemDtos.Response.from(getEntity(id));
+    }
+
+    /** 텍스트 목록 → 인수조건 객체 목록. prev가 있으면 같은 text의 체크 상태를 보존한다(텍스트 편집 시). */
+    private List<AcceptanceCriterion> wrapCriteria(List<String> texts, List<AcceptanceCriterion> prev) {
+        if (texts == null) {
+            return null;
+        }
+        List<AcceptanceCriterion> result = new java.util.ArrayList<>();
+        for (String text : texts) {
+            AcceptanceCriterion match = null;
+            if (prev != null) {
+                for (AcceptanceCriterion p : prev) {
+                    if (text.equals(p.getText())) { match = p; break; }
+                }
+            }
+            if (match != null && match.isChecked()) {
+                result.add(AcceptanceCriterion.builder()
+                        .text(text).checked(true)
+                        .checkedBy(match.getCheckedBy()).checkedAt(match.getCheckedAt()).build());
+            } else {
+                result.add(AcceptanceCriterion.builder().text(text).checked(false).build());
+            }
+        }
+        return result;
+    }
+
+    /** 미충족(checked=false) 인수조건만. 없거나 비면 빈 리스트. */
+    private List<AcceptanceCriterion> unmetCriteria(WorkItem w) {
+        if (w.getAcceptanceCriteria() == null || w.getAcceptanceCriteria().isEmpty()) {
+            return List.of();
+        }
+        List<AcceptanceCriterion> unmet = new java.util.ArrayList<>();
+        for (AcceptanceCriterion c : w.getAcceptanceCriteria()) {
+            if (!c.isChecked()) { unmet.add(c); }
+        }
+        return unmet;
+    }
+
+    /** 미충족 스냅샷 JSON(activity_logs.metadata) — {unmet:[text...], met:N, total:M}. */
+    private String unmetSnapshot(List<AcceptanceCriterion> unmet, int met, int total) {
+        try {
+            java.util.List<String> texts = new java.util.ArrayList<>();
+            for (AcceptanceCriterion c : unmet) { texts.add(c.getText()); }
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("unmet", texts);
+            m.put("met", met);
+            m.put("total", total);
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(m);
+        } catch (Exception e) {
+            return null;   // 스냅샷 실패가 완료를 막지 않는다(best-effort)
+        }
     }
 }
