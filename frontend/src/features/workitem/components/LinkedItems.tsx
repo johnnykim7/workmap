@@ -15,6 +15,7 @@ import {
   type WorkItemResponse, type LinkType, type LinkView, LINK_TYPE_LABEL,
 } from '@/types/domain';
 import { useLinks, useCreateLink, useDeleteLink, useProjectItems } from '../hooks';
+import { SECTION_LABEL_CLS } from './DetailBody';
 
 const LINK_TYPES: LinkType[] = ['BLOCKS', 'BLOCKED_BY', 'RELATES_TO', 'DUPLICATES'];
 
@@ -37,7 +38,7 @@ export function LinkedItems({ item, addRef }: { item: WorkItemResponse; addRef?:
   return (
     <section>
       <div className="mb-1.5 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">연결된 업무</h2>
+        <h2 className={SECTION_LABEL_CLS}>연결된 업무</h2>
         <Button variant="ghost" size="sm" className="gap-1" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" /> 연결
         </Button>

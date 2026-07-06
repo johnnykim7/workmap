@@ -33,7 +33,9 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
   const addAttachmentRef = useRef<() => void>(() => {});
 
   const body = (
-    <div className="min-w-0 flex-1 space-y-6 lg:pl-4">
+    // 섹션 사이 얇은 구분선 + 균일 상하 패딩으로 블록 경계를 만든다(제목은 muted 라벨 톤).
+    // [&>*]: 직속 섹션에만 패딩/구분선 적용, 첫 블록은 위 패딩·선 제거.
+    <div className="min-w-0 flex-1 divide-y divide-border lg:pl-4 [&>*]:py-5 [&>*:first-child]:pt-0">
       <ApprovalBanner item={item} />
       <DetailBody item={item} />
       {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}

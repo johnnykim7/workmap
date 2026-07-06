@@ -10,6 +10,7 @@ import { type WorkItemResponse } from '@/types/domain';
 import { useBoard } from '@/features/board/hooks';
 import { useProjectItems, useCreateSubtask, pickSubtasks } from '../hooks';
 import { SubtaskCheckbox } from './SubtaskCheckbox';
+import { SECTION_LABEL_CLS } from './DetailBody';
 
 interface Props {
   item: WorkItemResponse;
@@ -45,7 +46,7 @@ export function SubtaskList({ item, addRef }: Props) {
   return (
     <section>
       <div className="mb-1.5 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">하위 작업</h2>
+        <h2 className={SECTION_LABEL_CLS}>하위 작업</h2>
         <Button variant="ghost" size="sm" className="gap-1" onClick={() => setAdding((v) => !v)}>
           <Plus className="size-4" /> 추가
         </Button>

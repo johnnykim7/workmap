@@ -83,11 +83,16 @@ export function DetailBody({ item }: Props) {
   );
 }
 
+// 상세 섹션 제목 공통 톤 — 작은 uppercase muted 라벨. 본문보다 낮춰 위계를 만든다.
+// 다른 상세 컴포넌트(SubtaskList/LinkedItems/ActivityTabs/첨부/결과)도 이 클래스를 공유해 정합.
+export const SECTION_LABEL_CLS =
+  'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+
 function Section({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <section>
-      <div className="mb-1.5 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className={SECTION_LABEL_CLS}>{title}</h2>
         {right}
       </div>
       {children}

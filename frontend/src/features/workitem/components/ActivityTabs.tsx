@@ -9,13 +9,14 @@ import { type WorkItemResponse } from '@/types/domain';
 import { useComments, useActivities } from '../hooks';
 import { CommentThread } from './CommentThread';
 import { ActivityFeed, ACTION_LABEL } from './ActivityFeed';
+import { SECTION_LABEL_CLS } from './DetailBody';
 
 export function ActivityTabs({ item }: { item: WorkItemResponse }) {
   const [tab, setTab] = useState('comments');
 
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold text-foreground">활동</h2>
+      <h2 className={`mb-2 ${SECTION_LABEL_CLS}`}>활동</h2>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList variant="line" className="mb-3">
           <TabsTrigger value="all">전체</TabsTrigger>
