@@ -234,6 +234,18 @@ html, body, #root {
 [data-slot="sidebar-menu-sub-button"] {
   font-size: 0.875rem; /* 14px — 서브메뉴는 한 단계 작게 */
 }
+/* 활성 서브메뉴(개별 프로젝트·채널) 강조 — 배경색(ds-ui data-[active=true]) 위에 링 테두리를 더한다.
+ * "지금 어느 프로젝트/채널에 있는가"를 또렷하게(사용자 요청). 상위 고정메뉴(대시보드/알림/검색)는
+ * sidebar-menu-button이라 대상 아님(서브메뉴만). ds-ui는 focus-visible에만 ring이 있어 마우스로는
+ * 안 보였던 것을, 활성 상태에 상시 링으로 고정. box-shadow로 offset 링 재현(rounded 모서리 따름).
+ * 링 색 = --sidebar-primary(테마 포인트색, themes.ts 프리셋이 정의) → 활성 강조와 톤 일치·테마 자동대응.
+ * offset(안쪽 2px)은 --sidebar로 배경과 링 사이 간격을 줘 캡처의 '떠 보이는 테두리' 느낌 재현.
+ * 색은 LNB 톤 토큰(--sidebar-primary/--sidebar)만 사용(임의 hex 금지, 색 절제 규칙). */
+[data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  box-shadow:
+    0 0 0 2px var(--sidebar),
+    0 0 0 3px var(--sidebar-primary);
+}
 
 /* LNB 접기/펼치기 토글(sidebar-trigger) — 보조 기능이라 절제: LNB 글자색 60% + 배경 하이라이트 제거.
  * ghost Button 기본은 --foreground(다크 LNB에서 묻힘) + hover/focus 시 사각 배경 음영이 생긴다 →
