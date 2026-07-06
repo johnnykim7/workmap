@@ -11,7 +11,7 @@ import {
 } from '@therecommerce/ds-ui';
 import {
   Paperclip, Plus, MoreHorizontal, LayoutGrid, List as ListIcon,
-  Download, Trash2, Eye, ChevronDown, ChevronRight,
+  Download, Trash2, Eye, ChevronDown, ChevronRight, Upload,
 } from 'lucide-react';
 import { uploadFile } from '@/lib/upload';
 import { fmtDate } from '@/lib/date';
@@ -51,6 +51,8 @@ export function FileAttachmentList({
   const [confirmDelete, setConfirmDelete] = useState<AttachmentItem | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepth = useRef(0); // dragenter/leave가 자식 요소마다 발생 → 깊이 카운트로 안정화.
 
   // 뷰어로 넘길 파일 목록(전체 첨부 — 이미지 좌우 이동 시 형제 포함).
   const viewerFiles: ViewerFile[] = useMemo(
@@ -63,9 +65,8 @@ export function FileAttachmentList({
     viewer.open(viewerFiles, Math.max(0, idx));
   };
 
-  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = '';
+  // 파일 선택창·드래그&드롭 공용 업로드(멀티, 순차).
+  const uploadFiles = async (files: File[]) => {
     if (!files.length) return;
     const tooBig = files.find((f) => f.size > MAX_SIZE);
     if (tooBig) { toast.error(`"${tooBig.name}"이(가) 너무 큽니다(최대 10MB).`); return; }
@@ -89,6 +90,39 @@ export function FileAttachmentList({
     } finally {
       setUploading(false);
     }
+  };
+
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    void uploadFiles(files);
+  };
+
+  // ── 드래그 & 드롭(멀티) ──
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!canWrite || !e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    dragDepth.current += 1;
+    setDragOver(true);
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    if (!canWrite || !e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!canWrite) return;
+    e.preventDefault();
+    dragDepth.current -= 1;
+    if (dragDepth.current <= 0) { dragDepth.current = 0; setDragOver(false); }
+  };
+  const onDrop = (e: React.DragEvent) => {
+    if (!canWrite) return;
+    e.preventDefault();
+    dragDepth.current = 0;
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files ?? []);
+    void uploadFiles(files);
   };
 
   const doDelete = async (item: AttachmentItem) => {
@@ -121,12 +155,25 @@ export function FileAttachmentList({
   const count = items.length;
 
   return (
-    <section>
+    <section
+      className={cn('relative rounded-md', dragOver && 'ring-2 ring-primary ring-offset-2')}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {/* 드롭 오버레이 — 드래그 중일 때만 */}
+      {dragOver && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-md bg-primary/10 text-sm font-medium text-primary backdrop-blur-[1px]">
+          <Upload className="size-6" />
+          여기에 파일을 놓으세요
+        </div>
+      )}
       {/* 헤더 */}
       <div className="mb-1.5 flex items-center justify-between">
         <button
           type="button"
-          className={cn('flex items-center gap-1.5 text-sm font-semibold text-foreground', collapsible ? 'cursor-pointer' : 'cursor-default')}
+          className={cn('flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground', collapsible ? 'cursor-pointer' : 'cursor-default')}
           onClick={() => collapsible && setCollapsed((v) => !v)}
         >
           {collapsible && (collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />)}

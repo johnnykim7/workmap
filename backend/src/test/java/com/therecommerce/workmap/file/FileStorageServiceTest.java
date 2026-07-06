@@ -31,6 +31,7 @@ class FileStorageServiceTest {
         props.setDir(tempDir.toString());
         props.setPublicBase("/api/v1/files/serve");
         props.setAllowedContentTypes(List.of("image/png", "image/jpeg"));
+        props.setAllowedExtensions(List.of("png", "jpg", "jpeg"));  // 확장자 보조검사도 이미지로 한정(테스트 격리)
         service = new FileStorageService(props);
     }
 
@@ -89,6 +90,45 @@ class FileStorageServiceTest {
         assertThat(res.url()).endsWith(".pdf");
         assertThat(res.fileName()).isEqualTo("설계도.pdf");
         assertThat(res.contentType()).isEqualTo("application/pdf");
+    }
+
+    @Test
+    @DisplayName("md파일_MIME없어도_확장자로허용됨")
+    void store_markdownByExtension_succeeds() {
+        // md는 브라우저가 MIME를 비우거나 octet-stream으로 보냄 → 확장자 화이트리스트로 허용(CR-037).
+        UploadProperties props = new UploadProperties();
+        props.setDir(tempDir.toString());
+        props.setPublicBase("/api/v1/files/serve");
+        props.setAllowedContentTypes(List.of("image/png"));       // MIME엔 md 없음
+        props.setAllowedExtensions(List.of("png", "md"));          // 확장자엔 md 있음
+        FileStorageService svc = new FileStorageService(props);
+
+        // MIME가 비어있는(octet-stream) md
+        MockMultipartFile md = new MockMultipartFile(
+                "file", "README.md", "application/octet-stream", "# hi".getBytes());
+
+        FileUploadResponse res = svc.store(md);
+
+        assertThat(res.url()).endsWith(".md");
+        assertThat(res.fileName()).isEqualTo("README.md");
+    }
+
+    @Test
+    @DisplayName("MIME확장자모두불허_거부됨")
+    void store_neitherMimeNorExt_throws() {
+        UploadProperties props = new UploadProperties();
+        props.setDir(tempDir.toString());
+        props.setPublicBase("/api/v1/files/serve");
+        props.setAllowedContentTypes(List.of("image/png"));
+        props.setAllowedExtensions(List.of("png"));
+        FileStorageService svc = new FileStorageService(props);
+
+        MockMultipartFile exe = new MockMultipartFile(
+                "file", "virus.exe", "application/octet-stream", "MZ".getBytes());
+
+        assertThatThrownBy(() -> svc.store(exe))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", WmpErrorCode.FILE_TYPE_NOT_ALLOWED);
     }
 
     @Test

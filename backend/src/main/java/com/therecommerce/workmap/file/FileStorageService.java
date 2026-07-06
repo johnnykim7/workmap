@@ -36,11 +36,17 @@ public class FileStorageService {
             throw new BusinessException(WmpErrorCode.FILE_EMPTY);
         }
         String contentType = file.getContentType();
-        if (contentType == null || !props.getAllowedContentTypes().contains(contentType)) {
+        String ext = extensionOf(file.getOriginalFilename());  // 소문자 ".md" 등(비허용문자면 "")
+        String extNoDot = ext.startsWith(".") ? ext.substring(1) : ext;
+        // MIME 화이트리스트 OR 확장자 화이트리스트(CR-037). md 등은 브라우저가 MIME를 비우거나
+        // octet-stream으로 보내므로 확장자로 보조 판정한다.
+        boolean mimeOk = contentType != null && props.getAllowedContentTypes().contains(contentType);
+        boolean extOk = !extNoDot.isBlank() && props.getAllowedExtensions().contains(extNoDot);
+        if (!mimeOk && !extOk) {
             throw new BusinessException(WmpErrorCode.FILE_TYPE_NOT_ALLOWED);
         }
 
-        String storedName = UUID.randomUUID() + extensionOf(file.getOriginalFilename());
+        String storedName = UUID.randomUUID() + ext;
         Path dir = Paths.get(props.getDir());
         try {
             Files.createDirectories(dir);
