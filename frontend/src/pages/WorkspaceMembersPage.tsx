@@ -70,7 +70,7 @@ export function WorkspaceMembersPage() {
         <div className="w-64">
           <label className="mb-1 block text-sm text-muted-foreground">사용자 추가</label>
           <Select value={selectedUser} onValueChange={setSelectedUser}>
-            <SelectTrigger>
+            <SelectTrigger className="text-left [&>span]:text-left">
               <SelectValue placeholder="사용자 선택" />
             </SelectTrigger>
             <SelectContent>
