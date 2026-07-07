@@ -209,8 +209,9 @@ function ReadShell({ empty, placeholder, onEdit, boxed, children }: {
 }) {
   return (
     <div className={
+      // 흰 바탕 = bg-card. --background는 앱 테마가 회색 캔버스(#f6f7f9)로 오버라이드해 흰색이 아님(main.css §입력 컨트롤).
       boxed
-        ? 'group relative rounded-md border border-border bg-background px-3 py-2.5 hover:bg-muted/20'
+        ? 'group relative rounded-md border border-border bg-card px-3 py-2.5'
         : 'group relative rounded-md border border-transparent px-2 py-1.5 -mx-2 hover:border-border hover:bg-muted/30'
     }>
       <button
