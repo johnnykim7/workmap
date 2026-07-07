@@ -1,6 +1,7 @@
 // 업무 상세 패널(§9.3 구조 그대로) — 풀페이지(WorkItemDetail)와 분할뷰(SplitView)가 공유.
 // item을 직접 받는다(key 해소는 호출측 책임). compact=분할뷰용(헤더 화살표 등 축약 여지).
-import { useRef } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { type WorkItemResponse, type Sprint, type WorkStatus } from '@/types/domain';
 import { DetailHeader } from './DetailHeader';
 import { DetailBody } from './DetailBody';
@@ -39,20 +40,25 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
       {/* 콘텐츠 섹션: 구분선을 각 섹션 '위'(다음 섹션 제목 머리)에 둔다 — 선이 다음 블록의 시작을 알린다.
           첫 섹션은 위 선·패딩 제거. 자체 카드형(결과)은 [&>.detail-card]로 위 선 제외 — 카드 테두리와 겹침 방지.
           ⚠️ border-t 색은 Tailwind v4/ds-ui 혼재로 currentColor(검정)로 떨어짐 → main.css .detail-sections 규칙으로 색 강제. */}
-      <div className="detail-sections [&>*:not(:first-child)]:mt-5 [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:pt-5 [&>.detail-card]:border-t-0 [&>.detail-card]:pt-0">
+      {/* 주요 섹션(항상 펼침): 설명 → 첨부 → [부가 묶음] → 결과 → 활동.
+          부가(하위작업·연결업무·운영)는 CollapsibleGroup으로 통으로 접기 — 화면을 가볍게. */}
+      <div className="detail-sections [&>*:not(:first-child)]:mt-5 [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:pt-5">
         <DetailBody item={item} />
-        {/* 순서(Jira 정합): 설명 → 첨부 → (하위작업|상위작업) → 연결된업무. 설명·첨부는 붙인다. */}
         <Attachments item={item} addRef={addAttachmentRef} />
-        {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
-        {item.issueType === 'SUBTASK' && item.parentId != null && (
-          <section>
-            <h2 className="mb-1.5 text-sm font-semibold text-foreground">상위 작업</h2>
-            <ParentLink parentId={item.parentId} projectId={item.projectId} />
-          </section>
-        )}
-        <LinkedItems item={item} addRef={addLinkRef} />
-        {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
-        {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
+
+        <CollapsibleGroup title="하위 작업 · 연결 · 운영">
+          {item.issueType !== 'SUBTASK' && <SubtaskList item={item} addRef={addSubtaskRef} />}
+          {item.issueType === 'SUBTASK' && item.parentId != null && (
+            <section>
+              <h2 className="mb-1.5 text-sm font-semibold text-foreground">상위 작업</h2>
+              <ParentLink parentId={item.parentId} projectId={item.projectId} />
+            </section>
+          )}
+          <LinkedItems item={item} addRef={addLinkRef} />
+          {OPS_STATUSES.has(item.commonStatus) && <FieldVerifications item={item} />}
+          {OPS_STATUSES.has(item.commonStatus) && <PromoteToBacklog item={item} />}
+        </CollapsibleGroup>
+
         {/* 결과(완료 산출물) — 완료 상태일 때만 렌더(내부에서 isDoneStatus 가드), CR-048 */}
         <ResultSection item={item} />
         <ActivityTabs item={item} />
@@ -98,5 +104,28 @@ export function WorkItemDetailPanel({ item, sprints, stacked = false }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+// 부가 섹션 묶음 — 하위작업·연결업무·운영을 통으로 접었다 펼친다(기본 접힘). 화면을 가볍게.
+// 내부 섹션들도 detail-sections 패턴으로 서로 얇은 구분선을 가진다.
+function CollapsibleGroup({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 text-left text-sm font-semibold text-foreground"
+      >
+        {open ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+        {title}
+      </button>
+      {open && (
+        <div className="detail-sections mt-4 [&>*:not(:first-child)]:mt-5 [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:pt-5">
+          {children}
+        </div>
+      )}
+    </section>
   );
 }

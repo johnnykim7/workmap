@@ -20,11 +20,12 @@ export function ResultSection({ item }: { item: WorkItemResponse }) {
   if (!isDoneStatus(item)) return null;
 
   return (
-    <section className="detail-card rounded-md border border-border">
+    // 다른 섹션과 동일 구조 — 카드 박스 없이 제목을 밖으로. 접기 토글·초록 체크는 '완료 산출물' 신호로 유지.
+    <section>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+        className="mb-2 flex w-full items-center gap-1.5 text-left"
       >
         {open ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
         <CheckCircle2 className="size-4 text-emerald-600" />
@@ -32,7 +33,7 @@ export function ResultSection({ item }: { item: WorkItemResponse }) {
         <span className="text-xs text-muted-foreground">완료 산출물</span>
       </button>
       {open && (
-        <div className="space-y-4 border-t border-border px-3 py-3">
+        <div className="space-y-4">
           <ResultBody item={item} />
           <div>
             <h3 className="mb-1.5 text-xs font-semibold text-muted-foreground">결과물 파일</h3>
