@@ -1111,6 +1111,15 @@
 - **규모/절차**: 중규모. 설계 캐스케이드 T1-1(WMP-WI-012 보강)·T1-3(BIZ-118)→T3-1(kind 컬럼·V24)→T3-2(kind 필터 API)→T3-3(본문=REFERENCE·결과=RESULT). T1-5 FSM·T1-6 이벤트 무변경.
 - **요청자**: 사용자(2026-07-07, "첨부파일에 파일 추가하면 결과의 첨부에도 같은 파일이 들어간다 — 둘은 성격이 다른데" → kind 구분 확정) | **변경 일자**: 2026-07-07
 
+### CR-052 — 직접 생성 시 동명 PENDING 초대 정리 (초대·직접생성 flow 미연결 보정)
+
+- **배경**: 사용자 지적 — 초대(pull이 아닌 관리자 push) flow와 사용자 직접 생성 flow가 서로를 모른다. `InvitationService.invite`는 동명 PENDING 초대가 있으면 `INVITATION_PENDING_DUPLICATED`로 막지만, `UserService.create`는 users 테이블 중복(`existsByEmail`)만 검사하고 `invitations` 테이블은 건드리지 않았음. 그 결과 "직접 생성으로 유저를 만든 뒤에도 유령 PENDING 초대가 남는" 미연결이 존재. 후속 재초대 차단(`INVITATION_PENDING_DUPLICATED`)뿐 아니라, **살아있는 초대 링크로 `accept()` 재호출 시 `EMAIL_DUPLICATED`** 에러까지 유발.
+- **결정(사용자)**: 직접 생성 시 같은 이메일의 PENDING 초대를 **REVOKED로 정리**(살아있는 초대 링크 무효화·이력상 "이미 유저 생성됨" 명확). 연결 구조는 **`UserService`에 `InvitationMapper` 직접 주입**(Mapper는 도메인 로직이 아니라 Service 빈 간 순환 없음 — `UserService→InvitationMapper`, `InvitationService→UserService`는 사이클 미형성).
+- **BE**: `UserService.create` 트랜잭션 안에서 insert 직후 `invitationMapper.findPendingByEmail(email)` 있으면 `updateStatus(id, "REVOKED")`. 신규 API·스키마·에러코드 없음.
+- **테스트**: UserServiceTest USR-8(동명 PENDING→REVOKED 정리)·USR-9(PENDING 없음→정리 스킵) 2건 추가. 전체 284/284 PASS.
+- **규모/절차**: 소규모(로직 한 곳 보정). 설계 문서 캐스케이드 불요(계획 외 미연결 버그 보정). `@WebMvcTest`(UserControllerTest)는 UserService를 `@MockBean`으로 대체 + InvitationMapper mock 이미 등록됨(추가 보강 불요).
+- **요청자**: 사용자(2026-07-08, "사용자 초대 시 위와 같은 버그가 있습니다 — 직접 생성 시 동명 PENDING 초대가 유령으로 남는다") | **변경 일자**: 2026-07-08 | **영향도**: Low
+
 <!-- 변경 요청 추가 시 같은 형식으로 작성 -->
 
 ---

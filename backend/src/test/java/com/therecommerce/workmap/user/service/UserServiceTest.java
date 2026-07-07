@@ -2,6 +2,8 @@ package com.therecommerce.workmap.user.service;
 
 import com.therecommerce.common.exception.BusinessException;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
+import com.therecommerce.workmap.invitation.domain.Invitation;
+import com.therecommerce.workmap.invitation.mapper.InvitationMapper;
 import com.therecommerce.workmap.user.domain.User;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
 import com.therecommerce.workmap.user.dto.UserDetailResponse;
@@ -30,6 +32,9 @@ class UserServiceTest {
 
     @Mock
     UserMapper userMapper;
+
+    @Mock
+    InvitationMapper invitationMapper;
 
     @Spy
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -67,6 +72,33 @@ class UserServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(WmpErrorCode.EMAIL_DUPLICATED);
         verify(userMapper, never()).insert(any());
+    }
+
+    @Test
+    @DisplayName("USR-8: 직접생성_동명PENDING초대_REVOKED정리(CR-052)")
+    void 직접생성_동명PENDING초대_정리() {
+        CreateUserRequest req = new CreateUserRequest("ghost@therecommerce.com", "rawPassword123", "유령", null, null);
+        when(userMapper.existsByEmail(req.email())).thenReturn(false);
+        Invitation pending = Invitation.builder().id(42L).email(req.email()).status("PENDING").build();
+        when(invitationMapper.findPendingByEmail(req.email())).thenReturn(pending);
+
+        userService.create(req);
+
+        verify(userMapper).insert(any());
+        verify(invitationMapper).updateStatus(42L, "REVOKED");
+    }
+
+    @Test
+    @DisplayName("USR-9: 직접생성_PENDING초대없음_정리스킵(CR-052)")
+    void 직접생성_PENDING초대없음_스킵() {
+        CreateUserRequest req = new CreateUserRequest("clean@therecommerce.com", "rawPassword123", "정상", null, null);
+        when(userMapper.existsByEmail(req.email())).thenReturn(false);
+        when(invitationMapper.findPendingByEmail(req.email())).thenReturn(null);
+
+        userService.create(req);
+
+        verify(userMapper).insert(any());
+        verify(invitationMapper, never()).updateStatus(any(), any());
     }
 
     @Test

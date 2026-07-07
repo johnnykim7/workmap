@@ -4,6 +4,8 @@ import com.therecommerce.common.exception.BusinessException;
 import com.therecommerce.common.paging.PageRequest;
 import com.therecommerce.common.paging.PageResponse;
 import com.therecommerce.workmap.common.exception.WmpErrorCode;
+import com.therecommerce.workmap.invitation.domain.Invitation;
+import com.therecommerce.workmap.invitation.mapper.InvitationMapper;
 import com.therecommerce.workmap.user.domain.User;
 import com.therecommerce.workmap.user.dto.CreateUserRequest;
 import com.therecommerce.workmap.user.dto.UpdateUserRequest;
@@ -26,6 +28,7 @@ import java.util.List;
 public class UserService {
 
     private final UserMapper userMapper;
+    private final InvitationMapper invitationMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -42,6 +45,13 @@ public class UserService {
                 .isActive(true)
                 .build();
         userMapper.insert(user);
+        // CR-052: 직접 생성으로 유저가 만들어졌으니, 같은 이메일의 PENDING 초대(유령)를 REVOKED로 정리.
+        // 정리하지 않으면 (1) 재초대 시 INVITATION_PENDING_DUPLICATED로 막히고
+        // (2) 살아있는 초대 링크로 accept() 재호출 시 EMAIL_DUPLICATED가 난다.
+        Invitation pending = invitationMapper.findPendingByEmail(req.email());
+        if (pending != null) {
+            invitationMapper.updateStatus(pending.getId(), "REVOKED");
+        }
         return UserResponse.from(user);
     }
 
