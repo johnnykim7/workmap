@@ -101,6 +101,21 @@ class AiDraftServiceTest {
     }
 
     @Test
+    @DisplayName("AI-1b: LLM이 ```json 코드블록으로 감싸도 파싱해 draft를 생성한다(stripToJson 방어)")
+    void 코드블록_감싼응답_파싱() {
+        stubDevTemplate();
+        // 실제 aimbase story-task 워크플로가 이렇게 감싸서 응답함(운영 실측). epic 케이스로 방어 검증.
+        when(client.runAndPoll(eq("wf-epic"), anyMap())).thenReturn(
+                "```json\n{\n  \"epics\": [{\"summary\":\"결제\",\"description\":\"d\"}]\n}\n```");
+        when(workItemService.create(any(), eq(9L), eq(true))).thenReturn(resp(101L, "EPIC"));
+
+        var res = service.create(5L, new AiDraftDtos.CreateRequest("서술", AiDraftDtos.Mode.epic, null), 9L);
+
+        assertThat(res.created()).hasSize(1);
+        assertThat(res.failedCount()).isZero();
+    }
+
+    @Test
     @DisplayName("AI-2: story-task 모드 — 지정 Epic 하위로 Story와 그 Task를 계층 생성한다")
     void storyTask모드_계층생성() {
         stubDevTemplate();

@@ -200,7 +200,7 @@ public class AiDraftService {
     /** output JSON에서 지정 키(epics/stories) 배열을 파싱. 키가 없거나 배열 아니면 빈 리스트. */
     private <T> List<T> parseList(String outputJson, String key, Class<T> elemType) {
         try {
-            JsonNode root = om.readTree(outputJson);
+            JsonNode root = om.readTree(stripToJson(outputJson));
             JsonNode arr = root.get(key);
             if (arr == null || !arr.isArray()) {
                 throw new BusinessException(WmpErrorCode.AI_DRAFT_UPSTREAM_FAILED,
@@ -217,5 +217,21 @@ public class AiDraftService {
             log.error("[ai-draft] 응답 파싱 실패. key={} err={}", key, e.getMessage());
             throw new BusinessException(WmpErrorCode.AI_DRAFT_UPSTREAM_FAILED, "AI 초안 응답 파싱에 실패했습니다.");
         }
+    }
+
+    /**
+     * LLM 출력을 순수 JSON으로 정규화. LLM이 ```json … ``` 코드블록이나 앞뒤 설명 문장을 붙이는 경우가 잦아,
+     * 첫 '{'부터 마지막 '}'까지만 추출한다(가장 견고). 이미 순수 JSON이면 그대로 반환.
+     */
+    private static String stripToJson(String s) {
+        if (s == null) {
+            return "";
+        }
+        int start = s.indexOf('{');
+        int end = s.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return s.substring(start, end + 1);
+        }
+        return s;
     }
 }
