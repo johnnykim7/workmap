@@ -46,6 +46,7 @@ public class AiDraftClient {
             Map<String, Object> res = restClient.post()
                     .uri("/api/v1/workflows/{wfId}/run", workflowId)
                     .header("X-API-Key", props.getApiKey())
+                    .header("X-Tenant-Id", props.getTenantId())
                     .header("Content-Type", "application/json")
                     .body(input)
                     .retrieve()
@@ -70,6 +71,7 @@ public class AiDraftClient {
                 Map<String, Object> res = restClient.get()
                         .uri("/api/v1/workflows/runs/{runId}", runId)
                         .header("X-API-Key", props.getApiKey())
+                        .header("X-Tenant-Id", props.getTenantId())
                         .retrieve()
                         .body(Map.class);
                 data = asMap(res == null ? null : res.get("data"));

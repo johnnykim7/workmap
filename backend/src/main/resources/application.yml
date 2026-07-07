@@ -90,6 +90,7 @@ workmap:
   aimbase:
     base-url: ${WMP_AIMBASE_BASE_URL:http://59.8.160.12:8280}
     api-key: ${WMP_AIMBASE_KEY:}
+    tenant-id: ${WMP_AIMBASE_TENANT:workmap}
     epic-workflow-id: ${WMP_AIMBASE_EPIC_WF:}
     story-task-workflow-id: ${WMP_AIMBASE_STORY_TASK_WF:}
     poll-interval-ms: ${WMP_AIMBASE_POLL_INTERVAL_MS:3000}

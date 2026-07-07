@@ -21,6 +21,9 @@ public class AiDraftProperties {
     /** aimbase 시스템 API Key — X-API-Key 헤더. env(WMP_AIMBASE_KEY) 주입. 비어 있으면 초안 API가 미설정 응답. */
     private String apiKey = "";
 
+    /** aimbase 테넌트 식별자 — X-Tenant-Id 헤더(운영 필수, 실측). env(WMP_AIMBASE_TENANT) 주입. */
+    private String tenantId = "workmap";
+
     /** "서술 → Epic 초안" 워크플로 id(mode=epic). */
     private String epicWorkflowId = "";
 
